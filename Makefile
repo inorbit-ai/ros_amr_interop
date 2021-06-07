@@ -14,13 +14,15 @@ build:
 	cd ${WORKSPACE_DIR}; \
 	colcon build --packages-select ros2mass
 
-
 run:
-	@echo "WARNING/TODO: run target only supports zsh"
 	cd ${WORKSPACE_DIR}; \
 	. install/setup.zsh; \
 	ros2 run ros2mass ros2mass
 
+tests:
+	cd ${WORKSPACE_DIR}; \
+	colcon test --packages-select ros2mass; \
+	colcon test-result --verbose
 
 all: build run
 
