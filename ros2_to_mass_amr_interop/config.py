@@ -17,7 +17,7 @@ SUPPORTED_EXTERNAL_VALUES = [
 ]
 
 
-class MassConfig:
+class MassAMRInteropConfig:
     def __init__(self, path=None) -> None:
         self.logger = logging.getLogger(__class__.__name__)
         _config = self._load(path)

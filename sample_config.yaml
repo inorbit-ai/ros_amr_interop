@@ -1,5 +1,5 @@
 config:
-  server: "ws://localhost:3000"
+  server: "wss://localhost:3000"
   mapping:
     # Identity
     uuid:

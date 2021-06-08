@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from ros2_to_mass_amr_interop.config import MassConfig
+from ros2_to_mass_amr_interop.config import MassAMRInteropConfig
 from ros2_to_mass_amr_interop.config import CFG_PARAMETER_STATIC
 from ros2_to_mass_amr_interop.config import CFG_PARAMETER_ROS_TOPIC
 from ros2_to_mass_amr_interop.config import CFG_PARAMETER_ENVVAR
@@ -10,7 +10,7 @@ cwd = Path(__file__).resolve().parent
 
 def test_mass_config_load():
     cfg_file_path = Path(cwd) / "test_data" / "config.yaml"
-    assert MassConfig(str(cfg_file_path)).mapping != {}
+    assert MassAMRInteropConfig(str(cfg_file_path)).mapping != {}
 
 
 @pytest.mark.parametrize("param_name, param_type", [
@@ -21,7 +21,7 @@ def test_mass_config_load():
 ])
 def test_mass_config_get_parameter_type(param_name, param_type):
     cfg_file_path = Path(cwd) / "test_data" / "config.yaml"
-    mass_config = MassConfig(str(cfg_file_path))
+    mass_config = MassAMRInteropConfig(str(cfg_file_path))
     assert mass_config.get_parameter_source(param_name) == param_type
 
 
@@ -34,5 +34,5 @@ def test_mass_config_get_parameter_type(param_name, param_type):
 def test_mass_config_get_parameter_value(monkeypatch, param_name, value):
     monkeypatch.setenv("MY_UUID", "foo")  # Environment variable used on config file
     cfg_file_path = Path(cwd) / "test_data" / "config.yaml"
-    mass_config = MassConfig(str(cfg_file_path))
+    mass_config = MassAMRInteropConfig(str(cfg_file_path))
     assert mass_config.get_parameter_value(param_name) == value

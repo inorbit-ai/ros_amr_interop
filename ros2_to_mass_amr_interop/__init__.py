@@ -2,19 +2,28 @@ import logging
 import websockets
 import json
 import asyncio
+from pathlib import Path
 from rclpy.node import Node
-from .config import MassConfig
+from .config import MassAMRInteropConfig
 from .messages import IdentityReport
 
 logging.basicConfig(level=logging.DEBUG)
 
 
 class MassAMRInteropNode(Node):
-    def __init__(self, config_file) -> None:
-        super().__init__(self.__class__.__name__)
+    def __init__(self, **kwargs) -> None:
+        super().__init__(node_name=self.__class__.__name__, **kwargs)
         self.logger = logging.getLogger(self.__class__.__name__)
 
-        self._config = MassConfig(config_file)  # TODO: rename class
+        self.declare_parameter('config_file', './config.yaml')
+        config_file = self.get_parameter('config_file').get_parameter_value().string_value
+        config_file = Path(config_file).resolve()
+        if not config_file.is_file():
+            raise ValueError(f"Configuration file '{config_file}' doesn't exist!")
+
+        self.logger.info(f"Using configuration file '{config_file}'")
+        self._config = MassAMRInteropConfig(str(config_file))
+
         self._uri = self._config.server
         self.logger.debug(f"Connecting to Mass server '{self._uri}'")
         self._wss_conn = websockets.connect(self._uri)

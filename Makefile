@@ -17,7 +17,8 @@ build:
 run:
 	cd ${WORKSPACE_DIR}; \
 	. install/setup.zsh; \
-	ros2 run ros2_to_mass_amr_interop ros2_to_mass_node
+	ros2 run ros2_to_mass_amr_interop ros2_to_mass_node \
+		--ros-args -p config_file:=/home/leandro/dev_ws/src/ros2-to-mass-amr-interop/sample_config.yaml
 
 tests:
 	cd ${WORKSPACE_DIR}; \
