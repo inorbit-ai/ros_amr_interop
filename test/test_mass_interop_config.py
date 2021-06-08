@@ -1,9 +1,9 @@
 import pytest
 from pathlib import Path
-from ros2mass.config import MassConfig
-from ros2mass.config import CFG_PARAMETER_STATIC
-from ros2mass.config import CFG_PARAMETER_ROS_TOPIC
-from ros2mass.config import CFG_PARAMETER_ENVVAR
+from ros2_to_mass_amr_interop.config import MassConfig
+from ros2_to_mass_amr_interop.config import CFG_PARAMETER_STATIC
+from ros2_to_mass_amr_interop.config import CFG_PARAMETER_ROS_TOPIC
+from ros2_to_mass_amr_interop.config import CFG_PARAMETER_ENVVAR
 
 cwd = Path(__file__).resolve().parent
 

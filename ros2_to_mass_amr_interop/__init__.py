@@ -5,7 +5,7 @@ from .config import MassConfig
 logging.basicConfig(level=logging.DEBUG)
 
 
-class IOMassInterOp:
+class MassAMRInterop:
     def __init__(self, config_file) -> None:
         self.logger = logging.getLogger(__class__.__name__)
 

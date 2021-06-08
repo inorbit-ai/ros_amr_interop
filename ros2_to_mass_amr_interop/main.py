@@ -8,7 +8,7 @@ from .messages import IdentityReport
 import os
 
 # config_file_path = Path(__file__).resolve().parent / "config.yaml"
-config_file_path = "/home/leandro/dev_ws/src/ros2mass/config.yaml"
+config_file_path = "/home/leandro/dev_ws/src/ros2-to-mass-amr-interop/config.yaml"
 
 
 async def sendMessage():

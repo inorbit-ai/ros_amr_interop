@@ -1,4 +1,4 @@
-rosMass:
+config:
   server: "wss://mass.inorbit.ai/receiver/aGVsbG8gd29ybGQgSSBsaWtlIHJvYm90cwo="
   mapping:
     # Identity

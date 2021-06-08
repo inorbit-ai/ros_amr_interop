@@ -10,18 +10,18 @@ clean:
 	@echo "Workspace '${WORKSPACE_DIR}' cleaned"
 
 build:
-	@echo "Building package 'ros2mass'"
+	@echo "Building package 'ros2-to-mass-amr-interop'"
 	cd ${WORKSPACE_DIR}; \
-	colcon build --packages-select ros2mass
+	colcon build --packages-select ros2-to-mass-amr-interop
 
 run:
 	cd ${WORKSPACE_DIR}; \
 	. install/setup.zsh; \
-	ros2 run ros2mass ros2mass
+	ros2 run ros2-to-mass-amr-interop ros2-to-mass-amr-interop
 
 tests:
 	cd ${WORKSPACE_DIR}; \
-	colcon test --packages-select ros2mass; \
+	colcon test --packages-select ros2-to-mass-amr-interop; \
 	colcon test-result --verbose
 
 all: build run

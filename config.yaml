@@ -1,4 +1,4 @@
-rosMass:
+config:
   server: "ws://localhost:3000"
   mapping:
     # Identity

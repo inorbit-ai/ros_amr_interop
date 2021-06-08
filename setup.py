@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-package_name = 'ros2mass'
+package_name = 'ros2_to_mass_amr_interop'
 
 setup(
     name=package_name,
@@ -13,14 +13,14 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='leandro',
-    maintainer_email='leandro@inorbit.ai',
+    maintainer='InOrbit',
+    maintainer_email='support@inorbit.ai',
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'ros2mass = ros2mass.main:main'
+            'ros2_to_mass_amr_interop = ros2_to_mass_amr_interop.main:main'
         ],
     },
 )
