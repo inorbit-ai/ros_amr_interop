@@ -99,6 +99,7 @@ class MassConfig:
         Returns
         -------
             str: parameter value
+
         """
         param_source = self.get_parameter_source(name)
 

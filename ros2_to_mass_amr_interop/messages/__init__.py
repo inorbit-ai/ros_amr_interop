@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 
+
 class MassObject:
     def __init__(self) -> None:
         pass
