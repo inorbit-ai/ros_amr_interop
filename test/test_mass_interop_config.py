@@ -22,7 +22,7 @@ def test_mass_config_load():
 def test_mass_config_get_parameter_type(param_name, param_type):
     cfg_file_path = Path(cwd) / "test_data" / "config.yaml"
     mass_config = MassConfig(str(cfg_file_path))
-    assert mass_config.get_parameter_type(param_name) == param_type
+    assert mass_config.get_parameter_source(param_name) == param_type
 
 
 @pytest.mark.parametrize("param_name, value", [

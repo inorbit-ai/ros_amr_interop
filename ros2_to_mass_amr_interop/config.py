@@ -40,9 +40,9 @@ class MassConfig:
         config = config[k]
         return config
 
-    def get_parameter_type(self, name):
+    def get_parameter_source(self, name):
         """
-        Return parameter type.
+        Return parameter source.
 
         Args:
         ----
@@ -54,7 +54,7 @@ class MassConfig:
 
         Returns
         -------
-            str: parameter type
+            str: parameter source
 
         """
         if isinstance(self.mapping[name], str):
@@ -63,16 +63,16 @@ class MassConfig:
         if isinstance(self.mapping[name], dict):
             # Evaluate is the parameter is non static
             if 'valueFrom' in self.mapping[name]:
-                param_type = self.mapping[name]['valueFrom']
+                param_source = self.mapping[name]['valueFrom']
 
-                # param_type is a dict whose first key
+                # param_source is a dict whose first key
                 # is the external parameter type
-                if not isinstance(param_type, dict):
+                if not isinstance(param_source, dict):
                     raise ValueError(f"Invalid 'valueFrom' configuration: '{name}'")
-                param_type = next(iter(param_type))
+                param_source = next(iter(param_source))
 
-                if param_type in SUPPORTED_EXTERNAL_VALUES:
-                    return param_type
+                if param_source in SUPPORTED_EXTERNAL_VALUES:
+                    return param_source
 
         # If no supported external valueFrom configs were found,
         # assume that the parameter is static if it is an object
@@ -86,27 +86,27 @@ class MassConfig:
         Return configuration parameter value.
 
         It also deals with the complexity of getting
-        the value from different sources
+        the value from different sources.
 
         Args:
         ----
             name (Union[str, dict]): configuration parameter value
 
         """
-        param_type = self.get_parameter_type(name)
+        param_source = self.get_parameter_source(name)
 
-        if param_type == CFG_PARAMETER_STATIC:
+        if param_source == CFG_PARAMETER_STATIC:
             return self.mapping[name]
 
-        if param_type == CFG_PARAMETER_ENVVAR:
-            envvar_name = self.mapping[name]['valueFrom'][param_type]
+        if param_source == CFG_PARAMETER_ENVVAR:
+            envvar_name = self.mapping[name]['valueFrom'][param_source]
             param_value = os.getenv(envvar_name)
-            if not param_type:
+            if not param_source:
                 self.logger.warn(f"Empty or undefined environment variable: '{envvar_name}'")
             return param_value
 
-        if param_type == CFG_PARAMETER_ROS_TOPIC:
-            return self.mapping[name]['valueFrom'][param_type]
+        if param_source == CFG_PARAMETER_ROS_TOPIC:
+            return self.mapping[name]['valueFrom'][param_source]
 
-        if param_type == CFG_PARAMETER_ROS_PARAMETER:
-            return self.mapping[name]['valueFrom'][param_type]
+        if param_source == CFG_PARAMETER_ROS_PARAMETER:
+            return self.mapping[name]['valueFrom'][param_source]
