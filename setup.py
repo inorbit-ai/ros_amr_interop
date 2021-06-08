@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'ros2_to_mass_amr_interop = ros2_to_mass_amr_interop.main:main'
+            'ros2_to_mass_node = ros2_to_mass_amr_interop.ros2_to_mass_node:main'
         ],
     },
 )

@@ -17,7 +17,7 @@ build:
 run:
 	cd ${WORKSPACE_DIR}; \
 	. install/setup.zsh; \
-	ros2 run ros2-to-mass-amr-interop ros2-to-mass-amr-interop
+	ros2 run ros2_to_mass_amr_interop ros2_to_mass_node
 
 tests:
 	cd ${WORKSPACE_DIR}; \
