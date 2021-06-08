@@ -92,8 +92,17 @@ class MassConfig:
         ----
             name (Union[str, dict]): configuration parameter value
 
+        Raises
+        ------
+            ValueError: when parameter value does not exist or it is invalid
+
+        Returns
+        -------
+            str: parameter value
         """
         param_source = self.get_parameter_source(name)
+
+        self.logger.debug(f"Parameter '{name}' source: {param_source}")
 
         if param_source == CFG_PARAMETER_STATIC:
             return self.mapping[name]
@@ -101,8 +110,8 @@ class MassConfig:
         if param_source == CFG_PARAMETER_ENVVAR:
             envvar_name = self.mapping[name]['valueFrom'][param_source]
             param_value = os.getenv(envvar_name)
-            if not param_source:
-                self.logger.warn(f"Empty or undefined environment variable: '{envvar_name}'")
+            if not param_value:
+                raise ValueError(f"Empty or undefined environment variable: '{envvar_name}'")
             return param_value
 
         if param_source == CFG_PARAMETER_ROS_TOPIC:

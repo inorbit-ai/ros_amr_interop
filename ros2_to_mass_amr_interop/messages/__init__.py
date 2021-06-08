@@ -1,5 +1,5 @@
 import logging
-
+from datetime import datetime
 
 class MassObject:
     def __init__(self) -> None:
@@ -23,13 +23,10 @@ class IdentityReport(MassObject):
 
         # As per Mass example, data format is ISO8601
         # with timezone offset e.g. 2012-04-21T18:25:43-05:00
-        self.data['timestamp'] = '2012-04-21T18:25:43-05:00'  # TODO
+        self.data['timestamp'] = datetime.now().replace(microsecond=0).astimezone().isoformat()
 
         # Add other optional identity report properties
         for k, v in kwargs:
             self.data[k] = v
 
-        self._validate_schema()
-
-    def _validate_schema(self):
-        pass
+        self._validate_schema(mass_object_type='identityReport')
