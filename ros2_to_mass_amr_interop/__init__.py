@@ -11,6 +11,16 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 class MassAMRInteropNode(Node):
+    """ROS node implementing WebSocket communication to Mass.
+
+    The node configuration is obtained from a configuration file
+    that can be provided externally. Then it subscribes to various
+    topics and sends relevant data to a Mass server by using a
+    WebSocket connection.
+
+    Args:
+        Node (obj:`str`, optional): configuration file path. Defaults to `./config.yaml`.
+    """
     def __init__(self, **kwargs) -> None:
         super().__init__(node_name=self.__class__.__name__, **kwargs)
         self.logger = logging.getLogger(self.__class__.__name__)
