@@ -1,7 +1,7 @@
+import pytest
 import rclpy
 from rclpy import Parameter
 from pathlib import Path
-import pytest
 from ros2_to_mass_amr_interop import MassAMRInteropNode
 
 cwd = Path(__file__).resolve().parent

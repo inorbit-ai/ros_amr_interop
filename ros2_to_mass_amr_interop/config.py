@@ -18,6 +18,20 @@ SUPPORTED_EXTERNAL_VALUES = [
 
 
 class MassAMRInteropConfig:
+    """
+    Configuration file parsing and value gathering.
+
+    Parses yaml configuration file and deals with parameters
+    with values that are not static i.e. parameter values that
+    are obtained from environment variables or ROS2 topics.
+
+    Attributes
+    ----------
+        server (str): Mass WebSocket server URI
+        mapping (:obj:`dict`): parameter name and value mapping
+
+    """
+
     def __init__(self, path=None) -> None:
         self.logger = logging.getLogger(__class__.__name__)
         _config = self._load(path)
@@ -35,7 +49,7 @@ class MassAMRInteropConfig:
 
         self.logger.debug(f"Config file '{path}' loaded")
 
-        # Ignoring config file key
+        # Ignoring config file root key value as it's not relevant
         k = next(iter(config))
         config = config[k]
         return config
@@ -102,7 +116,6 @@ class MassAMRInteropConfig:
 
         """
         param_source = self.get_parameter_source(name)
-
         self.logger.debug(f"Parameter '{name}' source: {param_source}")
 
         if param_source == CFG_PARAMETER_STATIC:
