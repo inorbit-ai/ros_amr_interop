@@ -5,6 +5,8 @@ package_name = 'ros2_to_mass_amr_interop'
 setup(
     name=package_name,
     packages=find_packages(),
+    package_data={'': ['schema.json']},
+    include_package_data=True,
     version='0.1.0',
     data_files=[
         ('share/ament_index/resource_index/packages',

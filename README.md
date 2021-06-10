@@ -20,7 +20,7 @@ The node takes the Mass AMR config file path as parameter. If not provided, it i
 # Source the local overlay by running `. install/setup.sh` if
 # using bash or `. install/setup.zsh` if using zsh.
 ros2 run ros2_to_mass_amr_interop ros2_to_mass_node \
-    --ros-args -p config_file:=/path/to/config.yaml
+    --ros-args -p config_file:=/path/to/config.yaml --log-level debug
 ```
 
 ## Running tests

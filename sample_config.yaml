@@ -3,17 +3,18 @@
 # ==================================================================
 #
 # Parameters that are used to configure ROS2 node for connecting to Mass compatible servers.
-# The `server` section expects a string with a WebSocket server URI, while the `mapping` section
+# The `server` section expects a string with a WebSocket server URI, while the `mappings` section
 # contains a list of paramaters for configuring the ROS2 node. Mandatory parameters are `uuid`,
 # `manufacturerName`, `robotModel`, `robotSerialNumber` and `baseRobotEnvelope` (see full spec
 # https://github.com/MassRobotics-AMR/AMR_Interop_Standard/blob/main/AMR_Interop_Standard.json).
+# It assumed that all parameters under the `mappings` key follow the AMR Interop Standard
 # 
-# In addition to static values i.e. strings or objects, the `mapping` section supports a variety of
+# In addition to local values i.e. strings or objects, the `mappings` section supports a variety of
 # sources from where the parameter value can be obtained: `envVar`, `rosTopic` and `rosParameter`.
 
 config:
-  server: "wss://localhost:3000"
-  mapping:
+  server: "ws://localhost:3000"
+  mappings:
     # Identity
     uuid:
       valueFrom:
@@ -22,9 +23,9 @@ config:
     robotModel: "spoony1.0"
     robotSerialNumber: "2172837"
     baseRobotEnvelope:
-        x: 2
-        y: 1
-        z: 3
+      x: 2
+      y: 1
+      z: 3
     maxSpeed: 2.5
     maxRunTime: 8
     emergencyContactInformation: "555-5555"
@@ -35,11 +36,10 @@ config:
     thumbnailImage: "https://spoon.lift/media/spoony1.0.png"
     cargoType: "Anything solid or liquid"
     cargoMaxVolume:
-      value:
-        x: 2
-        y: 2
-        z: 1
-    cargoMaxWeight: 4000
+      x: 2
+      y: 2
+      z: 1
+    cargoMaxWeight: "4000"
     # Status
     operationalState:
       valueFrom:

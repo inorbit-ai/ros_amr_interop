@@ -1,6 +1,6 @@
 config:
   server: "wss://mass.inorbit.ai/receiver/aGVsbG8gd29ybGQgSSBsaWtlIHJvYm90cwo="
-  mapping:
+  mappings:
     # Identity
     uuid:
       valueFrom:
@@ -9,9 +9,9 @@ config:
     robotModel: "spoony1.0"
     robotSerialNumber: "2172837"
     baseRobotEnvelope:
-        x: 2
-        y: 1
-        z: 3
+      x: 2
+      y: 1
+      z: 3
     maxSpeed: 2.5
     maxRunTime: 8
     emergencyContactInformation: "555-5555"
@@ -22,11 +22,10 @@ config:
     thumbnailImage: "https://spoon.lift/media/spoony1.0.png"
     cargoType: "Anything solid or liquid"
     cargoMaxVolume:
-      value:
-        x: 2
-        y: 2
-        z: 1
-    cargoMaxWeight: 4000
+      x: 2
+      y: 2
+      z: 1
+    cargoMaxWeight: "4000"
     # Status
     operationalState:
       valueFrom:
