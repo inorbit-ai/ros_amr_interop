@@ -39,7 +39,8 @@ class MassAMRInteropConfig:
 
         self.server = _config['server']
         self.mappings = _config['mappings']
-        self.parameters_by_source = self._get_parameters_by_source(self.mappings)
+        self.parameters_by_source = defaultdict(list)
+        self._parse_config(self.mappings)
 
     def _load(self, path) -> None:
         config = dict()
@@ -56,13 +57,10 @@ class MassAMRInteropConfig:
         config = config[k]
         return config
 
-    def _get_parameters_by_source(self, mappings):
-        parameters_by_source = defaultdict(list)
+    def _parse_config(self, mappings):
         for parameter_name in mappings.keys():
             parameter_source = self.get_parameter_source(name=parameter_name)
-            parameters_by_source[parameter_source].append(parameter_name)
-
-        return parameters_by_source
+            self.parameters_by_source[parameter_source].append(parameter_name)
 
     def get_parameter_source(self, name):
         """
@@ -145,3 +143,12 @@ class MassAMRInteropConfig:
 
         if param_source == CFG_PARAMETER_ROS_PARAMETER:
             return self.mappings[name]['valueFrom'][param_source]
+
+    def get_ros_topic_parameter_type(self, name):
+        return self.mappings[name]['valueFrom']['msgType']
+
+    def get_ros_topic_parameter_topic(self, name):
+        return self.mappings[name]['valueFrom']['rosTopic']
+
+    def get_ros_topic_parameter_msg_field(self, name):
+        return self.mappings[name]['valueFrom'].get('msgField')

@@ -2,6 +2,8 @@ import websockets
 import json
 import asyncio
 from std_msgs import msg as ros_std_msgs
+from geometry_msgs import msg as ros_geometry_msgs
+from sensor_msgs import msg as ros_sensor_msgs
 
 from pathlib import Path
 from functools import partial
@@ -93,46 +95,7 @@ class MassAMRInteropNode(Node):
         loop.run_until_complete(self._send_report(self.mass_status_report))
     # </May be a good idea to move these outside this class>
 
-    def _get_topic_type(self, topic_name):
-        """
-        Return topic's type.
-
-        Tries to determine topic's type by analyzing all the subscribers
-        registered into that topic. It assumes that all topic endpoint
-        types are the same so no additional checking is done.
-
-        Args
-        ----
-            topic_name (str): topic's name.
-
-        Raises
-        ------
-            RuntimeError: when topic type cannot be determined.
-
-        Returns
-        -------
-            str: topic type e.g. `std_msgs/msg/String`.
-
-        """
-        # TODO: verify if this approach makes sense vs specifying the topic msgs
-        # type on the Node configuration. I'm assuming only one TopicEndpointInfo
-        # is returned, but it may not be the case. An idea for testing this would
-        # be to subscribe two or more nodes to the same topic and verify how many
-        # results `get_publishers_info_by_topic` returns. If two or more are
-        # returned, there are two possible implementations:
-        #  1) currently used, assume all `topic_type`s are the same and pick the first
-        #  2) verify that `topic_type`s of all TopicEndpointInfo objects are the same
-
-        self.logger.debug(f"Getting topic type for topic '{topic_name}'")
-        topic_subs_info = self.get_publishers_info_by_topic(topic_name)
-        self.logger.debug(f"Got topic subscription info: {topic_subs_info}")
-
-        if not len(topic_subs_info):
-            raise RuntimeError(f"No publishers found for topic '{topic_name}'")
-
-        return topic_subs_info[0].topic_type
-
-    def _callback(self, param_name, data):
+    def _callback(self, param_name, msg_field, data):
         # Callback method receives an object of certain type depending on the topic
         # message type this callback is registed. For example, if the callback is
         # called for messages of type `String` of topic `/foo/bar`, then `data` is
@@ -140,36 +103,65 @@ class MassAMRInteropNode(Node):
 
         # TODO: this may grow a lot, so it may be a good idea to implement an adapter
 
-        if param_name in self.mass_identity_report.schema_properties:
-            # TODO: Implement ROS2 data type adapter e.g. sensor_msgs/BatteryState to
-            # Mass `batteryPercentage`, `remainingRunTime` and `loadPercentageStillAvailable`
-            self.mass_identity_report.update_parameter(param_name, data.data)
-            self.send_identity_report()
-        if param_name in self.mass_status_report.schema_properties:
-            # TODO: Implement ROS2 data type adapter e.g. sensor_msgs/BatteryState to
-            # Mass `batteryPercentage`, `remainingRunTime` and `loadPercentageStillAvailable`
-            self.mass_status_report.update_parameter(param_name, data.data)
-            self.send_status_report()
+        mass_data = {}
+
         self.logger.info(f"Parameter '{param_name}', type {type(data)}")
+
+        if isinstance(data, ros_geometry_msgs.PoseStamped):
+            pose_position = data.pose.position  # Point
+            pose_orientation = data.pose.orientation  # Quaternion
+            mass_data["location"] = {
+                "x": pose_position.x,
+                "y": pose_position.y,
+                "z": pose_position.z,
+                "angle": {
+                    "x": pose_orientation.x,
+                    "y": pose_orientation.y,
+                    "z": pose_orientation.z,
+                    "w": pose_orientation.w
+                },
+                "planarDatum": "00000000-0000-0000-0000-000000000000"
+            }
+
+        if isinstance(data, ros_sensor_msgs.BatteryState):
+            # ros2 topic pub --once  /good_sensors/bat sensor_msgs/msg/BatteryState "{percentage: 91.3}"
+            try:
+                mass_data['batteryPercentage'] = getattr(data, msg_field)
+            except AttributeError:
+                self.logger.error(f"Message field '{msg_field}' on message type '{type(data)}' doesn't exist")
+
+        if param_name in self.mass_identity_report.schema_properties:
+            for mass_param_name, mass_param_data in mass_data.items():
+                self.mass_identity_report.update_parameter(mass_param_name, mass_param_data)
+                self.send_identity_report()
+        if param_name in self.mass_status_report.schema_properties:
+            for mass_param_name, mass_param_data in mass_data.items():
+                self.mass_status_report.update_parameter(mass_param_name, mass_param_data)
+                self.send_status_report()
 
     def register_mass_adapter(self, param_name, topic_name):
 
         self.logger.debug(f"Registering callback to topic '{topic_name}'")
-        try:
-            topic_type = self._get_topic_type(topic_name=topic_name)
-        except RuntimeError as ex:
-            self.logger.error(f"Couldn't determine topic '{topic_name}' type: {ex}")
-            return False
 
-        # topic_type_module = topic_type.split("/")[0]
+        topic_type = self._config.get_ros_topic_parameter_type(name=param_name)
+
+        topic_type_module = topic_type.split("/")[0]  # Are they actually modules? What does geometry_msgs in `geometry_msgs/msg/PoseStamped` means?
         topic_type_name = topic_type.split("/")[-1]
+
+        msg_field = self._config.get_ros_topic_parameter_msg_field(name=param_name)
 
         # TODO: support message types other than std_msgs
         # e.g. geometry_msgs. These have a different name structure
         # and come from a different module `geometry_msgs`
+        msgs_types = {
+            'geometry_msgs': ros_geometry_msgs,
+            'sensor_msgs': ros_sensor_msgs,
+            'std_msgs': ros_std_msgs
+        }
+
         try:
-            topic_type_t = getattr(ros_std_msgs, topic_type_name)
-        except AttributeError:
+            topic_type_t = getattr(msgs_types[topic_type_module], topic_type_name)
+        except (AttributeError, KeyError):
             self.logger.error(f"Undefined topic type {topic_type}")
             return False
 
@@ -178,7 +170,7 @@ class MassAMRInteropNode(Node):
         self.subscription = self.create_subscription(
             msg_type=topic_type_t,
             topic=topic_name,
-            callback=partial(self._callback, param_name),
+            callback=partial(self._callback, param_name, msg_field),
             qos_profile=10)
 
         return True
