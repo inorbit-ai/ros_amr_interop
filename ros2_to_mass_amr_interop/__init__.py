@@ -4,6 +4,7 @@ import asyncio
 from std_msgs import msg as ros_std_msgs
 from geometry_msgs import msg as ros_geometry_msgs
 from sensor_msgs import msg as ros_sensor_msgs
+from tf2_kdl import PyKDL
 
 from pathlib import Path
 from functools import partial
@@ -108,6 +109,7 @@ class MassAMRInteropNode(Node):
         self.logger.info(f"Parameter '{param_name}', type {type(data)}")
 
         if isinstance(data, ros_geometry_msgs.PoseStamped):
+            self.logger.debug(f"Message {data} type `PoseStamped`")
             pose_position = data.pose.position  # Point
             pose_orientation = data.pose.orientation  # Quaternion
             mass_data["location"] = {
@@ -124,11 +126,33 @@ class MassAMRInteropNode(Node):
             }
 
         if isinstance(data, ros_sensor_msgs.BatteryState):
-            # ros2 topic pub --once  /good_sensors/bat sensor_msgs/msg/BatteryState "{percentage: 91.3}"
+            self.logger.debug(f"Message {data} type `BatteryState`")
+
+            # ros2 topic pub --once /good_sensors/bat sensor_msgs/msg/BatteryState "{percentage: 91.3}"
             try:
                 mass_data['batteryPercentage'] = getattr(data, msg_field)
             except AttributeError:
                 self.logger.error(f"Message field '{msg_field}' on message type '{type(data)}' doesn't exist")
+
+        if isinstance(data, ros_geometry_msgs.TwistStamped):
+            self.logger.debug(f"Message {data} type `TwistStamped`")
+
+            # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped 
+            # TODO: find why command below doesn't work. It seems
+            # that auto headers are not supported on ros2
+            # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped "{header: {stamp: now, frame_id: 'value'}, twist.linear: {x: 1, y: 2, z: 3}, twist.angular: {x: 1, y: 1, z: 1}}"
+            twist = data.twist
+            quat = PyKDL.Rotation.EulerZYX(twist.angular.z, twist.angular.y, twist.angular.x).GetQuaternion()
+            mass_data["velocity"] = {
+                "linear": 1,  # TODO: calculate linear velocity
+                "angle": {
+                    "x": quat[0],
+                    "y": quat[1],
+                    "z": quat[2],
+                    "w": quat[3],
+                },
+                "planarDatum": "00000000-0000-0000-0000-000000000000"
+            }
 
         if param_name in self.mass_identity_report.schema_properties:
             for mass_param_name, mass_param_data in mass_data.items():
