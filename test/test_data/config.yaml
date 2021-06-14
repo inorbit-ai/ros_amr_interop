@@ -1,0 +1,68 @@
+config:
+  server: "wss://mass.inorbit.ai/receiver/aGVsbG8gd29ybGQgSSBsaWtlIHJvYm90cwo="
+  mapping:
+    # Identity
+    uuid:
+      valueFrom:
+        envVar: MY_UUID
+    manufacturerName: Spoonlift
+    robotModel: "spoony1.0"
+    robotSerialNumber: "2172837"
+    baseRobotEnvelope:
+        x: 2
+        y: 1
+        z: 3
+    maxSpeed: 2.5
+    maxRunTime: 8
+    emergencyContactInformation: "555-5555"
+    chargerType: "24V plus"
+    supportVendorName: "We-B-Robots"
+    supportVendorContactInformation: "support@we-b-robots.com"
+    productDocumentation: "https://spoon.lift/support/docs/spoony1.0"
+    thumbnailImage: "https://spoon.lift/media/spoony1.0.png"
+    cargoType: "Anything solid or liquid"
+    cargoMaxVolume:
+      value:
+        x: 2
+        y: 2
+        z: 1
+    cargoMaxWeight: 4000
+    # Status
+    operationalState:
+      valueFrom:
+        rosTopic: /we_b_robots/mode
+        # std_msgs/String
+    pose:
+      valueFrom:
+        rosTopic: /magic_nav/current_pose
+        # geometry_msgs/PoseStamped
+    velocity:
+      valueFrom:
+        rosTopic: /good_sensors/vel
+        # geometry_msgs/TwistStamped
+    batteryPercentage:
+      valueFrom:
+        rosTopic: /good_sensors/bat
+        # std_msgs/Float32
+    remainingRunTime:
+      valueFrom:
+        rosTopic: /we_b_robots/remaining_time
+        # std_msgs/Float32
+    loadPercentageStillAvailable:
+      valueFrom:
+        rosTopic: /spoonlift/available_capacity_percentage
+        # std_msgs/Float32
+    errorCodes: TBD / Juli / Flor
+    destinations:
+      valueFrom:
+        rosTopic: /we_b_robots/destinations
+        # nav_msgs/Path
+    path:
+      valueFrom:
+        rosTopic: /magic_nav/path
+      # nav_msgs/Path
+    rosFrameToPlanarDatumUUID:
+      # required since Mass expects frames to be referenced using uuids
+      map: "096522ad-61fa-4796-9b31-e35b0f8d0b26"
+      floor1: "096522ad-61fa-4796-9b31-e35b0f8d0b26"
+      floor2: "6ec7a6d0-21a9-4f04-b680-e7c640a0687e"
