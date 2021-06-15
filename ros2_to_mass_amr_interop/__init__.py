@@ -1,6 +1,8 @@
+from re import T
 import websockets
 import json
 import asyncio
+
 from std_msgs import msg as ros_std_msgs
 from geometry_msgs import msg as ros_geometry_msgs
 from sensor_msgs import msg as ros_sensor_msgs
@@ -51,7 +53,10 @@ class MassAMRInteropNode(Node):
 
         # Create websocket connection
         self._uri = self._config.server
-        self._wss_conn = websockets.connect(self._uri)
+        self._wss_conn = None
+        self.loop = asyncio.get_event_loop()
+        # perform a synchronous connect
+        self.loop.run_until_complete(self._async_connect())
         self.logger.debug(f"Connected to Mass server '{self._uri}'")
 
         # An instance of both report types is kept internally
@@ -73,6 +78,16 @@ class MassAMRInteropNode(Node):
             topic_name = self._config.get_parameter_value(name=param_name)
             self.register_mass_adapter(param_name, topic_name)
 
+    async def _async_connect(self):
+        # perform async connect, and store the connected WebSocketClientProtocol
+        # object, for later reuse for send & recv
+        self.logger.debug(f"Connecting to server '{self._uri}'")
+        self._wss_conn = await websockets.connect(self._uri, ping_timeout=3, ping_interval=5)
+
+    async def _async_send_report(self, mass_object):       
+        self.logger.debug(f"Sending object {mass_object.data}")
+        await self._wss_conn.send(json.dumps(mass_object.data))
+
     def _read_config_file(self, config_file_path):
 
         config_file_path = Path(config_file_path).resolve()
@@ -83,17 +98,11 @@ class MassAMRInteropNode(Node):
         return MassAMRInteropConfig(str(config_file_path))
 
     # <May be a good idea to move these outside this class>
-    async def _send_report(self, mass_object):
-        async with self._wss_conn as websocket:
-            await websocket.send(json.dumps(mass_object.data))
-
     def send_identity_report(self):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self._send_report(self.mass_identity_report))
+        self.loop.run_until_complete(self._async_send_report(self.mass_identity_report))
 
     def send_status_report(self):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self._send_report(self.mass_status_report))
+        self.loop.run_until_complete(self._async_send_report(self.mass_status_report))
     # </May be a good idea to move these outside this class>
 
     def _callback(self, param_name, msg_field, data):
@@ -141,10 +150,20 @@ class MassAMRInteropNode(Node):
             # TODO: find why command below doesn't work. It seems
             # that auto headers are not supported on ros2
             # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped "{header: {stamp: now, frame_id: 'value'}, twist.linear: {x: 1, y: 2, z: 3}, twist.angular: {x: 1, y: 1, z: 1}}"
+
             twist = data.twist
-            quat = PyKDL.Rotation.EulerZYX(twist.angular.z, twist.angular.y, twist.angular.x).GetQuaternion()
+
+            linear_vel = PyKDL.Vector(
+                x=twist.linear.x,
+                y=twist.linear.y,
+                z=twist.linear.z).Norm()
+            quat = PyKDL.Rotation.EulerZYX(
+                Alfa=twist.angular.z,
+                Beta=twist.angular.y,
+                Gamma=twist.angular.x).GetQuaternion()
+
             mass_data["velocity"] = {
-                "linear": 1,  # TODO: calculate linear velocity
+                "linear": linear_vel,
                 "angle": {
                     "x": quat[0],
                     "y": quat[1],
