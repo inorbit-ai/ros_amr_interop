@@ -1,4 +1,3 @@
-from re import T
 import websockets
 import json
 import asyncio
@@ -28,9 +27,15 @@ class MassAMRInteropNode(Node):
     ROS node implementing WebSocket communication to Mass.
 
     The node configuration is obtained from a configuration file
-    that can be provided externally. Then it subscribes to various
-    topics and sends relevant data to a Mass server by using a
+    that can be provided externally. On initialization, the node
+    subscribes to various topics and sends relevant data to a 
+    MassRobotics AMR InterOp standard capable server by using a
     WebSocket connection.
+
+    Instances for both Identity and Status reports are kept
+    internally as Node attribute. They are updated when data
+    from different datasources is received by the node.
+    TODO: implement watchdog for node configuration file changes.
 
     Attributes
     ----------
@@ -44,8 +49,9 @@ class MassAMRInteropNode(Node):
         # Get Node logger instance
         self.logger = self.get_logger()
 
-        # Declare Node configuration parameter. Defaults to './config.yaml' if
-        # no `config_file` parameter is provided.
+        # Declare Node configuration parameter. Defaults to './config.yaml' if no
+        # ``config_file`` parameter is provided. Provide the parameter when running
+        # the node by using ``--ros-args -p config_file:=/path/to/config.yaml``
         self.declare_parameter('config_file', './config.yaml')
         config_file_param = self.get_parameter(name='config_file')
         config_file_path = config_file_param.get_parameter_value().string_value
@@ -59,11 +65,21 @@ class MassAMRInteropNode(Node):
         self.loop.run_until_complete(self._async_connect())
         self.logger.debug(f"Connected to Mass server '{self._uri}'")
 
-        # An instance of both report types is kept internally
+        # Create an instance of both report types
         _uuid = self._config.get_parameter_value(MASS_REPORT_UUID)
         self.mass_identity_report = IdentityReport(uuid=_uuid)
         self.mass_status_report = StatusReport(uuid=_uuid)
 
+        self._process_config()
+
+    def _process_config(self):
+        """
+        Populate Identity Report object with parameters from configuration
+        and register callbacks for ROS Topics.
+        
+        TODO: re-run on configuration file changes
+        TODO: deregister callbacks on configuration changes
+        """
         # Update status report with local parameters
         for param_name in self._config.parameters_by_source[CFG_PARAMETER_LOCAL]:
             param_value = self._config.get_parameter_value(param_name)
@@ -79,14 +95,22 @@ class MassAMRInteropNode(Node):
             self.register_mass_adapter(param_name, topic_name)
 
     async def _async_connect(self):
-        # perform async connect, and store the connected WebSocketClientProtocol
-        # object, for later reuse for send & recv
         self.logger.debug(f"Connecting to server '{self._uri}'")
         self._wss_conn = await websockets.connect(self._uri, ping_timeout=3, ping_interval=5)
 
-    async def _async_send_report(self, mass_object):       
+    async def _async_send_report(self, mass_object):
+        """
+        Sends MassRobotics object data to MassRobotics server
+        by using WebSockets connection.
+
+        Args:
+            mass_object (:obj:`MassObject`): Identity or Status report
+        """
         self.logger.debug(f"Sending object {mass_object.data}")
         await self._wss_conn.send(json.dumps(mass_object.data))
+
+    def _sync_send_report(self, mass_object):
+        self.loop.run_until_complete(self._async_send_report(mass_object))
 
     def _read_config_file(self, config_file_path):
 
@@ -96,14 +120,6 @@ class MassAMRInteropNode(Node):
 
         self.logger.info(f"Using configuration file '{config_file_path}'")
         return MassAMRInteropConfig(str(config_file_path))
-
-    # <May be a good idea to move these outside this class>
-    def send_identity_report(self):
-        self.loop.run_until_complete(self._async_send_report(self.mass_identity_report))
-
-    def send_status_report(self):
-        self.loop.run_until_complete(self._async_send_report(self.mass_status_report))
-    # </May be a good idea to move these outside this class>
 
     def _callback(self, param_name, msg_field, data):
         # Callback method receives an object of certain type depending on the topic
@@ -173,38 +189,71 @@ class MassAMRInteropNode(Node):
                 "planarDatum": "00000000-0000-0000-0000-000000000000"
             }
 
+        # Reports are sent on each callback execution. This will be improved
+        # later by using a corutine to publish messages on time intervals.
         if param_name in self.mass_identity_report.schema_properties:
             for mass_param_name, mass_param_data in mass_data.items():
                 self.mass_identity_report.update_parameter(mass_param_name, mass_param_data)
-                self.send_identity_report()
+                self._sync_send_report(self.mass_identity_report)
         if param_name in self.mass_status_report.schema_properties:
             for mass_param_name, mass_param_data in mass_data.items():
                 self.mass_status_report.update_parameter(mass_param_name, mass_param_data)
-                self.send_status_report()
+                self._sync_send_report(self.mass_status_report)
 
     def register_mass_adapter(self, param_name, topic_name):
+        """
+        Register callbacks for parameters with source ROS topic.
 
+        Creates node callbacks for ROS topics based on ROS topic parameters
+        defined on the configuration file. The ``msgType`` configuration field
+        is used determine Node callback message type. As the ``msgType`` is a
+        string, this method tries to determine message type class as it is
+        required to register the callback.
+
+        Args
+        ----
+            param_name (str): configuration parameter name
+            topic_name (str): topic name callback will be register
+
+        Returns
+        -------
+            boolean: wheter callback registration was successful or not
+
+        """
         self.logger.debug(f"Registering callback to topic '{topic_name}'")
 
+        # Topic/message type is expected to contain package name e.g.
+        # ``geometry_msgs/msg/Twist``.
         topic_type = self._config.get_ros_topic_parameter_type(name=param_name)
-
-        topic_type_module = topic_type.split("/")[0]  # Are they actually modules? What does geometry_msgs in `geometry_msgs/msg/PoseStamped` means?
+        topic_type_package = topic_type.split("/")[0]
         topic_type_name = topic_type.split("/")[-1]
 
+        # In some cases, a single message of certain type may have fields that map
+        # to multiple MassRobotics report fields. For this scenarios, an additional
+        # ``msgField`` callback parameter can be provided, which makes the callback
+        # to extract a single field from the message that is processed.
+        # For example, a message of type ``sensors_msgs/msg/BatteryState`` contains
+        # several fields but we are only interested in ``percentage`` as it translates
+        # directly to MassRobotics status object field ``batteryPercentage``.
+        #   batteryPercentage:
+        #     valueFrom:
+        #       rosTopic: /good_sensors/bat
+        #       msgType: sensor_msgs/msg/BatteryState
+        #       msgField: percentage
         msg_field = self._config.get_ros_topic_parameter_msg_field(name=param_name)
 
-        # TODO: support message types other than std_msgs
-        # e.g. geometry_msgs. These have a different name structure
-        # and come from a different module `geometry_msgs`
+        # Map message package with corresponding module
         msgs_types = {
             'geometry_msgs': ros_geometry_msgs,
             'sensor_msgs': ros_sensor_msgs,
             'std_msgs': ros_std_msgs
         }
 
+        # Try to determine callback message type class
         try:
-            topic_type_t = getattr(msgs_types[topic_type_module], topic_type_name)
+            topic_type_t = getattr(msgs_types[topic_type_package], topic_type_name)
         except (AttributeError, KeyError):
+            # If the message type is not supported do not register any callback
             self.logger.error(f"Undefined topic type {topic_type}")
             return False
 
