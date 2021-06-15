@@ -9,7 +9,6 @@ from . import MassAMRInteropNode
 def main(args=None):
     rclpy.init(args=args)
     node = MassAMRInteropNode()
-    node.send_identity_report()
     rclpy.spin(node)
     rclpy.shutdown()
 

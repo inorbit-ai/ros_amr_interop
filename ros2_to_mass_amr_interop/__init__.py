@@ -72,6 +72,10 @@ class MassAMRInteropNode(Node):
 
         self._process_config()
 
+        # Send Identity report on init
+        self._sync_send_report(self.mass_identity_report)
+
+
     def _process_config(self):
         """
         Populate Identity Report object with parameters from configuration
@@ -113,7 +117,6 @@ class MassAMRInteropNode(Node):
         self.loop.run_until_complete(self._async_send_report(mass_object))
 
     def _read_config_file(self, config_file_path):
-
         config_file_path = Path(config_file_path).resolve()
         if not config_file_path.is_file():
             raise ValueError(f"Configuration file '{config_file_path}' doesn't exist!")
