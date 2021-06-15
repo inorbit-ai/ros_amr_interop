@@ -54,8 +54,10 @@ class MassObject:
         timestamp from source rather than generating a new one.
 
         Args:
+        ----
             name (str): MassRobotics AMR message parameter name.
             value (str): MassRobotics AMR message parameter value.
+
         """
         self.data[name] = value
         self._update_timestamp()

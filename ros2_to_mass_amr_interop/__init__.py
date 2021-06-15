@@ -26,15 +26,13 @@ class MassAMRInteropNode(Node):
     """
     ROS node implementing WebSocket communication to Mass.
 
-    The node configuration is obtained from a configuration file
-    that can be provided externally. On initialization, the node
-    subscribes to various topics and sends relevant data to a 
-    MassRobotics AMR InterOp standard capable server by using a
-    WebSocket connection.
+    The node configuration is obtained from a configuration file that can
+    be provided externally. On initialization, the node subscribes to various
+    topics and sends relevant data to a MassRobotics AMR InterOp standard
+    capable server by using a WebSocket connection.
 
-    Instances for both Identity and Status reports are kept
-    internally as Node attribute. They are updated when data
-    from different datasources is received by the node.
+    Instances for both Identity and Status reports are kept internally as Node
+    attributes and are updated when relevant data is processed.
     TODO: implement watchdog for node configuration file changes.
 
     Attributes
@@ -75,12 +73,13 @@ class MassAMRInteropNode(Node):
         # Send Identity report on init
         self._sync_send_report(self.mass_identity_report)
 
-
     def _process_config(self):
         """
+        Update object state based on configuration.
+
         Populate Identity Report object with parameters from configuration
         and register callbacks for ROS Topics.
-        
+
         TODO: re-run on configuration file changes
         TODO: deregister callbacks on configuration changes
         """
@@ -104,11 +103,15 @@ class MassAMRInteropNode(Node):
 
     async def _async_send_report(self, mass_object):
         """
+        Send MassRobotics object to MassRobotics server.
+
         Sends MassRobotics object data to MassRobotics server
         by using WebSockets connection.
 
         Args:
+        ----
             mass_object (:obj:`MassObject`): Identity or Status report
+
         """
         self.logger.debug(f"Sending object {mass_object.data}")
         await self._wss_conn.send(json.dumps(mass_object.data))
@@ -156,19 +159,22 @@ class MassAMRInteropNode(Node):
         if isinstance(data, ros_sensor_msgs.BatteryState):
             self.logger.debug(f"Message {data} type `BatteryState`")
 
-            # ros2 topic pub --once /good_sensors/bat sensor_msgs/msg/BatteryState "{percentage: 91.3}"
+            # ros2 topic pub --once /good_sensors/bat \
+            #   sensor_msgs/msg/BatteryState "{percentage: 91.3}"
             try:
                 mass_data['batteryPercentage'] = getattr(data, msg_field)
             except AttributeError:
-                self.logger.error(f"Message field '{msg_field}' on message type '{type(data)}' doesn't exist")
+                self.logger.error(f"Message field '{msg_field}' on message of "
+                                  f"type '{type(data)}' doesn't exist")
 
         if isinstance(data, ros_geometry_msgs.TwistStamped):
             self.logger.debug(f"Message {data} type `TwistStamped`")
 
-            # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped 
-            # TODO: find why command below doesn't work. It seems
-            # that auto headers are not supported on ros2
-            # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped "{header: {stamp: now, frame_id: 'value'}, twist.linear: {x: 1, y: 2, z: 3}, twist.angular: {x: 1, y: 1, z: 1}}"
+            # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped
+            # TODO: find why command below doesn't work. It seems that auto headers are
+            # not supported on ros2
+            # ros2 topic pub --once /good_sensors/vel \
+            #   geometry_msgs/msg/TwistStamped "{header: {stamp: now, frame_id: 'value'}, twist.linear: {x: 1, y: 2, z: 3}, twist.angular: {x: 1, y: 1, z: 1}}" # noqa: E501
 
             twist = data.twist
 
