@@ -1,14 +1,15 @@
 import websockets
 import json
 import asyncio
+from time import sleep
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+from functools import partial
+from tf2_kdl import PyKDL
 
 from std_msgs import msg as ros_std_msgs
 from geometry_msgs import msg as ros_geometry_msgs
 from sensor_msgs import msg as ros_sensor_msgs
-from tf2_kdl import PyKDL
-
-from pathlib import Path
-from functools import partial
 
 from rclpy.node import Node
 from .config import CFG_PARAMETER_LOCAL
@@ -16,6 +17,8 @@ from .config import CFG_PARAMETER_ENVVAR
 from .config import CFG_PARAMETER_ROS_TOPIC
 from .config import CFG_PARAMETER_ROS_PARAMETER  # noqa: F401
 from .config import MassAMRInteropConfig
+
+from .config import STATUS_REPORT_INTERVAL
 
 from .messages import MASS_REPORT_UUID
 from .messages import IdentityReport
@@ -55,13 +58,15 @@ class MassAMRInteropNode(Node):
         config_file_path = config_file_param.get_parameter_value().string_value
         self._config = self._read_config_file(config_file_path=config_file_path)
 
+        # ThreadPool for running other tasks
+        self._ex = ThreadPoolExecutor()
+
+        self.loop = asyncio.get_event_loop()
         # Create websocket connection
         self._uri = self._config.server
         self._wss_conn = None
-        self.loop = asyncio.get_event_loop()
         # perform a synchronous connect
         self.loop.run_until_complete(self._async_connect())
-        self.logger.debug(f"Connected to Mass server '{self._uri}'")
 
         # Create an instance of both report types
         _uuid = self._config.get_parameter_value(MASS_REPORT_UUID)
@@ -70,8 +75,19 @@ class MassAMRInteropNode(Node):
 
         self._process_config()
 
-        # Send Identity report on init
-        self._sync_send_report(self.mass_identity_report)
+        self.loop.run_until_complete(self._async_send_report(self.mass_identity_report))
+
+        self.loop.run_in_executor(self._ex, self._status_publisher_thread)
+
+    def _status_publisher_thread(self):
+        loop = asyncio.new_event_loop()
+        self.logger.debug("Starting status publisher thread")
+        def send_status():
+            while True:
+                self.loop.run_until_complete(self._async_send_report(self.mass_status_report))
+                self.logger.debug(f"Status report sent. Waiting ...")
+                sleep(STATUS_REPORT_INTERVAL)
+        loop.create_task(send_status())
 
     def _process_config(self):
         """
@@ -99,7 +115,9 @@ class MassAMRInteropNode(Node):
 
     async def _async_connect(self):
         self.logger.debug(f"Connecting to server '{self._uri}'")
-        self._wss_conn = await websockets.connect(self._uri, ping_timeout=3, ping_interval=5)
+        self._wss_conn = await websockets.connect(self._uri)
+        self.logger.debug(f"Connected to Mass server '{self._uri}'")
+        return self._wss_conn
 
     async def _async_send_report(self, mass_object):
         """
@@ -113,11 +131,16 @@ class MassAMRInteropNode(Node):
             mass_object (:obj:`MassObject`): Identity or Status report
 
         """
-        self.logger.debug(f"Sending object {mass_object.data}")
-        await self._wss_conn.send(json.dumps(mass_object.data))
-
-    def _sync_send_report(self, mass_object):
-        self.loop.run_until_complete(self._async_send_report(mass_object))
+        self.logger.debug(f"Sending object ({type(mass_object)}): {mass_object.data}")
+        try:
+            await self._wss_conn.send(json.dumps(mass_object.data))
+            await self._wss_conn.ensure_open()
+        except (Exception, websockets.exceptions.ConnectionClosed, websockets.exceptions.ConnectionClosedError) as ex:
+            self.logger.error(f"Got exception while sending object: {ex}")
+            self.logger.info(f"Reconnecting to server: {self._uri}")
+            await self._async_connect()
+            self.logger.info("Resending data")
+            await self._wss_conn.send(json.dumps(mass_object.data))
 
     def _read_config_file(self, config_file_path):
         config_file_path = Path(config_file_path).resolve()
@@ -159,8 +182,7 @@ class MassAMRInteropNode(Node):
         if isinstance(data, ros_sensor_msgs.BatteryState):
             self.logger.debug(f"Message {data} type `BatteryState`")
 
-            # ros2 topic pub --once /good_sensors/bat \
-            #   sensor_msgs/msg/BatteryState "{percentage: 91.3}"
+            # ros2 topic pub --once /good_sensors/bat sensor_msgs/msg/BatteryState "{percentage: 91.3}" # noqa: E501
             try:
                 mass_data['batteryPercentage'] = getattr(data, msg_field)
             except AttributeError:
@@ -173,8 +195,7 @@ class MassAMRInteropNode(Node):
             # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped
             # TODO: find why command below doesn't work. It seems that auto headers are
             # not supported on ros2
-            # ros2 topic pub --once /good_sensors/vel \
-            #   geometry_msgs/msg/TwistStamped "{header: {stamp: now, frame_id: 'value'}, twist.linear: {x: 1, y: 2, z: 3}, twist.angular: {x: 1, y: 1, z: 1}}" # noqa: E501
+            # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped "{header: {stamp: now, frame_id: 'value'}, twist.linear: {x: 1, y: 2, z: 3}, twist.angular: {x: 1, y: 1, z: 1}}" # noqa: E501
 
             twist = data.twist
 
@@ -203,11 +224,12 @@ class MassAMRInteropNode(Node):
         if param_name in self.mass_identity_report.schema_properties:
             for mass_param_name, mass_param_data in mass_data.items():
                 self.mass_identity_report.update_parameter(mass_param_name, mass_param_data)
-                self._sync_send_report(self.mass_identity_report)
+            self.loop.run_until_complete(self._async_send_report(self.mass_identity_report))
+
         if param_name in self.mass_status_report.schema_properties:
             for mass_param_name, mass_param_data in mass_data.items():
                 self.mass_status_report.update_parameter(mass_param_name, mass_param_data)
-                self._sync_send_report(self.mass_status_report)
+            self.loop.run_until_complete(self._async_send_report(self.mass_status_report))
 
     def register_mass_adapter(self, param_name, topic_name):
         """
@@ -263,7 +285,7 @@ class MassAMRInteropNode(Node):
             topic_type_t = getattr(msgs_types[topic_type_package], topic_type_name)
         except (AttributeError, KeyError):
             # If the message type is not supported do not register any callback
-            self.logger.error(f"Undefined topic type {topic_type}")
+            self.logger.error(f"Undefined topic type '{topic_type}'. Ignoring...")
             return False
 
         self.logger.debug(f"Binding parameter '{param_name}' with topic '{topic_name}'")
