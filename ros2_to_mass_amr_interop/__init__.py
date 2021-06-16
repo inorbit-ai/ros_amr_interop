@@ -81,6 +81,9 @@ class MassAMRInteropNode(Node):
         await self._async_send_report(self.mass_identity_report)
 
     def _status_publisher_thread(self):
+        # The main event loop is only used for running coroutines from
+        # callbacks. However, it's not possible to start it because it
+        # blocks the Node thread and the ROS callbacks are never executed.
         loop = asyncio.new_event_loop()
         self.logger.debug("Starting status publisher thread")
         def send_status():
