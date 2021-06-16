@@ -220,17 +220,6 @@ class MassAMRInteropNode(Node):
                 "planarDatum": "00000000-0000-0000-0000-000000000000"
             }
 
-        # Reports are sent on each callback execution. This will be improved
-        # later by using a corutine to publish messages on time intervals.
-        if param_name in self.mass_identity_report.schema_properties:
-            for mass_param_name, mass_param_data in mass_data.items():
-                self.mass_identity_report.update_parameter(mass_param_name, mass_param_data)
-            self.loop.run_until_complete(self._async_send_report(self.mass_identity_report))
-
-        if param_name in self.mass_status_report.schema_properties:
-            for mass_param_name, mass_param_data in mass_data.items():
-                self.mass_status_report.update_parameter(mass_param_name, mass_param_data)
-            self.loop.run_until_complete(self._async_send_report(self.mass_status_report))
 
     def register_mass_adapter(self, param_name, topic_name):
         """
