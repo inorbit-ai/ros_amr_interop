@@ -58,15 +58,9 @@ class MassAMRInteropNode(Node):
         config_file_path = config_file_param.get_parameter_value().string_value
         self._config = self._read_config_file(config_file_path=config_file_path)
 
-        # ThreadPool for running other tasks
-        self._ex = ThreadPoolExecutor()
-
-        self.loop = asyncio.get_event_loop()
-        # Create websocket connection
+        # Websocket connection
         self._uri = self._config.server
         self._wss_conn = None
-        # perform a synchronous connect
-        self.loop.run_until_complete(self._async_connect())
 
         # Create an instance of both report types
         _uuid = self._config.get_parameter_value(MASS_REPORT_UUID)
@@ -75,16 +69,23 @@ class MassAMRInteropNode(Node):
 
         self._process_config()
 
-        self.loop.run_until_complete(self._async_send_report(self.mass_identity_report))
+        # ThreadPool for running other tasks
+        self._ex = ThreadPoolExecutor()
 
+        self.loop = asyncio.get_event_loop()
         self.loop.run_in_executor(self._ex, self._status_publisher_thread)
+        self.loop.run_until_complete(self._run())
+
+    async def _run(self):
+        await self._async_connect()
+        await self._async_send_report(self.mass_identity_report)
 
     def _status_publisher_thread(self):
         loop = asyncio.new_event_loop()
         self.logger.debug("Starting status publisher thread")
         def send_status():
             while True:
-                self.loop.run_until_complete(self._async_send_report(self.mass_status_report))
+                loop.run_until_complete(self._async_send_report(self.mass_status_report))
                 self.logger.debug(f"Status report sent. Waiting ...")
                 sleep(STATUS_REPORT_INTERVAL)
         loop.create_task(send_status())
