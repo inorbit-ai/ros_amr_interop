@@ -138,9 +138,9 @@ class MassAMRInteropNode(Node):
             self.logger.info(f"Reconnecting to server: {self._uri}")
             await self._async_connect()
         try:
-          await self._wss_conn.send(json.dumps(mass_object.data))
+            await self._wss_conn.send(json.dumps(mass_object.data))
         except Exception as ex:
-          self.logger.info(f"Error while sending status report: {ex}")
+            self.logger.info(f"Error while sending status report: {ex}")
 
     def _read_config_file(self, config_file_path):
         config_file_path = Path(config_file_path).resolve()
