@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from functools import partial
 from tf2_kdl import PyKDL
+import threading
 
 from std_msgs import msg as ros_std_msgs
 from geometry_msgs import msg as ros_geometry_msgs
@@ -67,6 +68,9 @@ class MassAMRInteropNode(Node):
         self.mass_identity_report = IdentityReport(uuid=_uuid)
         self.mass_status_report = StatusReport(uuid=_uuid)
 
+        self._mass_identity_report_lock = threading.Lock()
+        self._mass_status_report_lock = threading.Lock()
+        
         self._process_config()
 
         # ThreadPool for running other tasks
@@ -135,16 +139,25 @@ class MassAMRInteropNode(Node):
             mass_object (:obj:`MassObject`): Identity or Status report
 
         """
+
+        lock = self._mass_status_report_lock
+        if mass_object == self.mass_identity_report:
+            lock = self._mass_identity_report_lock
+
         self.logger.debug(f"Sending object ({type(mass_object)}): {mass_object.data}")
         try:
             await self._wss_conn.ensure_open()
         except (Exception, websockets.exceptions.ConnectionClosed, websockets.exceptions.ConnectionClosedError) as ex:
             self.logger.info(f"Reconnecting to server: {self._uri}")
             await self._async_connect()
+
         try:
+            lock.acquire()
             await self._wss_conn.send(json.dumps(mass_object.data))
         except Exception as ex:
             self.logger.info(f"Error while sending status report: {ex}")
+        finally:
+            lock.release()
 
     def _read_config_file(self, config_file_path):
         config_file_path = Path(config_file_path).resolve()
@@ -154,75 +167,92 @@ class MassAMRInteropNode(Node):
         self.logger.info(f"Using configuration file '{config_file_path}'")
         return MassAMRInteropConfig(str(config_file_path))
 
-    def _callback(self, param_name, msg_field, data):
-        # Callback method receives an object of certain type depending on the topic
-        # message type this callback is registed. For example, if the callback is
-        # called for messages of type `String` of topic `/foo/bar`, then `data` is
-        # type `String`.
+    def _get_frame_id_from_header(self, msg):
+        msg_frame_id = msg.header.frame_id
+        frame_id = self._config.mappings['rosFrameToPlanarDatumUUID'].get(msg_frame_id)
+        if not frame_id:
+            self.logger.warning(f"Couldn't find mapping for frame '{msg_frame_id}': {msg}")
+            frame_id = "00000000-0000-0000-0000-000000000000"
+        return frame_id
 
-        # TODO: this may grow a lot, so it may be a good idea to implement an adapter
+    def _callback_pose_stamped_msg(self, param_name, msg_field, data):
 
-        mass_data = {}
+        self.logger.debug(f"Processing '{type(data)}' message: {data}")
+        if msg_field:
+            self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
 
-        self.logger.info(f"Parameter '{param_name}', type {type(data)}")
+        frame_id = self._get_frame_id_from_header(data)
 
-        if isinstance(data, ros_geometry_msgs.PoseStamped):
-            self.logger.debug(f"Message {data} type `PoseStamped`")
+        pose_position = data.pose.position  # Point
+        pose_orientation = data.pose.orientation  # Quaternion
+        self._mass_status_report_lock.acquire()
+        self.mass_status_report.data[param_name] = {
+            "x": pose_position.x,
+            "y": pose_position.y,
+            "z": pose_position.z,
+            "angle": {
+                "x": pose_orientation.x,
+                "y": pose_orientation.y,
+                "z": pose_orientation.z,
+                "w": pose_orientation.w
+            },
+            "planarDatum": frame_id
+        }
+        self._mass_status_report_lock.release()
 
-            # ros2 topic pub --once /move_base_simple/goal geometry_msgs/msg/PoseStamped "{pose: {position: {x: 2.0, y: 0.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 1.8, w: 1}}}" # noqa: E501
+    def _callback_battery_state_msg(self, param_name, msg_field, data):
 
-            pose_position = data.pose.position  # Point
-            pose_orientation = data.pose.orientation  # Quaternion
-            mass_data["location"] = {
-                "x": pose_position.x,
-                "y": pose_position.y,
-                "z": pose_position.z,
-                "angle": {
-                    "x": pose_orientation.x,
-                    "y": pose_orientation.y,
-                    "z": pose_orientation.z,
-                    "w": pose_orientation.w
-                },
-                "planarDatum": "00000000-0000-0000-0000-000000000000"
-            }
+        self.logger.debug(f"Processing '{type(data)}' message: {data}")
+        self._mass_status_report_lock.acquire()
+        try:
+            self.mass_status_report.data[param_name] = getattr(data, msg_field)
+        except AttributeError:
+            self.logger.error(f"Message field '{msg_field}' on message of "
+                                f"type '{type(data)}' doesn't exist")
+        finally:
+            self._mass_status_report_lock.release()
 
-        if isinstance(data, ros_sensor_msgs.BatteryState):
-            self.logger.debug(f"Message {data} type `BatteryState`")
+    def _callback_twist_stamped_msg(self, param_name, msg_field, data):
 
-            # ros2 topic pub --once /good_sensors/bat sensor_msgs/msg/BatteryState "{percentage: 91.3}" # noqa: E501
-            try:
-                mass_data['batteryPercentage'] = getattr(data, msg_field)
-            except AttributeError:
-                self.logger.error(f"Message field '{msg_field}' on message of "
-                                  f"type '{type(data)}' doesn't exist")
+        self.logger.debug(f"Processing '{type(data)}' message: {data}")
+        if msg_field:
+            self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
 
-        if isinstance(data, ros_geometry_msgs.TwistStamped):
-            self.logger.debug(f"Message {data} type `TwistStamped`")
+        frame_id = self._get_frame_id_from_header(data)
 
-            # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped "{twist: {linear: {x: 2.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 1.8}}}" # noqa: E501
+        twist = data.twist
 
-            twist = data.twist
+        linear_vel = PyKDL.Vector(
+            x=twist.linear.x,
+            y=twist.linear.y,
+            z=twist.linear.z).Norm()
+        quat = PyKDL.Rotation.EulerZYX(
+            Alfa=twist.angular.z,
+            Beta=twist.angular.y,
+            Gamma=twist.angular.x).GetQuaternion()
+        
+        self._mass_status_report_lock.acquire()
+        self.mass_status_report.data[param_name] = {
+            "linear": linear_vel,
+            "angle": {
+                "x": quat[0],
+                "y": quat[1],
+                "z": quat[2],
+                "w": quat[3],
+            },
+            "planarDatum": frame_id
+        }
+        self._mass_status_report_lock.release()
 
-            linear_vel = PyKDL.Vector(
-                x=twist.linear.x,
-                y=twist.linear.y,
-                z=twist.linear.z).Norm()
-            quat = PyKDL.Rotation.EulerZYX(
-                Alfa=twist.angular.z,
-                Beta=twist.angular.y,
-                Gamma=twist.angular.x).GetQuaternion()
+    def _callback_string_msg(self, param_name, msg_field, data):
 
-            mass_data["velocity"] = {
-                "linear": linear_vel,
-                "angle": {
-                    "x": quat[0],
-                    "y": quat[1],
-                    "z": quat[2],
-                    "w": quat[3],
-                },
-                "planarDatum": "00000000-0000-0000-0000-000000000000"
-            }
+        self.logger.debug(f"Processing '{type(data)}' message: {data}")
+        if msg_field:
+            self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
 
+        self._mass_status_report_lock.acquire()
+        self.mass_status_report.data[param_name] = data.data
+        self._mass_status_report_lock.release()
 
     def register_mass_adapter(self, param_name, topic_name):
         """
@@ -283,10 +313,39 @@ class MassAMRInteropNode(Node):
 
         self.logger.debug(f"Binding parameter '{param_name}' with topic '{topic_name}'")
 
+        callback = None
+        if param_name == 'velocity':
+            # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped "{twist: {linear: {x: 2.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 1.8}}}" # noqa: E501
+            # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped "{header: {frame_id: 'floor1'}, twist: {linear: {x: 1, y: 2, z: 3}, angular: {x: 1, y: 1, z: 1}}}" # noqa: E501
+            callback = partial(self._callback_twist_stamped_msg, param_name, msg_field)
+            self.logger.info(f"Registerd callback for parameter '{param_name}' (TwistStamped)")
+        if param_name == 'batteryPercentage':
+            # ros2 topic pub --once /good_sensors/bat sensor_msgs/msg/BatteryState "{percentage: 91.3}" # noqa: E501
+            callback = partial(self._callback_battery_state_msg, param_name, msg_field)
+            self.logger.info(f"Registerd callback for parameter '{param_name}' (BatteryState)")
+        if param_name == 'location':
+            # ros2 topic pub --once /move_base_simple/goal geometry_msgs/msg/PoseStamped "{pose: {position: {x: 2.0, y: 0.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 1.8, w: 1}}}" # noqa: E501
+            # ros2 topic pub --once /move_base_simple/goal geometry_msgs/msg/PoseStamped "{header: {frame_id: 'floor1'}, pose: {position: {x: 2.0, y: 0.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 1.8, w: 1}}}" # noqa: E501
+            callback = partial(self._callback_pose_stamped_msg, param_name, msg_field)
+            self.logger.info(f"Registerd callback for parameter '{param_name}' (PoseStamped)")
+
+        # if param_name doesn't have any specific callback, fallback to string
+        if not callback and topic_type_t is ros_std_msgs.String:
+            callback = partial(self._callback_string_msg, param_name, msg_field)
+            self.logger.info(f"Registered callback for parameter '{param_name}' (String)")
+
+        if not callback and topic_type_t in (ros_std_msgs.Float32, ros_std_msgs.Float64):
+            callback = partial(self._callback_string_msg, param_name, msg_field)
+            self.logger.info(f"Registered callback for parameter '{param_name}' (Number)")
+
+        if not callback:
+            self.logger.error(f"Callback for parameter '{param_name}' ({topic_type}) was not found.")
+            return False
+
         self.subscription = self.create_subscription(
             msg_type=topic_type_t,
             topic=topic_name,
-            callback=partial(self._callback, param_name, msg_field),
+            callback=callback,
             qos_profile=10)
 
         return True
