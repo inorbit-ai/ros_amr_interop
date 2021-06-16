@@ -164,6 +164,9 @@ class MassAMRInteropNode(Node):
 
         if isinstance(data, ros_geometry_msgs.PoseStamped):
             self.logger.debug(f"Message {data} type `PoseStamped`")
+
+            # ros2 topic pub --once /move_base_simple/goal geometry_msgs/msg/PoseStamped "{pose: {position: {x: 2.0, y: 0.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 1.8, w: 1}}}" # noqa: E501
+
             pose_position = data.pose.position  # Point
             pose_orientation = data.pose.orientation  # Quaternion
             mass_data["location"] = {
@@ -192,10 +195,7 @@ class MassAMRInteropNode(Node):
         if isinstance(data, ros_geometry_msgs.TwistStamped):
             self.logger.debug(f"Message {data} type `TwistStamped`")
 
-            # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped
-            # TODO: find why command below doesn't work. It seems that auto headers are
-            # not supported on ros2
-            # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped "{header: {stamp: now, frame_id: 'value'}, twist.linear: {x: 1, y: 2, z: 3}, twist.angular: {x: 1, y: 1, z: 1}}" # noqa: E501
+            # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped "{twist: {linear: {x: 2.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 1.8}}}" # noqa: E501
 
             twist = data.twist
 
