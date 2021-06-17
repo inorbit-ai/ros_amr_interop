@@ -6,7 +6,6 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from functools import partial
 from tf2_kdl import PyKDL
-import threading
 
 from std_msgs import msg as ros_std_msgs
 from geometry_msgs import msg as ros_geometry_msgs
@@ -68,9 +67,6 @@ class MassAMRInteropNode(Node):
         self.mass_identity_report = IdentityReport(uuid=_uuid)
         self.mass_status_report = StatusReport(uuid=_uuid)
 
-        self._mass_identity_report_lock = threading.Lock()
-        self._mass_status_report_lock = threading.Lock()
-        
         self._process_config()
 
         # ThreadPool for running other tasks
@@ -90,11 +86,13 @@ class MassAMRInteropNode(Node):
         # blocks the Node thread and the ROS callbacks are never executed.
         loop = asyncio.new_event_loop()
         self.logger.debug("Starting status publisher thread")
+
         def send_status():
             while True:
                 loop.run_until_complete(self._async_send_report(self.mass_status_report))
                 self.logger.debug(f"Status report sent. Waiting ...")
                 sleep(STATUS_REPORT_INTERVAL)
+
         loop.create_task(send_status())
 
     def _process_config(self):
@@ -139,25 +137,19 @@ class MassAMRInteropNode(Node):
             mass_object (:obj:`MassObject`): Identity or Status report
 
         """
-
-        lock = self._mass_status_report_lock
-        if mass_object == self.mass_identity_report:
-            lock = self._mass_identity_report_lock
-
         self.logger.debug(f"Sending object ({type(mass_object)}): {mass_object.data}")
         try:
             await self._wss_conn.ensure_open()
-        except (Exception, websockets.exceptions.ConnectionClosed, websockets.exceptions.ConnectionClosedError) as ex:
+        except (Exception,
+                websockets.exceptions.ConnectionClosed,
+                websockets.exceptions.ConnectionClosedError):
             self.logger.info(f"Reconnecting to server: {self._uri}")
             await self._async_connect()
 
         try:
-            lock.acquire()
             await self._wss_conn.send(json.dumps(mass_object.data))
         except Exception as ex:
             self.logger.info(f"Error while sending status report: {ex}")
-        finally:
-            lock.release()
 
     def _read_config_file(self, config_file_path):
         config_file_path = Path(config_file_path).resolve()
@@ -185,7 +177,6 @@ class MassAMRInteropNode(Node):
 
         pose_position = data.pose.position  # Point
         pose_orientation = data.pose.orientation  # Quaternion
-        self._mass_status_report_lock.acquire()
         self.mass_status_report.data[param_name] = {
             "x": pose_position.x,
             "y": pose_position.y,
@@ -198,19 +189,15 @@ class MassAMRInteropNode(Node):
             },
             "planarDatum": frame_id
         }
-        self._mass_status_report_lock.release()
 
     def _callback_battery_state_msg(self, param_name, msg_field, data):
 
         self.logger.debug(f"Processing '{type(data)}' message: {data}")
-        self._mass_status_report_lock.acquire()
         try:
             self.mass_status_report.data[param_name] = getattr(data, msg_field)
         except AttributeError:
             self.logger.error(f"Message field '{msg_field}' on message of "
-                                f"type '{type(data)}' doesn't exist")
-        finally:
-            self._mass_status_report_lock.release()
+                              f"type '{type(data)}' doesn't exist")
 
     def _callback_twist_stamped_msg(self, param_name, msg_field, data):
 
@@ -230,8 +217,7 @@ class MassAMRInteropNode(Node):
             Alfa=twist.angular.z,
             Beta=twist.angular.y,
             Gamma=twist.angular.x).GetQuaternion()
-        
-        self._mass_status_report_lock.acquire()
+
         self.mass_status_report.data[param_name] = {
             "linear": linear_vel,
             "angle": {
@@ -242,7 +228,6 @@ class MassAMRInteropNode(Node):
             },
             "planarDatum": frame_id
         }
-        self._mass_status_report_lock.release()
 
     def _callback_string_msg(self, param_name, msg_field, data):
 
@@ -250,9 +235,7 @@ class MassAMRInteropNode(Node):
         if msg_field:
             self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
 
-        self._mass_status_report_lock.acquire()
         self.mass_status_report.data[param_name] = data.data
-        self._mass_status_report_lock.release()
 
     def register_mass_adapter(self, param_name, topic_name):
         """
@@ -334,12 +317,14 @@ class MassAMRInteropNode(Node):
             callback = partial(self._callback_string_msg, param_name, msg_field)
             self.logger.info(f"Registered callback for parameter '{param_name}' (String)")
 
+        # TODO: add all remaining 'scalar' types
         if not callback and topic_type_t in (ros_std_msgs.Float32, ros_std_msgs.Float64):
             callback = partial(self._callback_string_msg, param_name, msg_field)
             self.logger.info(f"Registered callback for parameter '{param_name}' (Number)")
 
         if not callback:
-            self.logger.error(f"Callback for parameter '{param_name}' ({topic_type}) was not found.")
+            self.logger.error(f"Callback for parameter '{param_name}' "
+                              f"({topic_type}) was not found.")
             return False
 
         self.subscription = self.create_subscription(

@@ -19,6 +19,7 @@ SUPPORTED_EXTERNAL_VALUES = [
 
 STATUS_REPORT_INTERVAL = 1
 
+
 class MassAMRInteropConfig:
     """
     Configuration file parsing and value gathering.
