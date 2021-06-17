@@ -1,11 +1,12 @@
+from collections import defaultdict
 import yaml
 import logging
 import os
 
-# Config files may have non static values that are
+# Config files may have non local values that are
 # ought to be extracted from a different source
 # other than the config file
-CFG_PARAMETER_STATIC = "static"
+CFG_PARAMETER_LOCAL = "local"
 CFG_PARAMETER_ROS_TOPIC = "rosTopic"
 CFG_PARAMETER_ROS_PARAMETER = "rosParameter"
 CFG_PARAMETER_ENVVAR = "envVar"
@@ -16,19 +17,21 @@ SUPPORTED_EXTERNAL_VALUES = [
     CFG_PARAMETER_ENVVAR
 ]
 
+STATUS_REPORT_INTERVAL = 1
+
 
 class MassAMRInteropConfig:
     """
     Configuration file parsing and value gathering.
 
     Parses yaml configuration file and deals with parameters
-    with values that are not static i.e. parameter values that
+    with values that are not local i.e. parameter values that
     are obtained from environment variables or ROS2 topics.
 
     Attributes
     ----------
         server (str): Mass WebSocket server URI
-        mapping (:obj:`dict`): parameter name and value mapping
+        mappings (:obj:`dict`): parameter name and value mapping
 
     """
 
@@ -37,7 +40,9 @@ class MassAMRInteropConfig:
         _config = self._load(path)
 
         self.server = _config['server']
-        self.mapping = _config['mapping']
+        self.mappings = _config['mappings']
+        self.parameters_by_source = defaultdict(list)
+        self._parse_config(self.mappings)
 
     def _load(self, path) -> None:
         config = dict()
@@ -53,6 +58,11 @@ class MassAMRInteropConfig:
         k = next(iter(config))
         config = config[k]
         return config
+
+    def _parse_config(self, mappings):
+        for parameter_name in mappings.keys():
+            parameter_source = self.get_parameter_source(name=parameter_name)
+            self.parameters_by_source[parameter_source].append(parameter_name)
 
     def get_parameter_source(self, name):
         """
@@ -71,13 +81,15 @@ class MassAMRInteropConfig:
             str: parameter source
 
         """
-        if isinstance(self.mapping[name], str):
-            return CFG_PARAMETER_STATIC
+        if isinstance(self.mappings[name], str) or \
+                isinstance(self.mappings[name], float) or \
+                isinstance(self.mappings[name], int):
+            return CFG_PARAMETER_LOCAL
 
-        if isinstance(self.mapping[name], dict):
-            # Evaluate is the parameter is non static
-            if 'valueFrom' in self.mapping[name]:
-                param_source = self.mapping[name]['valueFrom']
+        if isinstance(self.mappings[name], dict):
+            # Evaluate is the parameter is non local
+            if 'valueFrom' in self.mappings[name]:
+                param_source = self.mappings[name]['valueFrom']
 
                 # param_source is a dict whose first key
                 # is the external parameter type
@@ -89,11 +101,11 @@ class MassAMRInteropConfig:
                     return param_source
 
         # If no supported external valueFrom configs were found,
-        # assume that the parameter is static if it is an object
-        if isinstance(self.mapping[name], dict):
-            return CFG_PARAMETER_STATIC
+        # assume that the parameter is local if it is an object
+        if isinstance(self.mappings[name], dict):
+            return CFG_PARAMETER_LOCAL
 
-        raise ValueError("Invalid parameter")
+        raise ValueError(f"Couldn't determine parameter '{name}' source.")
 
     def get_parameter_value(self, name):
         """
@@ -118,18 +130,27 @@ class MassAMRInteropConfig:
         param_source = self.get_parameter_source(name)
         self.logger.debug(f"Parameter '{name}' source: {param_source}")
 
-        if param_source == CFG_PARAMETER_STATIC:
-            return self.mapping[name]
+        if param_source == CFG_PARAMETER_LOCAL:
+            return self.mappings[name]
 
         if param_source == CFG_PARAMETER_ENVVAR:
-            envvar_name = self.mapping[name]['valueFrom'][param_source]
+            envvar_name = self.mappings[name]['valueFrom'][param_source]
             param_value = os.getenv(envvar_name)
             if not param_value:
                 raise ValueError(f"Empty or undefined environment variable: '{envvar_name}'")
             return param_value
 
         if param_source == CFG_PARAMETER_ROS_TOPIC:
-            return self.mapping[name]['valueFrom'][param_source]
+            return self.mappings[name]['valueFrom'][param_source]
 
         if param_source == CFG_PARAMETER_ROS_PARAMETER:
-            return self.mapping[name]['valueFrom'][param_source]
+            return self.mappings[name]['valueFrom'][param_source]
+
+    def get_ros_topic_parameter_type(self, name):
+        return self.mappings[name]['valueFrom']['msgType']
+
+    def get_ros_topic_parameter_topic(self, name):
+        return self.mappings[name]['valueFrom']['rosTopic']
+
+    def get_ros_topic_parameter_msg_field(self, name):
+        return self.mappings[name]['valueFrom'].get('msgField')

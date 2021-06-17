@@ -9,11 +9,24 @@
 
   <exec_depend>python3-websockets</exec_depend>
   <exec_depend>rclpy</exec_depend>
+  <exec_depend>tf2</exec_depend>
+  <exec_depend>tf2_bullet</exec_depend>
+  <exec_depend>tf2_eigen</exec_depend>
+  <exec_depend>tf2_eigen_kdl</exec_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
+  <exec_depend>tf2_kdl</exec_depend>
+  <exec_depend>tf2_msgs</exec_depend>
+  <exec_depend>tf2_py</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>tf2_sensor_msgs</exec_depend>
+  <exec_depend>tf2_tools</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
+  <test_depend>python3-pep8</test_depend>
+  <test_depend>python3-jsonschema</test_depend>
 
   <export>
     <build_type>ament_python</build_type>

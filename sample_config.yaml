@@ -3,17 +3,23 @@
 # ==================================================================
 #
 # Parameters that are used to configure ROS2 node for connecting to Mass compatible servers.
-# The `server` section expects a string with a WebSocket server URI, while the `mapping` section
-# contains a list of paramaters for configuring the ROS2 node. Mandatory parameters are `uuid`,
-# `manufacturerName`, `robotModel`, `robotSerialNumber` and `baseRobotEnvelope` (see full spec
-# https://github.com/MassRobotics-AMR/AMR_Interop_Standard/blob/main/AMR_Interop_Standard.json).
+# The `server` section expects a string with a WebSocket server URI, while the `mappings` section
+# contains a list of paramaters for configuring the ROS2 node. As per AMR Interop Standard,
+# mandatory parameters are `uuid`, `manufacturerName`, `robotModel`, `robotSerialNumber` and
+# `baseRobotEnvelope` (full spec https://github.com/MassRobotics-AMR/AMR_Interop_Standard/).
 # 
-# In addition to static values i.e. strings or objects, the `mapping` section supports a variety of
+# Translation to AMR Interop Standard messages might be direct (i.e. a string to a report message
+# field) or complex in case of ROS2 message having data that maps to many AMR report message fields.
+# For this reason, some configuration parameters below expect a particular ROS2 message type e.g.
+# fields on a ROS2 message of type `sensor_msgs/msg/BatteryState` are translated into AMR Interop
+# Status Report fields `batteryPercentage`, `remainingRunTime` and `loadPercentageStillAvailable`.
+# 
+# In addition to local values i.e. strings or objects, the `mappings` section supports a variety of
 # sources from where the parameter value can be obtained: `envVar`, `rosTopic` and `rosParameter`.
 
 config:
-  server: "wss://localhost:3000"
-  mapping:
+  server: "ws://localhost:3000"
+  mappings:
     # Identity
     uuid:
       valueFrom:
@@ -22,9 +28,9 @@ config:
     robotModel: "spoony1.0"
     robotSerialNumber: "2172837"
     baseRobotEnvelope:
-        x: 2
-        y: 1
-        z: 3
+      x: 2
+      y: 1
+      z: 3
     maxSpeed: 2.5
     maxRunTime: 8
     emergencyContactInformation: "555-5555"
@@ -35,45 +41,46 @@ config:
     thumbnailImage: "https://spoon.lift/media/spoony1.0.png"
     cargoType: "Anything solid or liquid"
     cargoMaxVolume:
-      value:
-        x: 2
-        y: 2
-        z: 1
-    cargoMaxWeight: 4000
+      x: 2
+      y: 2
+      z: 1
+    cargoMaxWeight: "4000"
     # Status
     operationalState:
       valueFrom:
         rosTopic: /we_b_robots/mode
-        # std_msgs/String
-    pose:
+        msgType: std_msgs/String
+    location:
       valueFrom:
-        rosTopic: /magic_nav/current_pose
-        # geometry_msgs/PoseStamped
+        rosTopic: /move_base_simple/goal
+        msgType: geometry_msgs/msg/PoseStamped
     velocity:
       valueFrom:
         rosTopic: /good_sensors/vel
-        # geometry_msgs/TwistStamped
+        msgType: geometry_msgs/msg/TwistStamped
     batteryPercentage:
       valueFrom:
         rosTopic: /good_sensors/bat
-        # std_msgs/Float32
+        msgType: sensor_msgs/msg/BatteryState
+        msgField: percentage
     remainingRunTime:
       valueFrom:
-        rosTopic: /we_b_robots/remaining_time
-        # std_msgs/Float32
+        rosTopic: /good_sensors/bat
+        msgType: sensor_msgs/msg/BatteryState
+        msgField: remaining
     loadPercentageStillAvailable:
       valueFrom:
-        rosTopic: /spoonlift/available_capacity_percentage
-        # std_msgs/Float32
+        rosTopic: /good_sensors/load
+        msgType: std_msgs/Float32
     errorCodes: TBD / Juli / Flor
     destinations:
       valueFrom:
         rosTopic: /we_b_robots/destinations
-        # nav_msgs/Path
+        msgType: nav_msgs/Path
     path:
       valueFrom:
         rosTopic: /magic_nav/path
-      # nav_msgs/Path
+        msgType: nav_msgs/Path
     rosFrameToPlanarDatumUUID:
       # required since Mass expects frames to be referenced using uuids
       map: "096522ad-61fa-4796-9b31-e35b0f8d0b26"
