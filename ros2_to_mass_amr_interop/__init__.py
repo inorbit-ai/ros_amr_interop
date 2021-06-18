@@ -28,7 +28,7 @@ from .messages import StatusReport
 
 
 def timestamp_to_isoformat(timestamp):
-    return datetime.fromtimestamp(timestamp).replace(microsecond=0).astimezone().isoformat()
+    return datetime.utcfromtimestamp(timestamp).replace(microsecond=0).isoformat()
 
 class MassAMRInteropNode(Node):
     """

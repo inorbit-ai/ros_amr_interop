@@ -39,8 +39,8 @@ class MassObject:
     def _update_timestamp(self):
         # As per Mass example, data format is ISO8601
         # with timezone offset e.g. 2012-04-21T18:25:43-05:00
-        self.data[MASS_REPORT_TIMESTAMP] = datetime.now() \
-            .replace(microsecond=0).astimezone().isoformat()
+        self.data[MASS_REPORT_TIMESTAMP] = datetime.utcnow() \
+            .replace(microsecond=0).isoformat()
 
     def update_parameter(self, name, value):
         """
