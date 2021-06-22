@@ -2,6 +2,7 @@ import websockets
 import json
 import asyncio
 from time import sleep
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from functools import partial
@@ -10,6 +11,7 @@ from tf2_kdl import PyKDL
 from std_msgs import msg as ros_std_msgs
 from geometry_msgs import msg as ros_geometry_msgs
 from sensor_msgs import msg as ros_sensor_msgs
+from nav_msgs import msg as ros_nav_msgs
 
 from rclpy.node import Node
 from .config import CFG_PARAMETER_LOCAL
@@ -24,6 +26,9 @@ from .messages import MASS_REPORT_UUID
 from .messages import IdentityReport
 from .messages import StatusReport
 
+
+def timestamp_to_isoformat(timestamp):
+    return datetime.fromtimestamp(timestamp).replace(microsecond=0).astimezone().isoformat()
 
 class MassAMRInteropNode(Node):
     """
@@ -149,7 +154,7 @@ class MassAMRInteropNode(Node):
         try:
             await self._wss_conn.send(json.dumps(mass_object.data))
         except Exception as ex:
-            self.logger.info(f"Error while sending status report: {ex}")
+            self.logger.error(f"Error while sending status report: {ex}")
 
     def _read_config_file(self, config_file_path):
         config_file_path = Path(config_file_path).resolve()
@@ -237,6 +242,40 @@ class MassAMRInteropNode(Node):
 
         self.mass_status_report.data[param_name] = data.data
 
+    def _callback_path_msg(self, param_name, msg_field, data):
+
+        self.logger.debug(f"Processing '{type(data)}' message: {data}")
+        if msg_field:
+            self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
+
+        # list of ROS2 Poses translated into Mass predictedLocation
+        mass_predicted_locations = list()
+        for pose in data.poses:
+            pose_position = pose.pose.position
+            pose_orientation = pose.pose.orientation
+            mass_predicted_locations.append({
+                "timestamp": timestamp_to_isoformat(pose.header.stamp.sec),
+                "x": pose_position.x,
+                "y": pose_position.y,
+                "z": pose_position.z,
+                "angle": {
+                    "x": pose_orientation.x,
+                    "y": pose_orientation.y,
+                    "z": pose_orientation.z,
+                    "w": pose_orientation.w
+                },
+                "planarDatum": self._get_frame_id_from_header(pose)
+            })
+
+        if len(mass_predicted_locations) > 10:
+            self.logger.warning(f"Max locations for '{param_name}' are 10 (got "
+                                f"{len(mass_predicted_locations)}). Keeping the "
+                                "first 10 locations and discarding the rest.")
+            mass_predicted_locations = mass_predicted_locations[:10]
+
+        self.mass_status_report.data[param_name] = mass_predicted_locations
+
+
     def register_mass_adapter(self, param_name, topic_name):
         """
         Register callbacks for parameters with source ROS topic.
@@ -283,7 +322,8 @@ class MassAMRInteropNode(Node):
         msgs_types = {
             'geometry_msgs': ros_geometry_msgs,
             'sensor_msgs': ros_sensor_msgs,
-            'std_msgs': ros_std_msgs
+            'std_msgs': ros_std_msgs,
+            'nav_msgs': ros_nav_msgs
         }
 
         # Try to determine callback message type class
@@ -298,19 +338,17 @@ class MassAMRInteropNode(Node):
 
         callback = None
         if param_name == 'velocity':
-            # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped "{twist: {linear: {x: 2.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 1.8}}}" # noqa: E501
-            # ros2 topic pub --once /good_sensors/vel geometry_msgs/msg/TwistStamped "{header: {frame_id: 'floor1'}, twist: {linear: {x: 1, y: 2, z: 3}, angular: {x: 1, y: 1, z: 1}}}" # noqa: E501
             callback = partial(self._callback_twist_stamped_msg, param_name, msg_field)
             self.logger.info(f"Registerd callback for parameter '{param_name}' (TwistStamped)")
         if param_name == 'batteryPercentage':
-            # ros2 topic pub --once /good_sensors/bat sensor_msgs/msg/BatteryState "{percentage: 91.3}" # noqa: E501
             callback = partial(self._callback_battery_state_msg, param_name, msg_field)
             self.logger.info(f"Registerd callback for parameter '{param_name}' (BatteryState)")
         if param_name == 'location':
-            # ros2 topic pub --once /move_base_simple/goal geometry_msgs/msg/PoseStamped "{pose: {position: {x: 2.0, y: 0.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 1.8, w: 1}}}" # noqa: E501
-            # ros2 topic pub --once /move_base_simple/goal geometry_msgs/msg/PoseStamped "{header: {frame_id: 'floor1'}, pose: {position: {x: 2.0, y: 0.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 1.8, w: 1}}}" # noqa: E501
             callback = partial(self._callback_pose_stamped_msg, param_name, msg_field)
             self.logger.info(f"Registerd callback for parameter '{param_name}' (PoseStamped)")
+        if param_name in ('destinations', 'path'):
+            callback = partial(self._callback_path_msg, param_name, msg_field)
+            self.logger.info(f"Registerd callback for parameter '{param_name}' (Path)")
 
         # if param_name doesn't have any specific callback, fallback to string
         if not callback and topic_type_t is ros_std_msgs.String:
