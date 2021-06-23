@@ -1,0 +1,24 @@
+name: Lint ROS2 package
+on:
+  # Run this action whenever a pull request is made
+  pull_request:
+  push:
+    # branches:
+    #   - master
+
+jobs:
+  ament_lint:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:bionic
+    strategy:
+      fail-fast: false
+      matrix:
+          linter: [copyright, flake8, mypy, pep257, pep8, xmllint]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ros-tooling/setup-ros@master
+    - uses: ros-tooling/action-ros-lint@master
+      with:
+        linter: ${{ matrix.linter }}
+        package-name: ros2_to_mass_amr_interop
