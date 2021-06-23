@@ -11,8 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-          linter: [copyright, flake8, mypy, pep257, pep8, xmllint]
     container:
       image: ubuntu:focal
     steps:
@@ -20,8 +18,7 @@ jobs:
     - uses: ros-tooling/setup-ros@0.2.1
       with:
         required-ros-distributions: foxy
-    - uses: ros-tooling/action-ros-lint@0.1.3
+    - uses: ros-tooling/action-ros-ci@v0.2
       with:
-        linter: ${{ matrix.linter }}
-        distribution: foxy
         package-name: ros2_to_mass_amr_interop
+        target-ros2-distro: foxy
