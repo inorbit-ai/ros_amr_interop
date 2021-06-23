@@ -30,6 +30,7 @@ from .messages import StatusReport
 def timestamp_to_isoformat(timestamp):
     return datetime.utcfromtimestamp(timestamp).replace(microsecond=0).isoformat()
 
+
 class MassAMRInteropNode(Node):
     """
     ROS node implementing WebSocket communication to Mass.
@@ -275,7 +276,6 @@ class MassAMRInteropNode(Node):
 
         self.mass_status_report.data[param_name] = mass_predicted_locations
 
-
     def register_mass_adapter(self, param_name, topic_name):
         """
         Register callbacks for parameters with source ROS topic.
@@ -339,16 +339,16 @@ class MassAMRInteropNode(Node):
         callback = None
         if param_name == 'velocity':
             callback = partial(self._callback_twist_stamped_msg, param_name, msg_field)
-            self.logger.info(f"Registerd callback for parameter '{param_name}' (TwistStamped)")
+            self.logger.info(f"Registered callback for parameter '{param_name}' (TwistStamped)")
         if param_name == 'batteryPercentage':
             callback = partial(self._callback_battery_state_msg, param_name, msg_field)
-            self.logger.info(f"Registerd callback for parameter '{param_name}' (BatteryState)")
+            self.logger.info(f"Registered callback for parameter '{param_name}' (BatteryState)")
         if param_name == 'location':
             callback = partial(self._callback_pose_stamped_msg, param_name, msg_field)
-            self.logger.info(f"Registerd callback for parameter '{param_name}' (PoseStamped)")
+            self.logger.info(f"Registered callback for parameter '{param_name}' (PoseStamped)")
         if param_name in ('destinations', 'path'):
             callback = partial(self._callback_path_msg, param_name, msg_field)
-            self.logger.info(f"Registerd callback for parameter '{param_name}' (Path)")
+            self.logger.info(f"Registered callback for parameter '{param_name}' (Path)")
 
         # if param_name doesn't have any specific callback, fallback to string
         if not callback and topic_type_t is ros_std_msgs.String:
@@ -365,7 +365,7 @@ class MassAMRInteropNode(Node):
                               f"({topic_type}) was not found.")
             return False
 
-        self.subscription = self.create_subscription(
+        self.create_subscription(
             msg_type=topic_type_t,
             topic=topic_name,
             callback=callback,
