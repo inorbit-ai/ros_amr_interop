@@ -22,3 +22,4 @@ jobs:
       with:
         package-name: ros2_to_mass_amr_interop
         target-ros2-distro: foxy
+        vcs-repo-file-url: https://raw.githubusercontent.com/ros2/ros2/foxy/ros2.repos
