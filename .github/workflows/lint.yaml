@@ -8,9 +8,7 @@ on:
 
 jobs:
   ament_lint:
-    runs-on: ubuntu-latest
-    container:
-      image: ubuntu:bionic
+    runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
       matrix:
@@ -20,7 +18,6 @@ jobs:
     - uses: ros-tooling/setup-ros@v0.2
       with:
         required-ros-distributions: foxy
-
     - uses: ros-tooling/action-ros-lint@master
       with:
         linter: ${{ matrix.linter }}
