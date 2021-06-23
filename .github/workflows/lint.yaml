@@ -8,15 +8,15 @@ on:
 
 jobs:
   ament_lint:
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
           linter: [copyright, flake8, mypy, pep257, pep8, xmllint]
     container:
-      image: ubuntu:bionic
+      image: ubuntu:focal
     steps:
     - uses: actions/checkout@v2.3.4
-    - run: echo "/usr/lib/ros2_to_mass_amr_interop" >> $GITHUB_PATH
     - uses: ros-tooling/setup-ros@0.2.1
       with:
         required-ros-distributions: foxy
