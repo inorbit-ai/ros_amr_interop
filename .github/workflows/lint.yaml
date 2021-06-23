@@ -23,4 +23,5 @@ jobs:
     - uses: ros-tooling/action-ros-lint@0.1.3
       with:
         linter: ${{ matrix.linter }}
+        distribution: foxy
         package-name: ros2_to_mass_amr_interop
