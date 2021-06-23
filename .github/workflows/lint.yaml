@@ -13,12 +13,14 @@ jobs:
       fail-fast: false
       matrix:
           linter: [copyright, flake8, mypy, pep257, pep8, xmllint]
+    container:
+      image: ubuntu:bionic
     steps:
     - uses: actions/checkout@v2
-    - uses: ros-tooling/setup-ros@0.0.15
+    - uses: ros-tooling/setup-ros@master
       with:
         required-ros-distributions: foxy
-    - uses: ros-tooling/action-ros-lint@master
-      with:
-        linter: ${{ matrix.linter }}
-        package-name: ros2_to_mass_amr_interop
+    # - uses: ros-tooling/action-ros-lint@master
+    #   with:
+    #     linter: ${{ matrix.linter }}
+    #     package-name: ros2_to_mass_amr_interop
