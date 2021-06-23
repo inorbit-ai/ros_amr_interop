@@ -17,7 +17,7 @@ jobs:
           linter: [copyright, flake8, mypy, pep257, pep8, xmllint]
     steps:
     - uses: actions/checkout@v2
-    - uses: ros-tooling/setup-ros@master
+    - uses: ros-tooling/setup-ros@v0.2
     - uses: ros-tooling/action-ros-lint@master
       with:
         linter: ${{ matrix.linter }}
