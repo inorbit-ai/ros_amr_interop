@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-package_name = 'ros2_to_mass_amr_interop'
+package_name = 'mrai_sender'
 
 setup(
     name=package_name,
@@ -22,7 +22,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'ros2_to_mass_node = ros2_to_mass_amr_interop.ros2_to_mass_node:main'
+            'mrai_node = mrai_sender.mrai_node:main'
         ],
     },
 )

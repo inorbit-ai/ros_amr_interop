@@ -47,7 +47,7 @@ from .config import CFG_PARAMETER_LOCAL
 from .config import CFG_PARAMETER_ENVVAR
 from .config import CFG_PARAMETER_ROS_TOPIC
 from .config import CFG_PARAMETER_ROS_PARAMETER  # noqa: F401
-from .config import MassAMRInteropConfig
+from .config import MassRoboticsAMRInteropConfig
 
 from .config import STATUS_REPORT_INTERVAL
 
@@ -60,9 +60,9 @@ def timestamp_to_isoformat(timestamp):
     return datetime.fromtimestamp(timestamp).replace(microsecond=0).astimezone().isoformat()
 
 
-class MassAMRInteropNode(Node):
+class MassRoboticsAMRInteropNode(Node):
     """
-    ROS node implementing WebSocket communication to Mass.
+    ROS node implementing WebSocket communication to MassRobotics AMR Receiver.
 
     The node configuration is obtained from a configuration file that can
     be provided externally. On initialization, the node subscribes to various
@@ -192,7 +192,7 @@ class MassAMRInteropNode(Node):
             raise ValueError(f"Configuration file '{config_file_path}' doesn't exist!")
 
         self.logger.info(f"Using configuration file '{config_file_path}'")
-        return MassAMRInteropConfig(str(config_file_path))
+        return MassRoboticsAMRInteropConfig(str(config_file_path))
 
     def _get_frame_id_from_header(self, msg):
         msg_frame_id = msg.header.frame_id
