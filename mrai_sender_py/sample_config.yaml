@@ -1,8 +1,8 @@
-# ==================================================================
-# ROS2 to Mass AMR Interoperability Standard node configuration file
-# ==================================================================
+# ====================================================================
+# MassRobotics AMR Interoperability Standard sender configuration file
+# ====================================================================
 #
-# Parameters that are used to configure ROS2 node for connecting to Mass compatible servers.
+# Parameters that are used to configure ROS2 node for connecting to MassRobotics compatible servers.
 # The `server` section expects a string with a WebSocket server URI, while the `mappings` section
 # contains a list of paramaters for configuring the ROS2 node. As per AMR Interop Standard,
 # mandatory parameters are `uuid`, `manufacturerName`, `robotModel`, `robotSerialNumber` and
