@@ -34,7 +34,7 @@ import rclpy
 from rclpy import Parameter
 from pathlib import Path
 from unittest.mock import AsyncMock
-from mrai_sender import MassRoboticsAMRInteropNode
+from massrobotics_amr_sender import MassRoboticsAMRInteropNode
 
 from std_msgs import msg as ros_std_msgs
 from geometry_msgs import msg as ros_geometry_msgs
@@ -91,7 +91,7 @@ def mock_ws_conn(mocker):
     def _fake_status_publisher_thread():
         pass
 
-    mocker.patch('mrai_sender.MassRoboticsAMRInteropNode._status_publisher_thread',
+    mocker.patch('massrobotics_amr_sender.MassRoboticsAMRInteropNode._status_publisher_thread',
                  side_effect=_fake_status_publisher_thread)
 
 
@@ -117,7 +117,7 @@ def test_mass_config_load_fails_on_missing_config_file(monkeypatch):
     rclpy.shutdown()
 
 
-def test_mrai_node_init():
+def test_massrobotics_amr_node_init():
     rclpy.init()
     node = MassRoboticsAMRInteropNode(parameter_overrides=[
         Parameter("config_file", value=str(config_file_test))
@@ -343,7 +343,7 @@ STATUS_REPORT_TESTS = [
 ]
 
 
-def test_mrai_node_status_report_callbacks(event_loop):
+def test_massrobotics_amr_node_status_report_callbacks(event_loop):
     rclpy.init()
     # create the node we want to test
     node = MassRoboticsAMRInteropNode(parameter_overrides=[

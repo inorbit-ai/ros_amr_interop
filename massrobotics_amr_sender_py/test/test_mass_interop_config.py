@@ -29,10 +29,10 @@
 
 import pytest
 from pathlib import Path
-from mrai_sender.config import MassRoboticsAMRInteropConfig
-from mrai_sender.config import CFG_PARAMETER_LOCAL
-from mrai_sender.config import CFG_PARAMETER_ROS_TOPIC
-from mrai_sender.config import CFG_PARAMETER_ENVVAR
+from massrobotics_amr_sender.config import MassRoboticsAMRInteropConfig
+from massrobotics_amr_sender.config import CFG_PARAMETER_LOCAL
+from massrobotics_amr_sender.config import CFG_PARAMETER_ROS_TOPIC
+from massrobotics_amr_sender.config import CFG_PARAMETER_ENVVAR
 
 cwd = Path(__file__).resolve().parent
 

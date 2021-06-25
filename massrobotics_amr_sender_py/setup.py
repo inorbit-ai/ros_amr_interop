@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-package_name = 'mrai_sender'
+package_name = 'massrobotics_amr_sender'
 
 setup(
     name=package_name,
@@ -22,7 +22,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'mrai_node = mrai_sender.mrai_node:main'
+            'massrobotics_amr_node = massrobotics_amr_sender.massrobotics_amr_node:main'
         ],
     },
 )

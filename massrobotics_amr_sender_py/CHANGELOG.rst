@@ -1,10 +1,10 @@
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Changelog for package mrai_sender
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Changelog for package massrobotics_amr_sender
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 0.0.2 (2021-06-24)
 -------------------
-* Changed package name to ``mrai_sender``
+* Changed package name to ``massrobotics_amr_sender``
 * Changed repository folder organization
 
 0.0.1 (2021-06-23)
