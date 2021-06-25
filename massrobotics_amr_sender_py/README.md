@@ -57,5 +57,3 @@ This is a summary of the steps required for releasing a new package.
 3. Run ``catkin_prepare_release`` for bumping up package version. By default this command increases the patch version of your package, e.g. ``0.1.1 -> 0.1.2``, but you can pick minor or major using the ``--bump`` option.
 
     **Note**: this command increment the version in your ``package.xml``'s, and commit/tag the changes with a bloom compatible flag.
-
-https://docs.ros.org/en/foxy/Contributing/Developer-Guide.html#library-versioning
