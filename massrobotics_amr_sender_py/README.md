@@ -13,9 +13,9 @@ git clone https://github.com/inorbit-ai/ros_amr_interop.git ./src
 colcon build --packages-select massrobotics_amr_sender
 ```
 
-## Running the node
+## Running the node from source
 
-The node takes the Mass AMR config file path as parameter. If not provided, it is assumed the file is on the current directory.
+The node takes the MassRobotics AMR config file path as parameter. If not provided, it is assumed the file is on the current directory.
 
 ```bash
 # Source the local overlay by running `. install/setup.sh` if
