@@ -2,8 +2,8 @@
 Changelog for package massrobotics_amr_sender
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.0 (2021-06-25)
+------------------
 * Adding bits for first release (`#7 <https://github.com/inorbit-ai/ros_amr_interop/issues/7>`_)
 
 0.0.2 (2021-06-24)
