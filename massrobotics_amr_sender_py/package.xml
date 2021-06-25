@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>ros2-to-mass-amr-interop</name>
-  <version>0.0.1</version>
-  <description>MassRobotics AMR Interop Standard implementation</description>
+  <name>massrobotics_amr_sender</name>
+  <version>0.0.2</version>
+  <description>MassRobotics AMR Interop Sender</description>
   <maintainer email="support@inorbit.ai">leandro</maintainer>
   <license>3-Clause BSD License</license>
 

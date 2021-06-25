@@ -30,14 +30,14 @@
 
 
 import rclpy
-from . import MassAMRInteropNode
+from . import MassRoboticsAMRInteropNode
 
 # Interesting example https://github.com/clalancette/mtexec_example
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = MassAMRInteropNode()
+    node = MassRoboticsAMRInteropNode()
     rclpy.spin(node)
     rclpy.shutdown()
 
