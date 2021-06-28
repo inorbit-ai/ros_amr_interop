@@ -2,12 +2,13 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>massrobotics_amr_sender</name>
-  <version>0.0.2</version>
+  <version>1.0.0</version>
   <description>MassRobotics AMR Interop Sender</description>
   <maintainer email="support@inorbit.ai">leandro</maintainer>
   <license>3-Clause BSD License</license>
 
   <exec_depend>python3-websockets</exec_depend>
+  <exec_depend>python3-pykdl</exec_depend>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>tf2</exec_depend>
   <exec_depend>tf2_bullet</exec_depend>
