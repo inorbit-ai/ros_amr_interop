@@ -8,7 +8,8 @@
   <license>3-Clause BSD License</license>
 
   <exec_depend>python3-websockets</exec_depend>
-  <!-- python3-pykdl is used for quaternion transformation -->
+  <!-- kdl is used for processing Twist messages -->
+  <exec_depend>tf2_kdl</exec_depend>
   <exec_depend>python3-pykdl</exec_depend>
   <exec_depend>rclpy</exec_depend>
 
