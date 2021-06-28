@@ -32,6 +32,7 @@ import json
 import asyncio
 from time import sleep
 from datetime import datetime
+from datetime import timezone
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from functools import partial
@@ -57,7 +58,9 @@ from .messages import StatusReport
 
 
 def timestamp_to_isoformat(timestamp):
-    return datetime.fromtimestamp(timestamp).replace(microsecond=0).astimezone().isoformat()
+    return datetime.fromtimestamp(
+        timestamp,
+        tz=timezone.utc).replace(microsecond=0).isoformat()
 
 
 class MassRoboticsAMRInteropNode(Node):
