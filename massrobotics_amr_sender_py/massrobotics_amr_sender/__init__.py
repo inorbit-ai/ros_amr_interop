@@ -27,6 +27,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+from jsonschema import exceptions as jsonschema_exc
 import websockets
 import json
 import asyncio
@@ -175,6 +176,14 @@ class MassRoboticsAMRInteropNode(Node):
             mass_object (:obj:`MassObject`): Identity or Status report
 
         """
+        self.logger.debug(f"Validating schema MassRobotics object schema")
+        try:
+            mass_object.validate_schema()
+        except jsonschema_exc.ValidationError as ex:
+            self.logger.error(f"Invalid schema for '{type(mass_object)}' message. "
+                              f"The error reported is: '{ex.message}'. Ignoring message.")
+            return
+
         self.logger.debug(f"Sending object ({type(mass_object)}): {mass_object.data}")
         try:
             await self._wss_conn.ensure_open()

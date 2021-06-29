@@ -366,7 +366,7 @@ STATUS_REPORT_TESTS = [
         'topic': '/troubleshooting/errorcodes',
         'msg': ros_std_msgs.String(data='error1,error2,error1'),
         'property': 'errorCodes',
-        'value': ['error1', 'error2', 'error1'] # FIXME: duplicate are no allowed
+        'value': ['error1', 'error2', 'error1']  # FIXME: duplicate are no allowed
     }
 ]
 
