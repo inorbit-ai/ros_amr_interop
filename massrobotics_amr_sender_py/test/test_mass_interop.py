@@ -339,6 +339,27 @@ STATUS_REPORT_TESTS = [
                 'planarDatum': '096522ad-61fa-4796-9b31-e35b0f8d0b26'
             }
         ]
+    },
+    {
+        'msg_type': ros_std_msgs.String,
+        'topic': '/troubleshooting/errorcodes',
+        'msg': ros_std_msgs.String(data='error1,error2,error3'),
+        'property': 'errorCodes',
+        'value': ['error1', 'error2', 'error3']
+    },
+    {
+        'msg_type': ros_std_msgs.String,
+        'topic': '/troubleshooting/errorcodes',
+        'msg': ros_std_msgs.String(data='error1'),
+        'property': 'errorCodes',
+        'value': ['error1']
+    },
+    {
+        'msg_type': ros_std_msgs.String,
+        'topic': '/troubleshooting/errorcodes',
+        'msg': ros_std_msgs.String(),
+        'property': 'errorCodes',
+        'value': []
     }
 ]
 
@@ -365,8 +386,12 @@ def test_massrobotics_amr_node_status_report_callbacks(event_loop):
 
         publisher.destroy()
 
-        assert node.mass_status_report.data[
-            test_data['property']] == test_data['value']
+        result = node.mass_status_report.data[test_data['property']]
+        expected = test_data['value']
+
+        if result != expected:
+            pytest.fail(f"The obtained result '{result}' doesn't match with the "
+                        f"expected output '{expected}'. Test data: {test_data}")
 
     event_loop.run_until_complete(node._async_send_report(node.mass_status_report))
     rclpy.shutdown()

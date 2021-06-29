@@ -308,6 +308,18 @@ class MassRoboticsAMRInteropNode(Node):
 
         self.mass_status_report.data[param_name] = mass_predicted_locations
 
+    def _callback_error_codes_msg(self, param_name, msg_field, data):
+
+        self.logger.debug(f"Processing '{type(data)}' message: {data}")
+        if msg_field:
+            self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
+
+        data = data.data
+        # If the message is empty return no errors.
+        error_codes = data.split(',') if data else []
+
+        self.mass_status_report.data[param_name] = error_codes
+
     def register_mass_adapter(self, param_name, topic_name):
         """
         Register callbacks for parameters with source ROS topic.
@@ -363,7 +375,8 @@ class MassRoboticsAMRInteropNode(Node):
             topic_type_t = getattr(msgs_types[topic_type_package], topic_type_name)
         except (AttributeError, KeyError):
             # If the message type is not supported do not register any callback
-            self.logger.error(f"Undefined topic type '{topic_type}'. Ignoring...")
+            self.logger.error(f"Undefined topic type '{topic_type}' on "
+                              f"parameter '{param_name}'. Ignoring...")
             return False
 
         self.logger.debug(f"Binding parameter '{param_name}' with topic '{topic_name}'")
@@ -381,6 +394,9 @@ class MassRoboticsAMRInteropNode(Node):
         if param_name in ('destinations', 'path'):
             callback = partial(self._callback_path_msg, param_name, msg_field)
             self.logger.info(f"Registered callback for parameter '{param_name}' (Path)")
+        if param_name == 'errorCodes':
+            callback = partial(self._callback_error_codes_msg, param_name, msg_field)
+            self.logger.info(f"Registered callback for parameter '{param_name}' (String)")
 
         # if param_name doesn't have any specific callback, fallback to string
         if not callback and topic_type_t is ros_std_msgs.String:
