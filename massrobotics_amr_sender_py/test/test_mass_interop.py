@@ -403,3 +403,30 @@ def test_massrobotics_amr_node_status_report_callbacks(event_loop):
     # Mass identity report is sent once on Node init
     # and after processing all messages on ``STATUS_REPORT_TESTS``
     assert node._wss_conn.send.call_count == 2
+
+
+def test_massrobotics_amr_node_status_report_not_sent_on_invalid_schema(event_loop):
+    rclpy.init()
+    # create the node we want to test
+    node = MassRoboticsAMRInteropNode(parameter_overrides=[
+        Parameter("config_file", value=str(config_file_test))
+    ])
+
+    node.mass_status_report.data['operationalState'] = 'foobar'
+
+    rclpy.spin_once(node, timeout_sec=.1)
+
+    # Try to send a status report with an invalid schema i.e. ``foobar`` operational
+    # state is not an allowed value.
+    event_loop.run_until_complete(node._async_send_report(node.mass_status_report))
+
+    rclpy.shutdown()
+
+    # assert connect method has been called once
+    assert websockets.connect.call_count == 1
+    # assert mocked status published thread has been called once
+    assert node._status_publisher_thread.call_count == 1
+    # Mass identity report is sent once on Node init
+    # That should be the only successful call given that the status
+    # report sent above is invalid and the node should not send it.
+    assert node._wss_conn.send.call_count == 1
