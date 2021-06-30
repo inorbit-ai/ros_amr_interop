@@ -152,9 +152,9 @@ STATUS_REPORT_TESTS = [
     {
         'msg_type': ros_std_msgs.String,
         'topic': '/we_b_robots/mode',
-        'msg': ros_std_msgs.String(data='foo'),
+        'msg': ros_std_msgs.String(data='charging'),
         'property': 'operationalState',
-        'value': 'foo'
+        'value': 'charging'
     },
     {
         'msg_type': ros_geometry_msgs.PoseStamped,
@@ -360,13 +360,6 @@ STATUS_REPORT_TESTS = [
         'msg': ros_std_msgs.String(),
         'property': 'errorCodes',
         'value': []
-    },
-    {
-        'msg_type': ros_std_msgs.String,
-        'topic': '/troubleshooting/errorcodes',
-        'msg': ros_std_msgs.String(data='error1,error2,error1'),
-        'property': 'errorCodes',
-        'value': ['error1', 'error2', 'error1']  # FIXME: duplicate are no allowed
     }
 ]
 
