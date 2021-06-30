@@ -71,7 +71,13 @@ config:
       valueFrom:
         rosTopic: /good_sensors/load
         msgType: std_msgs/Float32
-    errorCodes: TBD / Juli / Flor
+    # Error codes are expected to be comma-separated strings published on a topic of
+    # type std_msgs/msg/String. Those errors are then transformed into an array, as
+    # required on the MassRobotics standard.
+    errorCodes:
+      valueFrom:
+        rosTopic: /troubleshooting/errorcodes
+        msgType: std_msgs/msg/String
     destinations:
       valueFrom:
         rosTopic: /we_b_robots/destinations
