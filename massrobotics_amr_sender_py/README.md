@@ -1,20 +1,21 @@
 # massrobotics_amr_sender
 
-Configuration-based ROS2 package for sending MassRobotics [AMR Interop Standard messages](https://github.com/MassRobotics-AMR/AMR_Interop_Standard) to complaint receivers.
+Configuration-based ROS2 package for sending MassRobotics [AMR Interop Standard messages](https://github.com/MassRobotics-AMR/AMR_Interop_Standard) to compliant receivers.
 
-# Installing
+# Package installation
 
 ## From binary packages
 
-The node is available as a released package and can be added manually to your ROS2 build installation:
+The node is available as a released package and can be added manually to your ROS2 build installation running the following command:
 
-```sudo apt-get install ros-foxy-massrobotics-amr-sender```
+```console
+$ sudo apt-get install ros-foxy-massrobotics-amr-sender
 
-Or listed as a rosdep dependency and installed with `rosdep update`
+Alternatively, you can add the package as a rosdep dependency and then install it running `rosdep update`
 
 ## Building from source
 
-Make sure `ros2` is installed properly. Clone this repository inside your `src` folder on your local workspace and build the package:
+Make sure `ros2` is installed properly. Then clone this repository inside your `src` folder on your local workspace and build the package executing the following commands:
 
 ```bash
 # Create a ROS2 workspace and go into it - if you don't have one already

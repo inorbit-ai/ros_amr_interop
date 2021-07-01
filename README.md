@@ -1,10 +1,10 @@
 # ROS AMR interoperability packages
 
-This repository is intended to host a collection of ROS packages to ease
+This repository hosts a collection of ROS packages to ease
 the integration of ROS based robots with different interoperability
 standards, with a focus on AMRs (Autonomous Mobile Robots).
 
-## Packages
+## Packages in this repository
 
 ### Mass Robotics AMR Interop Sender for ROS2
 
@@ -14,7 +14,7 @@ ROS2 system and publishes it to a [Mass Robotics Interop compliant
 Receiver](https://github.com/MassRobotics-AMR/AMR_Interop_Standard/tree/main/MassRobotics-AMR-Receiver).
 
 Mapping of different data elements from the ROS2 system into Mass
-Robotics Interop data format is managed through a YAML configuration
+Robotics Interop messages can be customized through a YAML configuration
 file.
 
 ## Related Initiatives
