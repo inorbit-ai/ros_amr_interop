@@ -4,7 +4,10 @@ This repository hosts a collection of ROS packages to ease
 the integration of ROS based robots with different interoperability
 standards, with a focus on AMRs (Autonomous Mobile Robots).
 
-## Packages in this repository
+## Packages
+
+The following packages are included in this repository:
+
 
 ### Mass Robotics AMR Interop Sender for ROS2
 
@@ -19,6 +22,10 @@ file.
 
 ## Related Initiatives
 
+The topic of AMR interoperability is in a fluid state of evolution. For this reason, it is worth it to keep track of other standards, initiatives, libraries and efforts related to this topic.
+
+The following is an incomplete and growing list of such related topics:
+
  * [Open-RMF](https://osrf.github.io/ros2multirobotbook/) (formerly RMF Core) is an
  open source framework based on ROS 2 to enable the interoperability of heterogeneous
  fleets of any type of robotics systems.
@@ -31,3 +38,5 @@ file.
    (OPC UA) is a machine to machine communication protocol for industrial
  automation developed by the OPC Foundation
    * [ros_opcua_communication](http://wiki.ros.org/ros_opcua_communication) ROS bindings for different open-source OPC-UA implementations
+
+We expect to keep curating the set of relevant topics with the contribution of the community.

@@ -8,8 +8,9 @@ Configuration-based ROS2 package for sending MassRobotics [AMR Interop Standard 
 
 The node is available as a released package and can be added manually to your ROS2 build installation running the following command:
 
-```console
+```bash
 $ sudo apt-get install ros-foxy-massrobotics-amr-sender
+```
 
 Alternatively, you can add the package as a rosdep dependency and then install it running `rosdep update`
 
@@ -27,11 +28,11 @@ rosdep install --ignore-src --from-paths src/
 # Run the build
 colcon build --packages-select massrobotics_amr_sender
 ```
-# Configuring
+# Node configuration
 
 A configuration file must be provided to define how ROS2 messages are mapped to different AMR Interop Standard messages. A [sample_config.yaml](https://github.com/inorbit-ai/ros_amr_interop/blob/foxy-devel/massrobotics_amr_sender_py/sample_config.yaml) is provided for reference.
 
-# Running
+# Running the sender node
 
 The node takes the MassRobotics AMR config file path as parameter. If not provided, it is assumed the file is on the current directory.
 
