@@ -27,6 +27,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+from jsonschema import exceptions as jsonschema_exc
 import websockets
 import json
 import asyncio
@@ -143,14 +144,12 @@ class MassRoboticsAMRInteropNode(Node):
         TODO: re-run on configuration file changes
         TODO: deregister callbacks on configuration changes
         """
-        # Update status report with local parameters
-        for param_name in self._config.parameters_by_source[CFG_PARAMETER_LOCAL]:
-            param_value = self._config.get_parameter_value(param_name)
-            self.mass_identity_report.update_parameter(name=param_name, value=param_value)
-
-        for param_name in self._config.parameters_by_source[CFG_PARAMETER_ENVVAR]:
-            param_value = self._config.get_parameter_value(param_name)
-            self.mass_identity_report.update_parameter(name=param_name, value=param_value)
+        # Update identity report values
+        for param_name in self.mass_identity_report.schema_properties:
+            if param_name in self._config.parameters_by_source[CFG_PARAMETER_ENVVAR] or \
+                    param_name in self._config.parameters_by_source[CFG_PARAMETER_LOCAL]:
+                param_value = self._config.get_parameter_value(param_name)
+                self.mass_identity_report.update_parameter(name=param_name, value=param_value)
 
         # Register callbacks for rosTopic parameters
         for param_name in self._config.parameters_by_source[CFG_PARAMETER_ROS_TOPIC]:
@@ -175,6 +174,14 @@ class MassRoboticsAMRInteropNode(Node):
             mass_object (:obj:`MassObject`): Identity or Status report
 
         """
+        self.logger.debug(f"Validating schema MassRobotics object schema")
+        try:
+            mass_object.validate_schema()
+        except jsonschema_exc.ValidationError as ex:
+            self.logger.error(f"Invalid schema for '{type(mass_object)}' message. "
+                              f"The error reported is: '{ex.message}'. Ignoring message.")
+            return
+
         self.logger.debug(f"Sending object ({type(mass_object)}): {mass_object.data}")
         try:
             await self._wss_conn.ensure_open()
@@ -206,7 +213,6 @@ class MassRoboticsAMRInteropNode(Node):
         return frame_id
 
     def _callback_pose_stamped_msg(self, param_name, msg_field, data):
-
         self.logger.debug(f"Processing '{type(data)}' message: {data}")
         if msg_field:
             self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
@@ -229,7 +235,6 @@ class MassRoboticsAMRInteropNode(Node):
         }
 
     def _callback_battery_state_msg(self, param_name, msg_field, data):
-
         self.logger.debug(f"Processing '{type(data)}' message: {data}")
         try:
             self.mass_status_report.data[param_name] = getattr(data, msg_field)
@@ -238,7 +243,6 @@ class MassRoboticsAMRInteropNode(Node):
                               f"type '{type(data)}' doesn't exist")
 
     def _callback_twist_stamped_msg(self, param_name, msg_field, data):
-
         self.logger.debug(f"Processing '{type(data)}' message: {data}")
         if msg_field:
             self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
@@ -268,7 +272,6 @@ class MassRoboticsAMRInteropNode(Node):
         }
 
     def _callback_string_msg(self, param_name, msg_field, data):
-
         self.logger.debug(f"Processing '{type(data)}' message: {data}")
         if msg_field:
             self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
@@ -276,7 +279,6 @@ class MassRoboticsAMRInteropNode(Node):
         self.mass_status_report.data[param_name] = data.data
 
     def _callback_path_msg(self, param_name, msg_field, data):
-
         self.logger.debug(f"Processing '{type(data)}' message: {data}")
         if msg_field:
             self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
@@ -309,7 +311,6 @@ class MassRoboticsAMRInteropNode(Node):
         self.mass_status_report.data[param_name] = mass_predicted_locations
 
     def _callback_error_codes_msg(self, param_name, msg_field, data):
-
         self.logger.debug(f"Processing '{type(data)}' message: {data}")
         if msg_field:
             self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
@@ -384,29 +385,22 @@ class MassRoboticsAMRInteropNode(Node):
         callback = None
         if param_name == 'velocity':
             callback = partial(self._callback_twist_stamped_msg, param_name, msg_field)
-            self.logger.info(f"Registered callback for parameter '{param_name}' (TwistStamped)")
         if param_name == 'batteryPercentage':
             callback = partial(self._callback_battery_state_msg, param_name, msg_field)
-            self.logger.info(f"Registered callback for parameter '{param_name}' (BatteryState)")
         if param_name == 'location':
             callback = partial(self._callback_pose_stamped_msg, param_name, msg_field)
-            self.logger.info(f"Registered callback for parameter '{param_name}' (PoseStamped)")
         if param_name in ('destinations', 'path'):
             callback = partial(self._callback_path_msg, param_name, msg_field)
-            self.logger.info(f"Registered callback for parameter '{param_name}' (Path)")
         if param_name == 'errorCodes':
             callback = partial(self._callback_error_codes_msg, param_name, msg_field)
-            self.logger.info(f"Registered callback for parameter '{param_name}' (String)")
 
         # if param_name doesn't have any specific callback, fallback to string
         if not callback and topic_type_t is ros_std_msgs.String:
             callback = partial(self._callback_string_msg, param_name, msg_field)
-            self.logger.info(f"Registered callback for parameter '{param_name}' (String)")
 
         # TODO: add all remaining 'scalar' types
         if not callback and topic_type_t in (ros_std_msgs.Float32, ros_std_msgs.Float64):
             callback = partial(self._callback_string_msg, param_name, msg_field)
-            self.logger.info(f"Registered callback for parameter '{param_name}' (Number)")
 
         if not callback:
             self.logger.error(f"Callback for parameter '{param_name}' "
@@ -418,5 +412,7 @@ class MassRoboticsAMRInteropNode(Node):
             topic=topic_name,
             callback=callback,
             qos_profile=10)
+
+        self.logger.info(f"Registered callback for parameter '{param_name}' ({topic_type_name})")
 
         return True

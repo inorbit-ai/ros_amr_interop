@@ -64,6 +64,7 @@ class MassObject:
 
         self.data = {MASS_REPORT_UUID: kwargs[MASS_REPORT_UUID]}
         self._update_timestamp()
+        self.schema = self._load_schema()
 
     def _update_timestamp(self):
         # As per Mass example, data format is ISO8601
@@ -91,15 +92,25 @@ class MassObject:
         self.data[name] = value
         self._update_timestamp()
 
-    def _validate_schema(self):
+    def _load_schema(self):
         cwd = Path(__file__).resolve().parent
         jsonschema_def_path = str(cwd / 'schema.json')
         with open(jsonschema_def_path, 'r') as fp:
             schema = json.load(fp)
 
+        # Fail if additional properties are found on the objects.
+        # This can be consider as a workaround, the ``additionalProperties``
+        # keyword should be set in the original schema.
+        for obj_name in ('identityReport', 'statusReport'):
+            if 'additionalProperties' not in schema[obj_name]:
+                schema[obj_name]['additionalProperties'] = False
+
+        return schema
+
+    def validate_schema(self):
         # TODO: capture relevant exceptions and improve
         # error reporting
-        jsonschema.validate(instance=self.data, schema=schema)
+        jsonschema.validate(instance=self.data, schema=self.schema)
 
 
 class IdentityReport(MassObject):
@@ -145,7 +156,7 @@ class IdentityReport(MassObject):
         for property_name, property_value in kwargs.items():
             self.data[property_name] = property_value
 
-        self._validate_schema()
+        self.validate_schema()
 
 
 class StatusReport(MassObject):
@@ -195,4 +206,4 @@ class StatusReport(MassObject):
         for property_name, property_value in kwargs.items():
             self.data[property_name] = property_value
 
-        self._validate_schema()
+        self.validate_schema()
