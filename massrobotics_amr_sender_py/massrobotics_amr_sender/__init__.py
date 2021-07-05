@@ -32,6 +32,7 @@ import websockets
 import json
 import asyncio
 from time import sleep
+from time import time
 from datetime import datetime
 from datetime import timezone
 from concurrent.futures import ThreadPoolExecutor
@@ -191,6 +192,8 @@ class MassRoboticsAMRInteropNode(Node):
             self.logger.info(f"Reconnecting to server: {self._uri}")
             await self._async_connect()
 
+        mass_object.update_timestamp()
+
         try:
             await self._wss_conn.send(json.dumps(mass_object.data))
         except Exception as ex:
@@ -206,6 +209,13 @@ class MassRoboticsAMRInteropNode(Node):
 
     def _get_frame_id_from_header(self, msg):
         msg_frame_id = msg.header.frame_id
+
+        # Return no frame_id if the original message had no frame_id
+        # This is validated before looking up keys in order to avoid
+        # flooding logs with warning messages below
+        if not msg_frame_id:
+            return ''
+
         frame_id = self._config.mappings['rosFrameToPlanarDatumUUID'].get(msg_frame_id)
         if not frame_id:
             self.logger.warning(f"Couldn't find mapping for frame '{msg_frame_id}': {msg}")
@@ -225,7 +235,7 @@ class MassRoboticsAMRInteropNode(Node):
             "x": pose_position.x,
             "y": pose_position.y,
             "z": pose_position.z,
-            "angle": {
+            "angular": {
                 "x": pose_orientation.x,
                 "y": pose_orientation.y,
                 "z": pose_orientation.z,
@@ -262,7 +272,7 @@ class MassRoboticsAMRInteropNode(Node):
 
         self.mass_status_report.data[param_name] = {
             "linear": linear_vel,
-            "angle": {
+            "angular": {
                 "x": quat[0],
                 "y": quat[1],
                 "z": quat[2],
@@ -293,7 +303,7 @@ class MassRoboticsAMRInteropNode(Node):
                 "x": pose_position.x,
                 "y": pose_position.y,
                 "z": pose_position.z,
-                "angle": {
+                "angular": {
                     "x": pose_orientation.x,
                     "y": pose_orientation.y,
                     "z": pose_orientation.z,
