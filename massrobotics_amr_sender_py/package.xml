@@ -4,7 +4,7 @@
   <name>massrobotics_amr_sender</name>
   <version>1.0.0</version>
   <description>MassRobotics AMR Interop Sender</description>
-  <maintainer email="support@inorbit.ai">leandro</maintainer>
+  <maintainer email="support@inorbit.ai">InOrbit</maintainer>
   <license>3-Clause BSD License</license>
 
   <exec_depend>python3-websockets</exec_depend>
