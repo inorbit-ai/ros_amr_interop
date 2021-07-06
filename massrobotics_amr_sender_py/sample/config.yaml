@@ -113,13 +113,13 @@ config:
     # Estimated remaining runtime in hours
     remainingRunTime:
       valueFrom:
-        rosTopic: /good_sensors/bat_remaining
+        rosTopic: /battery_runtime
         msgType: std_msgs/Float32
 
     # Percentage of capacity still available
     loadPercentageStillAvailable:
       valueFrom:
-        rosTopic: /good_sensors/load
+        rosTopic: /load_perc_available
         msgType: std_msgs/Float32
 
     # List of current error states

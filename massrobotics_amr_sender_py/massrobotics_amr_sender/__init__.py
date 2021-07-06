@@ -235,7 +235,7 @@ class MassRoboticsAMRInteropNode(Node):
             "x": pose_position.x,
             "y": pose_position.y,
             "z": pose_position.z,
-            "angular": {
+            "angle": {
                 "x": pose_orientation.x,
                 "y": pose_orientation.y,
                 "z": pose_orientation.z,
@@ -303,7 +303,7 @@ class MassRoboticsAMRInteropNode(Node):
                 "x": pose_position.x,
                 "y": pose_position.y,
                 "z": pose_position.z,
-                "angular": {
+                "angle": {
                     "x": pose_orientation.x,
                     "y": pose_orientation.y,
                     "z": pose_orientation.z,

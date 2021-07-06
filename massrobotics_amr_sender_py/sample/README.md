@@ -1,8 +1,8 @@
-# Samples for massrobotics_amr_sender
+# Sample data for massrobotics_amr_sender
 
 Scripts, launch files, recordings and other tools for demoing and testing the `massrobotics_amr_sender` node.
 
-The `rosbag` folder contains a stripped rosbag based on a `turtlebot3` using [Gazebo](https://emanual.robotis.com/docs/en/platform/turtlebot3/simulation/#gazebo-simulation), [SLAM](https://emanual.robotis.com/docs/en/platform/turtlebot3/slam_simulation/) and the [Navigation](https://emanual.robotis.com/docs/en/platform/turtlebot3/nav_simulation/) simulations.
+The `rosbag` folder contains a stripped rosbag based on `turtlebot3`. I was built relying on the [Gazebo](https://emanual.robotis.com/docs/en/platform/turtlebot3/simulation/#gazebo-simulation), [SLAM](https://emanual.robotis.com/docs/en/platform/turtlebot3/slam_simulation/) and [Navigation](https://emanual.robotis.com/docs/en/platform/turtlebot3/nav_simulation/) simulations.
 
 ```bash
 $ ros2 bag info rosbag/rosbag_demo.db3
@@ -28,3 +28,10 @@ Topic information: Topic: /battery | Type: sensor_msgs/msg/BatteryState | Count:
 
 Messages on topics such as `/plan` and `/local_plan` were kept unchanged while messages on `/location` and `/velocity` were crafted by creating `PoseStamped` and `TwistStamped` messages using data from `Odometry` messages on topic `/odom`. The messages on the remaning topics `/battery`, `/battery_runtime`, `/load_perc_available`, `/mode` and `/troubleshooting/errorcodes` as well as all the transformation described above were generated with very basic ROS2 node that is available at `synthetic/node.py`.
 
+## How to run
+
+The `massrobotics_amr_sender_rosbag_launch.py` launch file describes a `massrobotics_amr_sender` node that is configured to use a configuration file that is specific for the sample rosbag, and also plays the rosbag in loop mode so the different node callbacks are executed.
+
+```bash
+ros2 launch massrobotics_amr_sender_rosbag_launch.py
+```
