@@ -34,14 +34,15 @@ from launch.substitutions import PathJoinSubstitution
 from launch.substitutions import ThisLaunchFileDir
 from launch_ros.actions import Node
 
+from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
+    my_package_share_dir = get_package_share_directory('massrobotics_amr_sender')
+
     return LaunchDescription([
         DeclareLaunchArgument(
-            'mass_config_file',
-            default_value=[
-                PathJoinSubstitution([ThisLaunchFileDir(), '..', 'sample_config.yaml'])
-            ],
+            'config_file',
+            default_value=PathJoinSubstitution([my_package_share_dir, 'params', 'sample_config.yaml']),
             description='massrobotics_amr_sender node configuration file'
         ),
         Node(
@@ -50,7 +51,7 @@ def generate_launch_description():
             executable='massrobotics_amr_node',
             name='massrobotics_amr_sender',
             parameters=[
-                {'config_file': LaunchConfiguration('mass_config_file')}
+                {'config_file': LaunchConfiguration('config_file')}
             ]
         ),
     ])

@@ -1,10 +1,14 @@
 from setuptools import setup, find_packages
 import xml.etree.ElementTree as ET
+import os
+from glob import glob
 
 # Read version from ``package.xml`` file
 package_xml = ET.parse('package.xml').getroot()
 
 package_name = 'massrobotics_amr_sender'
+
+share_dir = os.path.join('share', package_name)
 
 setup(
     name=package_name,
@@ -15,7 +19,11 @@ setup(
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
-        ('share/' + package_name, ['package.xml']),
+        (share_dir, ['package.xml']),
+        # Include launch files
+        (share_dir, glob('launch/*.launch.py')),
+        # Sample config files
+        (os.path.join(share_dir, 'params'), [os.path.join('params', 'sample_config.yaml')]),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

@@ -24,7 +24,7 @@ mkdir -p ~/ros2_ws/src && cd ros2_ws/
 # Clone the repo inside the workspace
 git clone https://github.com/inorbit-ai/ros_amr_interop.git ./src
 # Install dependencies
-rosdep install --ignore-src --from-paths src/
+rosdep update && rosdep install --ignore-src --from-paths src/
 # Run the build
 colcon build --packages-select massrobotics_amr_sender
 ```
@@ -39,9 +39,8 @@ The node takes the MassRobotics AMR config file path as parameter. If not provid
 ```bash
 # Remember to source the ROS2 environment from the binary installation or your workspace overlay
 source install/setup.bash
-# Run the node pointing to your configuration file
-ros2 run massrobotics_amr_sender massrobotics_amr_node \
-    --ros-args -p config_file:=/path/to/config.yaml --log-level debug
+# Launch the node pointing to your configuration file
+ros2 launch massrobotics_amr_sender massrobotics_amr_sender.launch.py config_file:=/path/to/config.yaml
 ```
 
 
