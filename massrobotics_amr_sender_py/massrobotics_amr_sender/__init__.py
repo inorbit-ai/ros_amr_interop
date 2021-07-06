@@ -92,7 +92,7 @@ class MassRoboticsAMRInteropNode(Node):
         # Declare Node configuration parameter. Defaults to './config.yaml' if no
         # ``config_file`` parameter is provided. Provide the parameter when running
         # the node by using ``--ros-args -p config_file:=/path/to/config.yaml``
-        self.declare_parameter('config_file', './config.yaml')
+        self.declare_parameter('config_file', './confog.yaml')
         config_file_param = self.get_parameter(name='config_file')
         config_file_path = config_file_param.get_parameter_value().string_value
         self._config = self._read_config_file(config_file_path=config_file_path)
