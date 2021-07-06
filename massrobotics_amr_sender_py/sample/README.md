@@ -30,7 +30,7 @@ Messages on topics such as `/plan` and `/local_plan` were kept unchanged while m
 
 ## How to run
 
-The `massrobotics_amr_sender_rosbag_launch.py` launch file describes a `massrobotics_amr_sender` node that is configured to use a configuration file that is specific for the sample rosbag, and also plays the rosbag in loop mode so the different node callbacks are executed.
+The `massrobotics_amr_sender_rosbag_launch.py` launch file describes a `massrobotics_amr_sender` node that uses a configuration file customized for the sample rosbag, and also plays the rosbag in loop mode so the different node callbacks are executed.
 
 ```bash
 ros2 launch massrobotics_amr_sender_rosbag_launch.py
