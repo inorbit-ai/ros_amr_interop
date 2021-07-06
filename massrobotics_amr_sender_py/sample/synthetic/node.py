@@ -55,7 +55,7 @@ class SampleDataNode(Node):
         self.robot_state = 'navigating'
         self.battery_perc = 90
 
-        self.create_timer(20, self.state_callback)
+        self.create_timer(20, self.flip_state_callback)
         self.create_timer(1, self.battery_callback)
         self.create_timer(7, self.set_error_callback)
         self.create_timer(3, self.send_error_callback)
@@ -81,7 +81,7 @@ class SampleDataNode(Node):
         self.get_logger().info('Publishing errors: "%s"' % msg.data)
         self.errors = ''
 
-    def state_callback(self):
+    def flip_state_callback(self):
         self.robot_state = 'navigating' if self.robot_state == 'charging' else 'charging'
         msg = String()
         msg.data = self.robot_state
@@ -122,11 +122,8 @@ class SampleDataNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-
     sample_data_node = SampleDataNode()
-
     rclpy.spin(sample_data_node)
-
     sample_data_node.destroy_node()
     rclpy.shutdown()
 
