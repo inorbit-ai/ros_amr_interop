@@ -182,7 +182,7 @@ STATUS_REPORT_TESTS = [
         'property': 'velocity',
         'value': {
             'linear': 1,
-            'angle': {
+            'angular': {
                 'w': 0.9937606691655042,
                 'x': 0.09970865087213879,
                 'y': 0.04972948160146044,

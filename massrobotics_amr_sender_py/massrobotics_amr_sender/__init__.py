@@ -32,7 +32,6 @@ import websockets
 import json
 import asyncio
 from time import sleep
-from time import time
 from datetime import datetime
 from datetime import timezone
 from concurrent.futures import ThreadPoolExecutor
