@@ -2,7 +2,7 @@
 
 Scripts, launch files, recordings and other tools for demoing and testing the `massrobotics_amr_sender` node.
 
-The `rosbag` folder contains a stripped rosbag based on `turtlebot3`. I was built relying on the [Gazebo](https://emanual.robotis.com/docs/en/platform/turtlebot3/simulation/#gazebo-simulation), [SLAM](https://emanual.robotis.com/docs/en/platform/turtlebot3/slam_simulation/) and [Navigation](https://emanual.robotis.com/docs/en/platform/turtlebot3/nav_simulation/) simulations.
+The `rosbag` folder contains a stripped rosbag based on `turtlebot3`. It was built using on the [Gazebo](https://emanual.robotis.com/docs/en/platform/turtlebot3/simulation/#gazebo-simulation), [SLAM](https://emanual.robotis.com/docs/en/platform/turtlebot3/slam_simulation/) and [Navigation](https://emanual.robotis.com/docs/en/platform/turtlebot3/nav_simulation/) simulations.
 
 ```bash
 $ ros2 bag info rosbag/rosbag_demo.db3
