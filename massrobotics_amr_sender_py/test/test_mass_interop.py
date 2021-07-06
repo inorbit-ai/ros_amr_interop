@@ -104,7 +104,7 @@ def mock_robot_id(monkeypatch):
 @pytest.fixture
 def event_loop():
     # Fixture for running the async method for sending the Mass object
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
     yield loop
     loop.close()
 
@@ -182,7 +182,7 @@ STATUS_REPORT_TESTS = [
         'property': 'velocity',
         'value': {
             'linear': 1,
-            'angle': {
+            'angular': {
                 'w': 0.9937606691655042,
                 'x': 0.09970865087213879,
                 'y': 0.04972948160146044,

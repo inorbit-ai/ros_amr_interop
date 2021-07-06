@@ -31,6 +31,7 @@ from datetime import datetime
 from pathlib import Path
 import json
 import jsonschema
+from datetime import timezone
 
 # MassRobotics AMR Interop required properties
 # for both Identity and Status report objects.
@@ -63,14 +64,14 @@ class MassObject:
             raise ValueError(f"Missing mandatory IdentityReport parameter {MASS_REPORT_UUID}")
 
         self.data = {MASS_REPORT_UUID: kwargs[MASS_REPORT_UUID]}
-        self._update_timestamp()
+        self.update_timestamp()
         self.schema = self._load_schema()
 
-    def _update_timestamp(self):
+    def update_timestamp(self):
         # As per Mass example, data format is ISO8601
         # with timezone offset e.g. 2012-04-21T18:25:43-05:00
-        self.data[MASS_REPORT_TIMESTAMP] = datetime.now() \
-            .replace(microsecond=0).astimezone().isoformat()
+        self.data[MASS_REPORT_TIMESTAMP] = datetime.now(tz=timezone.utc) \
+            .replace(microsecond=0).isoformat()
 
     def update_parameter(self, name, value):
         """
@@ -90,7 +91,7 @@ class MassObject:
 
         """
         self.data[name] = value
-        self._update_timestamp()
+        self.update_timestamp()
 
     def _load_schema(self):
         cwd = Path(__file__).resolve().parent
