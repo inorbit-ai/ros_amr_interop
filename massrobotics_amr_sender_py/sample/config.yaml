@@ -18,7 +18,7 @@
 # sources from where the parameter value can be obtained: `envVar`, `rosTopic` and `rosParameter`.
 
 config:
-  server: "wss://mass.staging.inorbit.ai/receiver/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb21wYW55QXBpS2V5IjoiLWJScnlzb2wzeHFGR25pZCIsImlhdCI6MTYyMzMzOTk0MX0.tgy7knSwoCHHxMCpuWstCtJb0khi2xdKzm00vZZthGI"
+  server: "ws://localhost:3000"
   mappings:
     # Mapping definition for Identity report messages
 
