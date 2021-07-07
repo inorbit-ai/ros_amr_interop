@@ -1,5 +1,7 @@
 # ROS AMR interoperability packages
 
+[![black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 This repository hosts a collection of ROS packages to ease
 the integration of ROS based robots with different interoperability
 standards, with a focus on AMRs (Autonomous Mobile Robots).
