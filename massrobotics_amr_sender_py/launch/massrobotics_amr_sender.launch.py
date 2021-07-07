@@ -36,22 +36,25 @@ from launch_ros.actions import Node
 
 from ament_index_python.packages import get_package_share_directory
 
-def generate_launch_description():
-    my_package_share_dir = get_package_share_directory('massrobotics_amr_sender')
 
-    return LaunchDescription([
-        DeclareLaunchArgument(
-            'config_file',
-            default_value=PathJoinSubstitution([my_package_share_dir, 'params', 'sample_config.yaml']),
-            description='massrobotics_amr_sender node configuration file'
-        ),
-        Node(
-            package='massrobotics_amr_sender',
-            namespace='massrobotics_amr_sender',
-            executable='massrobotics_amr_node',
-            name='massrobotics_amr_sender',
-            parameters=[
-                {'config_file': LaunchConfiguration('config_file')}
-            ]
-        ),
-    ])
+def generate_launch_description():
+    my_package_share_dir = get_package_share_directory("massrobotics_amr_sender")
+
+    return LaunchDescription(
+        [
+            DeclareLaunchArgument(
+                "config_file",
+                default_value=PathJoinSubstitution(
+                    [my_package_share_dir, "params", "sample_config.yaml"]
+                ),
+                description="massrobotics_amr_sender node configuration file",
+            ),
+            Node(
+                package="massrobotics_amr_sender",
+                namespace="massrobotics_amr_sender",
+                executable="massrobotics_amr_node",
+                name="massrobotics_amr_sender",
+                parameters=[{"config_file": LaunchConfiguration("config_file")}],
+            ),
+        ]
+    )

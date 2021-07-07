@@ -36,16 +36,16 @@ from datetime import timezone
 # MassRobotics AMR Interop required properties
 # for both Identity and Status report objects.
 # Common properties
-MASS_REPORT_UUID = 'uuid'
-MASS_REPORT_TIMESTAMP = 'timestamp'
+MASS_REPORT_UUID = "uuid"
+MASS_REPORT_TIMESTAMP = "timestamp"
 # Identity Report specific
-MASS_REPORT_MANUFACTURER_NAME = 'manufacturerName'
-MASS_REPORT_ROBOT_MODEL = 'robotModel'
-MASS_REPORT_ROBOT_SERIAL_NUMBER = 'robotSerialNumber'
-MASS_REPORT_BASE_ROBOT_ENVELOPE = 'baseRobotEnvelope'
+MASS_REPORT_MANUFACTURER_NAME = "manufacturerName"
+MASS_REPORT_ROBOT_MODEL = "robotModel"
+MASS_REPORT_ROBOT_SERIAL_NUMBER = "robotSerialNumber"
+MASS_REPORT_BASE_ROBOT_ENVELOPE = "baseRobotEnvelope"
 # Status Report specific
-MASS_REPORT_OPERATIONAL_STATE = 'operationalState'
-MASS_REPORT_LOCATION = 'location'
+MASS_REPORT_OPERATIONAL_STATE = "operationalState"
+MASS_REPORT_LOCATION = "location"
 
 
 class MassObject:
@@ -61,7 +61,9 @@ class MassObject:
     def __init__(self, **kwargs) -> None:
 
         if MASS_REPORT_UUID not in kwargs:
-            raise ValueError(f"Missing mandatory IdentityReport parameter {MASS_REPORT_UUID}")
+            raise ValueError(
+                f"Missing mandatory IdentityReport parameter {MASS_REPORT_UUID}"
+            )
 
         self.data = {MASS_REPORT_UUID: kwargs[MASS_REPORT_UUID]}
         self.update_timestamp()
@@ -70,8 +72,9 @@ class MassObject:
     def update_timestamp(self):
         # As per Mass example, data format is ISO8601
         # with timezone offset e.g. 2012-04-21T18:25:43-05:00
-        self.data[MASS_REPORT_TIMESTAMP] = datetime.now(tz=timezone.utc) \
-            .replace(microsecond=0).isoformat()
+        self.data[MASS_REPORT_TIMESTAMP] = (
+            datetime.now(tz=timezone.utc).replace(microsecond=0).isoformat()
+        )
 
     def update_parameter(self, name, value):
         """
@@ -95,16 +98,16 @@ class MassObject:
 
     def _load_schema(self):
         cwd = Path(__file__).resolve().parent
-        jsonschema_def_path = str(cwd / 'schema.json')
-        with open(jsonschema_def_path, 'r') as fp:
+        jsonschema_def_path = str(cwd / "schema.json")
+        with open(jsonschema_def_path, "r") as fp:
             schema = json.load(fp)
 
         # Fail if additional properties are found on the objects.
         # This can be consider as a workaround, the ``additionalProperties``
         # keyword should be set in the original schema.
-        for obj_name in ('identityReport', 'statusReport'):
-            if 'additionalProperties' not in schema[obj_name]:
-                schema[obj_name]['additionalProperties'] = False
+        for obj_name in ("identityReport", "statusReport"):
+            if "additionalProperties" not in schema[obj_name]:
+                schema[obj_name]["additionalProperties"] = False
 
         return schema
 
@@ -134,24 +137,39 @@ class IdentityReport(MassObject):
         # Identity Report required and optional properties
         # TODO: get them directly from schema file
         self.schema_properties = [
-            "uuid", "timestamp", "manufacturerName", "robotModel",
-            "robotSerialNumber", "baseRobotEnvelope", "maxSpeed",
-            "maxRunTime", "emergencyContactInformation", "chargerType",
-            "supportVendorName", "supportVendorContactInformation",
-            "productDocumentation", "thumbnailImage", "cargoType",
-            "cargoMaxVolume", "cargoMaxWeight"
+            "uuid",
+            "timestamp",
+            "manufacturerName",
+            "robotModel",
+            "robotSerialNumber",
+            "baseRobotEnvelope",
+            "maxSpeed",
+            "maxRunTime",
+            "emergencyContactInformation",
+            "chargerType",
+            "supportVendorName",
+            "supportVendorContactInformation",
+            "productDocumentation",
+            "thumbnailImage",
+            "cargoType",
+            "cargoMaxVolume",
+            "cargoMaxWeight",
         ]
 
         # Initialize Identity Report object with required properties,
         # assigning default values if not provided.
         self.data[MASS_REPORT_MANUFACTURER_NAME] = kwargs.get(
-            MASS_REPORT_MANUFACTURER_NAME, "unknown")
+            MASS_REPORT_MANUFACTURER_NAME, "unknown"
+        )
         self.data[MASS_REPORT_ROBOT_MODEL] = kwargs.get(
-            MASS_REPORT_ROBOT_MODEL, "unknown")
+            MASS_REPORT_ROBOT_MODEL, "unknown"
+        )
         self.data[MASS_REPORT_ROBOT_SERIAL_NUMBER] = kwargs.get(
-            MASS_REPORT_ROBOT_SERIAL_NUMBER, "unknown")
+            MASS_REPORT_ROBOT_SERIAL_NUMBER, "unknown"
+        )
         self.data[MASS_REPORT_BASE_ROBOT_ENVELOPE] = kwargs.get(
-            MASS_REPORT_BASE_ROBOT_ENVELOPE, {"x": 0, "y": 0})
+            MASS_REPORT_BASE_ROBOT_ENVELOPE, {"x": 0, "y": 0}
+        )
 
         # Add other optional identity report properties
         for property_name, property_value in kwargs.items():
@@ -180,28 +198,33 @@ class StatusReport(MassObject):
         # Status Report required and optional properties
         # TODO: get them directly from schema file
         self.schema_properties = [
-            "uuid", "timestamp", "operationalState", "location",
-            "velocity", "batteryPercentage", "remainingRunTime",
-            "loadPercentageStillAvailable", "errorCodes",
-            "destinations", "path"
+            "uuid",
+            "timestamp",
+            "operationalState",
+            "location",
+            "velocity",
+            "batteryPercentage",
+            "remainingRunTime",
+            "loadPercentageStillAvailable",
+            "errorCodes",
+            "destinations",
+            "path",
         ]
 
         # Initialize Status Report object with required properties,
         # assigning default values if not provided.
         self.data[MASS_REPORT_OPERATIONAL_STATE] = kwargs.get(
-            MASS_REPORT_OPERATIONAL_STATE, "idle")
+            MASS_REPORT_OPERATIONAL_STATE, "idle"
+        )
         self.data[MASS_REPORT_LOCATION] = kwargs.get(
-            MASS_REPORT_LOCATION, {
+            MASS_REPORT_LOCATION,
+            {
                 "x": 0,
                 "y": 0,
-                "angle": {
-                    "w": 0,
-                    "x": 0,
-                    "y": 0,
-                    "z": 0
-                },
-                "planarDatum": "00000000-0000-0000-0000-000000000000"
-            })
+                "angle": {"w": 0, "x": 0, "y": 0, "z": 0},
+                "planarDatum": "00000000-0000-0000-0000-000000000000",
+            },
+        )
 
         # Add other optional identity report properties
         for property_name, property_value in kwargs.items():

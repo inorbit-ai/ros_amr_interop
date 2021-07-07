@@ -59,9 +59,11 @@ from .messages import StatusReport
 
 
 def timestamp_to_isoformat(timestamp):
-    return datetime.fromtimestamp(
-        timestamp,
-        tz=timezone.utc).replace(microsecond=0).isoformat()
+    return (
+        datetime.fromtimestamp(timestamp, tz=timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+    )
 
 
 class MassRoboticsAMRInteropNode(Node):
@@ -92,8 +94,8 @@ class MassRoboticsAMRInteropNode(Node):
         # Declare Node configuration parameter. Defaults to './config.yaml' if no
         # ``config_file`` parameter is provided. Provide the parameter when running
         # the node by using ``--ros-args -p config_file:=/path/to/config.yaml``
-        self.declare_parameter('config_file', 'config.yaml')
-        config_file_param = self.get_parameter(name='config_file')
+        self.declare_parameter("config_file", "config.yaml")
+        config_file_param = self.get_parameter(name="config_file")
         config_file_path = config_file_param.get_parameter_value().string_value
         self._config = self._read_config_file(config_file_path=config_file_path)
 
@@ -128,7 +130,9 @@ class MassRoboticsAMRInteropNode(Node):
 
         def send_status():
             while True:
-                loop.run_until_complete(self._async_send_report(self.mass_status_report))
+                loop.run_until_complete(
+                    self._async_send_report(self.mass_status_report)
+                )
                 self.logger.debug(f"Status report sent. Waiting ...")
                 sleep(STATUS_REPORT_INTERVAL)
 
@@ -146,10 +150,14 @@ class MassRoboticsAMRInteropNode(Node):
         """
         # Update identity report values
         for param_name in self.mass_identity_report.schema_properties:
-            if param_name in self._config.parameters_by_source[CFG_PARAMETER_ENVVAR] or \
-                    param_name in self._config.parameters_by_source[CFG_PARAMETER_LOCAL]:
+            if (
+                param_name in self._config.parameters_by_source[CFG_PARAMETER_ENVVAR]
+                or param_name in self._config.parameters_by_source[CFG_PARAMETER_LOCAL]
+            ):
                 param_value = self._config.get_parameter_value(param_name)
-                self.mass_identity_report.update_parameter(name=param_name, value=param_value)
+                self.mass_identity_report.update_parameter(
+                    name=param_name, value=param_value
+                )
 
         # Register callbacks for rosTopic parameters
         for param_name in self._config.parameters_by_source[CFG_PARAMETER_ROS_TOPIC]:
@@ -178,16 +186,20 @@ class MassRoboticsAMRInteropNode(Node):
         try:
             mass_object.validate_schema()
         except jsonschema_exc.ValidationError as ex:
-            self.logger.error(f"Invalid schema for '{type(mass_object)}' message. "
-                              f"The error reported is: '{ex.message}'. Ignoring message.")
+            self.logger.error(
+                f"Invalid schema for '{type(mass_object)}' message. "
+                f"The error reported is: '{ex.message}'. Ignoring message."
+            )
             return
 
         self.logger.debug(f"Sending object ({type(mass_object)}): {mass_object.data}")
         try:
             await self._wss_conn.ensure_open()
-        except (Exception,
-                websockets.exceptions.ConnectionClosed,
-                websockets.exceptions.ConnectionClosedError):
+        except (
+            Exception,
+            websockets.exceptions.ConnectionClosed,
+            websockets.exceptions.ConnectionClosedError,
+        ):
             self.logger.info(f"Reconnecting to server: {self._uri}")
             await self._async_connect()
 
@@ -213,18 +225,22 @@ class MassRoboticsAMRInteropNode(Node):
         # This is validated before looking up keys in order to avoid
         # flooding logs with warning messages below
         if not msg_frame_id:
-            return ''
+            return ""
 
-        frame_id = self._config.mappings['rosFrameToPlanarDatumUUID'].get(msg_frame_id)
+        frame_id = self._config.mappings["rosFrameToPlanarDatumUUID"].get(msg_frame_id)
         if not frame_id:
-            self.logger.warning(f"Couldn't find mapping for frame '{msg_frame_id}': {msg}")
+            self.logger.warning(
+                f"Couldn't find mapping for frame '{msg_frame_id}': {msg}"
+            )
             frame_id = "00000000-0000-0000-0000-000000000000"
         return frame_id
 
     def _callback_pose_stamped_msg(self, param_name, msg_field, data):
         self.logger.debug(f"Processing '{type(data)}' message: {data}")
         if msg_field:
-            self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
+            self.logger.warning(
+                f"Parameter {param_name} doesn't support `msgField`. Ignoring."
+            )
 
         frame_id = self._get_frame_id_from_header(data)
 
@@ -238,9 +254,9 @@ class MassRoboticsAMRInteropNode(Node):
                 "x": pose_orientation.x,
                 "y": pose_orientation.y,
                 "z": pose_orientation.z,
-                "w": pose_orientation.w
+                "w": pose_orientation.w,
             },
-            "planarDatum": frame_id
+            "planarDatum": frame_id,
         }
 
     def _callback_battery_state_msg(self, param_name, msg_field, data):
@@ -248,26 +264,28 @@ class MassRoboticsAMRInteropNode(Node):
         try:
             self.mass_status_report.data[param_name] = getattr(data, msg_field)
         except AttributeError:
-            self.logger.error(f"Message field '{msg_field}' on message of "
-                              f"type '{type(data)}' doesn't exist")
+            self.logger.error(
+                f"Message field '{msg_field}' on message of "
+                f"type '{type(data)}' doesn't exist"
+            )
 
     def _callback_twist_stamped_msg(self, param_name, msg_field, data):
         self.logger.debug(f"Processing '{type(data)}' message: {data}")
         if msg_field:
-            self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
+            self.logger.warning(
+                f"Parameter {param_name} doesn't support `msgField`. Ignoring."
+            )
 
         frame_id = self._get_frame_id_from_header(data)
 
         twist = data.twist
 
         linear_vel = PyKDL.Vector(
-            x=twist.linear.x,
-            y=twist.linear.y,
-            z=twist.linear.z).Norm()
+            x=twist.linear.x, y=twist.linear.y, z=twist.linear.z
+        ).Norm()
         quat = PyKDL.Rotation.EulerZYX(
-            Alfa=twist.angular.z,
-            Beta=twist.angular.y,
-            Gamma=twist.angular.x).GetQuaternion()
+            Alfa=twist.angular.z, Beta=twist.angular.y, Gamma=twist.angular.x
+        ).GetQuaternion()
 
         self.mass_status_report.data[param_name] = {
             "linear": linear_vel,
@@ -277,44 +295,52 @@ class MassRoboticsAMRInteropNode(Node):
                 "z": quat[2],
                 "w": quat[3],
             },
-            "planarDatum": frame_id
+            "planarDatum": frame_id,
         }
 
     def _callback_string_msg(self, param_name, msg_field, data):
         self.logger.debug(f"Processing '{type(data)}' message: {data}")
         if msg_field:
-            self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
+            self.logger.warning(
+                f"Parameter {param_name} doesn't support `msgField`. Ignoring."
+            )
 
         self.mass_status_report.data[param_name] = data.data
 
     def _callback_path_msg(self, param_name, msg_field, data):
         self.logger.debug(f"Processing '{type(data)}' message: {data}")
         if msg_field:
-            self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
+            self.logger.warning(
+                f"Parameter {param_name} doesn't support `msgField`. Ignoring."
+            )
 
         # list of ROS2 Poses translated into Mass predictedLocation
         mass_predicted_locations = list()
         for pose in data.poses:
             pose_position = pose.pose.position
             pose_orientation = pose.pose.orientation
-            mass_predicted_locations.append({
-                "timestamp": timestamp_to_isoformat(pose.header.stamp.sec),
-                "x": pose_position.x,
-                "y": pose_position.y,
-                "z": pose_position.z,
-                "angle": {
-                    "x": pose_orientation.x,
-                    "y": pose_orientation.y,
-                    "z": pose_orientation.z,
-                    "w": pose_orientation.w
-                },
-                "planarDatum": self._get_frame_id_from_header(pose)
-            })
+            mass_predicted_locations.append(
+                {
+                    "timestamp": timestamp_to_isoformat(pose.header.stamp.sec),
+                    "x": pose_position.x,
+                    "y": pose_position.y,
+                    "z": pose_position.z,
+                    "angle": {
+                        "x": pose_orientation.x,
+                        "y": pose_orientation.y,
+                        "z": pose_orientation.z,
+                        "w": pose_orientation.w,
+                    },
+                    "planarDatum": self._get_frame_id_from_header(pose),
+                }
+            )
 
         if len(mass_predicted_locations) > 10:
-            self.logger.warning(f"Max locations for '{param_name}' are 10 (got "
-                                f"{len(mass_predicted_locations)}). Keeping the "
-                                "first 10 locations and discarding the rest.")
+            self.logger.warning(
+                f"Max locations for '{param_name}' are 10 (got "
+                f"{len(mass_predicted_locations)}). Keeping the "
+                "first 10 locations and discarding the rest."
+            )
             mass_predicted_locations = mass_predicted_locations[:10]
 
         self.mass_status_report.data[param_name] = mass_predicted_locations
@@ -322,11 +348,13 @@ class MassRoboticsAMRInteropNode(Node):
     def _callback_error_codes_msg(self, param_name, msg_field, data):
         self.logger.debug(f"Processing '{type(data)}' message: {data}")
         if msg_field:
-            self.logger.warning(f"Parameter {param_name} doesn't support `msgField`. Ignoring.")
+            self.logger.warning(
+                f"Parameter {param_name} doesn't support `msgField`. Ignoring."
+            )
 
         data = data.data
         # If the message is empty return no errors.
-        error_codes = data.split(',') if data else []
+        error_codes = data.split(",") if data else []
 
         self.mass_status_report.data[param_name] = error_codes
 
@@ -374,10 +402,10 @@ class MassRoboticsAMRInteropNode(Node):
 
         # Map message package with corresponding module
         msgs_types = {
-            'geometry_msgs': ros_geometry_msgs,
-            'sensor_msgs': ros_sensor_msgs,
-            'std_msgs': ros_std_msgs,
-            'nav_msgs': ros_nav_msgs
+            "geometry_msgs": ros_geometry_msgs,
+            "sensor_msgs": ros_sensor_msgs,
+            "std_msgs": ros_std_msgs,
+            "nav_msgs": ros_nav_msgs,
         }
 
         # Try to determine callback message type class
@@ -385,22 +413,24 @@ class MassRoboticsAMRInteropNode(Node):
             topic_type_t = getattr(msgs_types[topic_type_package], topic_type_name)
         except (AttributeError, KeyError):
             # If the message type is not supported do not register any callback
-            self.logger.error(f"Undefined topic type '{topic_type}' on "
-                              f"parameter '{param_name}'. Ignoring...")
+            self.logger.error(
+                f"Undefined topic type '{topic_type}' on "
+                f"parameter '{param_name}'. Ignoring..."
+            )
             return False
 
         self.logger.debug(f"Binding parameter '{param_name}' with topic '{topic_name}'")
 
         callback = None
-        if param_name == 'velocity':
+        if param_name == "velocity":
             callback = partial(self._callback_twist_stamped_msg, param_name, msg_field)
-        if param_name == 'batteryPercentage':
+        if param_name == "batteryPercentage":
             callback = partial(self._callback_battery_state_msg, param_name, msg_field)
-        if param_name == 'location':
+        if param_name == "location":
             callback = partial(self._callback_pose_stamped_msg, param_name, msg_field)
-        if param_name in ('destinations', 'path'):
+        if param_name in ("destinations", "path"):
             callback = partial(self._callback_path_msg, param_name, msg_field)
-        if param_name == 'errorCodes':
+        if param_name == "errorCodes":
             callback = partial(self._callback_error_codes_msg, param_name, msg_field)
 
         # if param_name doesn't have any specific callback, fallback to string
@@ -408,20 +438,25 @@ class MassRoboticsAMRInteropNode(Node):
             callback = partial(self._callback_string_msg, param_name, msg_field)
 
         # TODO: add all remaining 'scalar' types
-        if not callback and topic_type_t in (ros_std_msgs.Float32, ros_std_msgs.Float64):
+        if not callback and topic_type_t in (
+            ros_std_msgs.Float32,
+            ros_std_msgs.Float64,
+        ):
             callback = partial(self._callback_string_msg, param_name, msg_field)
 
         if not callback:
-            self.logger.error(f"Callback for parameter '{param_name}' "
-                              f"({topic_type}) was not found.")
+            self.logger.error(
+                f"Callback for parameter '{param_name}' "
+                f"({topic_type}) was not found."
+            )
             return False
 
         self.create_subscription(
-            msg_type=topic_type_t,
-            topic=topic_name,
-            callback=callback,
-            qos_profile=10)
+            msg_type=topic_type_t, topic=topic_name, callback=callback, qos_profile=10
+        )
 
-        self.logger.info(f"Registered callback for parameter '{param_name}' ({topic_type_name})")
+        self.logger.info(
+            f"Registered callback for parameter '{param_name}' ({topic_type_name})"
+        )
 
         return True

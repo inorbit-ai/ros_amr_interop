@@ -4,37 +4,39 @@ import os
 from glob import glob
 
 # Read version from ``package.xml`` file
-package_xml = ET.parse('package.xml').getroot()
+package_xml = ET.parse("package.xml").getroot()
 
-package_name = 'massrobotics_amr_sender'
+package_name = "massrobotics_amr_sender"
 
-share_dir = os.path.join('share', package_name)
+share_dir = os.path.join("share", package_name)
 
 setup(
     name=package_name,
     packages=find_packages(),
-    package_data={'': ['schema.json']},
+    package_data={"": ["schema.json"]},
     include_package_data=True,
-    version=package_xml.find('version').text,
+    version=package_xml.find("version").text,
     data_files=[
-        ('share/ament_index/resource_index/packages',
-            ['resource/' + package_name]),
-        (share_dir, ['package.xml']),
+        ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
+        (share_dir, ["package.xml"]),
         # Include launch files
-        (share_dir, glob('launch/*.launch.py')),
+        (share_dir, glob("launch/*.launch.py")),
         # Sample config files
-        (os.path.join(share_dir, 'params'), [os.path.join('params', 'sample_config.yaml')]),
+        (
+            os.path.join(share_dir, "params"),
+            [os.path.join("params", "sample_config.yaml")],
+        ),
     ],
-    install_requires=['setuptools'],
+    install_requires=["setuptools"],
     zip_safe=True,
-    maintainer='InOrbit',
-    maintainer_email='support@inorbit.ai',
-    description='ROS2 node implementing a MassRobotics AMR Interoperability Sender',
-    license='3-Clause BSD License',
-    tests_require=['pytest'],
+    maintainer="InOrbit",
+    maintainer_email="support@inorbit.ai",
+    description="ROS2 node implementing a MassRobotics AMR Interoperability Sender",
+    license="3-Clause BSD License",
+    tests_require=["pytest"],
     entry_points={
-        'console_scripts': [
-            'massrobotics_amr_node = massrobotics_amr_sender.massrobotics_amr_node:main'
+        "console_scripts": [
+            "massrobotics_amr_node = massrobotics_amr_sender.massrobotics_amr_node:main"
         ],
     },
 )

@@ -43,7 +43,7 @@ CFG_PARAMETER_ENVVAR = "envVar"
 SUPPORTED_EXTERNAL_VALUES = [
     CFG_PARAMETER_ROS_TOPIC,
     CFG_PARAMETER_ROS_PARAMETER,
-    CFG_PARAMETER_ENVVAR
+    CFG_PARAMETER_ENVVAR,
 ]
 
 STATUS_REPORT_INTERVAL = 1
@@ -68,8 +68,8 @@ class MassRoboticsAMRInteropConfig:
         self.logger = logging.getLogger(__class__.__name__)
         _config = self._load(path)
 
-        self.server = _config['server']
-        self.mappings = _config['mappings']
+        self.server = _config["server"]
+        self.mappings = _config["mappings"]
         self.parameters_by_source = defaultdict(list)
         self._parse_config(self.mappings)
 
@@ -110,15 +110,17 @@ class MassRoboticsAMRInteropConfig:
             str: parameter source
 
         """
-        if isinstance(self.mappings[name], str) or \
-                isinstance(self.mappings[name], float) or \
-                isinstance(self.mappings[name], int):
+        if (
+            isinstance(self.mappings[name], str)
+            or isinstance(self.mappings[name], float)
+            or isinstance(self.mappings[name], int)
+        ):
             return CFG_PARAMETER_LOCAL
 
         if isinstance(self.mappings[name], dict):
             # Evaluate is the parameter is non local
-            if 'valueFrom' in self.mappings[name]:
-                param_source = self.mappings[name]['valueFrom']
+            if "valueFrom" in self.mappings[name]:
+                param_source = self.mappings[name]["valueFrom"]
 
                 # param_source is a dict whose first key
                 # is the external parameter type
@@ -163,23 +165,25 @@ class MassRoboticsAMRInteropConfig:
             return self.mappings[name]
 
         if param_source == CFG_PARAMETER_ENVVAR:
-            envvar_name = self.mappings[name]['valueFrom'][param_source]
+            envvar_name = self.mappings[name]["valueFrom"][param_source]
             param_value = os.getenv(envvar_name)
             if not param_value:
-                raise ValueError(f"Empty or undefined environment variable: '{envvar_name}'")
+                raise ValueError(
+                    f"Empty or undefined environment variable: '{envvar_name}'"
+                )
             return param_value
 
         if param_source == CFG_PARAMETER_ROS_TOPIC:
-            return self.mappings[name]['valueFrom'][param_source]
+            return self.mappings[name]["valueFrom"][param_source]
 
         if param_source == CFG_PARAMETER_ROS_PARAMETER:
-            return self.mappings[name]['valueFrom'][param_source]
+            return self.mappings[name]["valueFrom"][param_source]
 
     def get_ros_topic_parameter_type(self, name):
-        return self.mappings[name]['valueFrom']['msgType']
+        return self.mappings[name]["valueFrom"]["msgType"]
 
     def get_ros_topic_parameter_topic(self, name):
-        return self.mappings[name]['valueFrom']['rosTopic']
+        return self.mappings[name]["valueFrom"]["rosTopic"]
 
     def get_ros_topic_parameter_msg_field(self, name):
-        return self.mappings[name]['valueFrom'].get('msgField')
+        return self.mappings[name]["valueFrom"].get("msgField")

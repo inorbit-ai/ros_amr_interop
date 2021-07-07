@@ -41,18 +41,22 @@ from builtin_interfaces.msg import Time
 
 
 class SampleDataNode(Node):
-
     def __init__(self):
-        super().__init__('SampleDataNode')
+        super().__init__("SampleDataNode")
         # publishers for fake data
-        self.errors_publisher = self.create_publisher(String, '/troubleshooting/errorcodes', 10)
-        self.state_publisher = self.create_publisher(String, '/mode', 10)
-        self.battery_publisher = self.create_publisher(BatteryState, '/battery', 10)
-        self.battery_runtime_publisher = self.create_publisher(Float32, '/battery_runtime', 10)
+        self.errors_publisher = self.create_publisher(
+            String, "/troubleshooting/errorcodes", 10
+        )
+        self.state_publisher = self.create_publisher(String, "/mode", 10)
+        self.battery_publisher = self.create_publisher(BatteryState, "/battery", 10)
+        self.battery_runtime_publisher = self.create_publisher(
+            Float32, "/battery_runtime", 10
+        )
         self.load_perc_available_publisher = self.create_publisher(
-            Float32, '/load_perc_available', 10)
-        self.errors = ''
-        self.robot_state = 'navigating'
+            Float32, "/load_perc_available", 10
+        )
+        self.errors = ""
+        self.robot_state = "navigating"
         self.battery_perc = 90
 
         self.create_timer(20, self.flip_state_callback)
@@ -64,33 +68,36 @@ class SampleDataNode(Node):
 
         # transforming data from raw rosbag
         self.odom_listener = self.create_subscription(
-            Odometry,
-            '/odom',
-            self.odom_to_location_and_velocity_callback,
-            10)
-        self.location_publisher = self.create_publisher(PoseStamped, '/location', 10)
-        self.velocity_publisher = self.create_publisher(TwistStamped, '/velocity', 10)
+            Odometry, "/odom", self.odom_to_location_and_velocity_callback, 10
+        )
+        self.location_publisher = self.create_publisher(PoseStamped, "/location", 10)
+        self.velocity_publisher = self.create_publisher(TwistStamped, "/velocity", 10)
 
     def set_error_callback(self):
-        self.errors = 'error_194,error_1'
+        self.errors = "error_194,error_1"
 
     def send_error_callback(self):
         msg = String()
         msg.data = self.errors
         self.errors_publisher.publish(msg)
         self.get_logger().info('Publishing errors: "%s"' % msg.data)
-        self.errors = ''
+        self.errors = ""
 
     def flip_state_callback(self):
-        self.robot_state = 'navigating' if self.robot_state == 'charging' else 'charging'
+        self.robot_state = (
+            "navigating" if self.robot_state == "charging" else "charging"
+        )
         msg = String()
         msg.data = self.robot_state
         self.state_publisher.publish(msg)
         self.get_logger().info('Publishing state: "%s"' % msg.data)
 
     def battery_callback(self):
-        self.battery_perc = self.battery_perc + 1 \
-            if self.robot_state == 'charging' else self.battery_perc - 1
+        self.battery_perc = (
+            self.battery_perc + 1
+            if self.robot_state == "charging"
+            else self.battery_perc - 1
+        )
         msg = BatteryState()
         msg.percentage = float(self.battery_perc)
         self.battery_publisher.publish(msg)
@@ -109,14 +116,12 @@ class SampleDataNode(Node):
     def odom_to_location_and_velocity_callback(self, msg):
         # msg is type Odometry
         pose = msg.pose.pose
-        pose = PoseStamped(
-            header=Header(stamp=Time(sec=int(time.time()))),
-            pose=pose)
+        pose = PoseStamped(header=Header(stamp=Time(sec=int(time.time()))), pose=pose)
         self.location_publisher.publish(pose)
         twist = msg.twist.twist
         twist = TwistStamped(
-            header=Header(stamp=Time(sec=int(time.time()))),
-            twist=twist)
+            header=Header(stamp=Time(sec=int(time.time()))), twist=twist
+        )
         self.velocity_publisher.publish(twist)
 
 
@@ -128,5 +133,5 @@ def main(args=None):
     rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
