@@ -42,3 +42,8 @@ The following is an incomplete and growing list of such related topics:
    * [ros_opcua_communication](http://wiki.ros.org/ros_opcua_communication) ROS bindings for different open-source OPC-UA implementations
 
 We expect to keep curating the set of relevant topics with the contribution of the community.
+
+
+## Development
+
+Install [pre-commit](https://pre-commit.com/) in your computer and then set it up by running `pre-commit install` at the root of the cloned project.
