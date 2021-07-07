@@ -74,7 +74,7 @@ class MassRoboticsAMRInteropConfig:
         self._parse_config(self.mappings)
 
     def _load(self, path) -> None:
-        config = dict()
+        config = {}
         with open(path, "r") as fd:
             try:
                 config = yaml.safe_load(fd)

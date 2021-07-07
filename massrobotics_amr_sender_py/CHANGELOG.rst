@@ -15,7 +15,7 @@ Changelog for package massrobotics_amr_sender
 -------------------
 * Added support for Identity and Status reports
 * Added support for several ROS2 messages
-  
+
   * ``geometry_msgs/TwistStamped``
   * ``sensor_msgs/BatteryState``
   * ``geometry_msgs/PoseStamped``

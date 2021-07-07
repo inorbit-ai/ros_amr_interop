@@ -315,7 +315,7 @@ class MassRoboticsAMRInteropNode(Node):
             )
 
         # list of ROS2 Poses translated into Mass predictedLocation
-        mass_predicted_locations = list()
+        mass_predicted_locations = []
         for pose in data.poses:
             pose_position = pose.pose.position
             pose_orientation = pose.pose.orientation
