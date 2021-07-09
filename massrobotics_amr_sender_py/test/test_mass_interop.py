@@ -43,7 +43,7 @@ from nav_msgs import msg as ros_nav_msgs
 from builtin_interfaces import msg as ros_builtin_msgs
 
 cwd = Path(__file__).resolve().parent
-config_file_test = Path(cwd).parent / "sample_config.yaml"
+config_file_test = Path(cwd).parent / "params" / "sample_config.yaml"
 
 FAKE_ROBOT_ID = "d6f7c89c-6b11-45b4-b763-86cec88cc2eb"
 
