@@ -7,13 +7,13 @@
 # contains a list of paramaters for configuring the ROS2 node. As per AMR Interop Standard,
 # mandatory parameters are `uuid`, `manufacturerName`, `robotModel`, `robotSerialNumber` and
 # `baseRobotEnvelope` (full spec https://github.com/MassRobotics-AMR/AMR_Interop_Standard/).
-# 
+#
 # Translation to AMR Interop Standard messages might be direct (i.e. a string to a report message
 # field) or complex in case of ROS2 message having data that maps to many AMR report message fields.
 # For this reason, some configuration parameters below expect a particular ROS2 message type e.g.
 # fields on a ROS2 message of type `sensor_msgs/msg/BatteryState` are translated into AMR Interop
 # Status Report fields `batteryPercentage`, `remainingRunTime` and `loadPercentageStillAvailable`.
-# 
+#
 # In addition to local values i.e. strings or objects, the `mappings` section supports a variety of
 # sources from where the parameter value can be obtained: `envVar`, `rosTopic` and `rosParameter`.
 
@@ -29,7 +29,7 @@ config:
       valueFrom:
         envVar: MY_UUID
 
-    # Robot manufacturer name 
+    # Robot manufacturer name
     manufacturerName: Spoonlift
 
     # Robot model
@@ -88,7 +88,7 @@ config:
       valueFrom:
         rosTopic: /mode
         msgType: std_msgs/String
-    
+
     # Current location of AMR
     location:
       valueFrom:
@@ -130,7 +130,7 @@ config:
       valueFrom:
         rosTopic: /troubleshooting/errorcodes
         msgType: std_msgs/msg/String
-    
+
     # Target destination(s) of Automated Guided Vehicle (AGV)
     destinations:
       valueFrom:

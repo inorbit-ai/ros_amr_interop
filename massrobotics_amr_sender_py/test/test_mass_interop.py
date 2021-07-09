@@ -45,27 +45,27 @@ from builtin_interfaces import msg as ros_builtin_msgs
 cwd = Path(__file__).resolve().parent
 config_file_test = Path(cwd).parent / "params" / "sample_config.yaml"
 
-FAKE_ROBOT_ID = 'd6f7c89c-6b11-45b4-b763-86cec88cc2eb'
+FAKE_ROBOT_ID = "d6f7c89c-6b11-45b4-b763-86cec88cc2eb"
 
 # Mass Identity Report built after parsing
 # the ``sample_config.yaml`` file
 MASS_IDENTITY_REPORT = {
-    'uuid': FAKE_ROBOT_ID,
-    'manufacturerName': 'Spoonlift',
-    'robotModel': 'spoony1.0',
-    'robotSerialNumber': '2172837',
-    'baseRobotEnvelope': {'x': 2, 'y': 1, 'z': 3},
-    'maxSpeed': 2.5,
-    'maxRunTime': 8,
-    'emergencyContactInformation': '555-5555',
-    'chargerType': '24V plus',
-    'supportVendorName': 'We-B-Robots',
-    'supportVendorContactInformation': 'support@we-b-robots.com',
-    'productDocumentation': 'https://spoon.lift/support/docs/spoony1.0',
-    'thumbnailImage': 'https://spoon.lift/media/spoony1.0.png',
-    'cargoType': 'Anything solid or liquid',
-    'cargoMaxVolume': {'x': 2, 'y': 2, 'z': 1},
-    'cargoMaxWeight': '4000'
+    "uuid": FAKE_ROBOT_ID,
+    "manufacturerName": "Spoonlift",
+    "robotModel": "spoony1.0",
+    "robotSerialNumber": "2172837",
+    "baseRobotEnvelope": {"x": 2, "y": 1, "z": 3},
+    "maxSpeed": 2.5,
+    "maxRunTime": 8,
+    "emergencyContactInformation": "555-5555",
+    "chargerType": "24V plus",
+    "supportVendorName": "We-B-Robots",
+    "supportVendorContactInformation": "support@we-b-robots.com",
+    "productDocumentation": "https://spoon.lift/support/docs/spoony1.0",
+    "thumbnailImage": "https://spoon.lift/media/spoony1.0.png",
+    "cargoType": "Anything solid or liquid",
+    "cargoMaxVolume": {"x": 2, "y": 2, "z": 1},
+    "cargoMaxWeight": "4000",
 }
 
 
@@ -82,7 +82,7 @@ def mock_ws_conn(mocker):
     # return mocked WebsocketClientProtocol
     websockets_mock.return_value = websocket_client_protocol
 
-    mocker.patch('websockets.connect', side_effect=websockets_mock)
+    mocker.patch("websockets.connect", side_effect=websockets_mock)
 
     # On init, the Node creates a task on a separate thread for publishing
     # Mass status reports on a fixed time interval.
@@ -91,8 +91,10 @@ def mock_ws_conn(mocker):
     def _fake_status_publisher_thread():
         pass
 
-    mocker.patch('massrobotics_amr_sender.MassRoboticsAMRInteropNode._status_publisher_thread',
-                 side_effect=_fake_status_publisher_thread)
+    mocker.patch(
+        "massrobotics_amr_sender.MassRoboticsAMRInteropNode._status_publisher_thread",
+        side_effect=_fake_status_publisher_thread,
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -119,10 +121,10 @@ def test_mass_config_load_fails_on_missing_config_file(monkeypatch):
 
 def test_massrobotics_amr_node_init():
     rclpy.init()
-    node = MassRoboticsAMRInteropNode(parameter_overrides=[
-        Parameter("config_file", value=str(config_file_test))
-    ])
-    rclpy.spin_once(node, timeout_sec=.1)
+    node = MassRoboticsAMRInteropNode(
+        parameter_overrides=[Parameter("config_file", value=str(config_file_test))]
+    )
+    rclpy.spin_once(node, timeout_sec=0.1)
     rclpy.shutdown()
 
     mass_identity_report = node.mass_identity_report.data
@@ -150,248 +152,303 @@ def test_massrobotics_amr_node_init():
 #   - value: the value that should be written on the Mass Status report
 STATUS_REPORT_TESTS = [
     {
-        'msg_type': ros_std_msgs.String,
-        'topic': '/we_b_robots/mode',
-        'msg': ros_std_msgs.String(data='charging'),
-        'property': 'operationalState',
-        'value': 'charging'
+        "msg_type": ros_std_msgs.String,
+        "topic": "/we_b_robots/mode",
+        "msg": ros_std_msgs.String(data="charging"),
+        "property": "operationalState",
+        "value": "charging",
     },
     {
-        'msg_type': ros_geometry_msgs.PoseStamped,
-        'topic': '/move_base_simple/goal',
-        'msg': ros_geometry_msgs.PoseStamped(
-            header=ros_std_msgs.Header(frame_id='floor1'),
+        "msg_type": ros_geometry_msgs.PoseStamped,
+        "topic": "/move_base_simple/goal",
+        "msg": ros_geometry_msgs.PoseStamped(
+            header=ros_std_msgs.Header(frame_id="floor1"),
             pose=ros_geometry_msgs.Pose(
                 position=ros_geometry_msgs.Point(x=42.0, y=4.0, z=2.0),
-                orientation=ros_geometry_msgs.Quaternion(x=-1.0, y=9.0, z=-3.0, w=0.1))),
-        'property': 'location',
-        'value': {
-            'x': 42, 'y': 4, 'z': 2,
-            'angle': {'w': 0.1, 'x': -1.0, 'y': 9.0, 'z': -3.0},
-            'planarDatum': '096522ad-61fa-4796-9b31-e35b0f8d0b26'
-        }
+                orientation=ros_geometry_msgs.Quaternion(x=-1.0, y=9.0, z=-3.0, w=0.1),
+            ),
+        ),
+        "property": "location",
+        "value": {
+            "x": 42,
+            "y": 4,
+            "z": 2,
+            "angle": {"w": 0.1, "x": -1.0, "y": 9.0, "z": -3.0},
+            "planarDatum": "096522ad-61fa-4796-9b31-e35b0f8d0b26",
+        },
     },
     {
-        'msg_type': ros_geometry_msgs.TwistStamped,
-        'topic': '/good_sensors/vel',
-        'msg': ros_geometry_msgs.TwistStamped(
-            header=ros_std_msgs.Header(frame_id='floor2'),
+        "msg_type": ros_geometry_msgs.TwistStamped,
+        "topic": "/good_sensors/vel",
+        "msg": ros_geometry_msgs.TwistStamped(
+            header=ros_std_msgs.Header(frame_id="floor2"),
             twist=ros_geometry_msgs.Twist(
                 linear=ros_geometry_msgs.Vector3(x=1.0, y=0.0, z=0.0),
-                angular=ros_geometry_msgs.Vector3(x=0.2, y=0.1, z=0.0))),
-        'property': 'velocity',
-        'value': {
-            'linear': 1,
-            'angular': {
-                'w': 0.9937606691655042,
-                'x': 0.09970865087213879,
-                'y': 0.04972948160146044,
-                'z': -0.0049895912294619805
+                angular=ros_geometry_msgs.Vector3(x=0.2, y=0.1, z=0.0),
+            ),
+        ),
+        "property": "velocity",
+        "value": {
+            "linear": 1,
+            "angular": {
+                "w": 0.9937606691655042,
+                "x": 0.09970865087213879,
+                "y": 0.04972948160146044,
+                "z": -0.0049895912294619805,
             },
-            'planarDatum': '6ec7a6d0-21a9-4f04-b680-e7c640a0687e'
-        }
+            "planarDatum": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
+        },
     },
     {
-        'msg_type': ros_sensor_msgs.BatteryState,
-        'topic': '/good_sensors/bat',
-        'msg': ros_sensor_msgs.BatteryState(percentage=12.34),
-        'property': 'batteryPercentage',
-        'value': pytest.approx(12.34)
+        "msg_type": ros_sensor_msgs.BatteryState,
+        "topic": "/good_sensors/bat",
+        "msg": ros_sensor_msgs.BatteryState(percentage=12.34),
+        "property": "batteryPercentage",
+        "value": pytest.approx(12.34),
     },
     {
-        'msg_type': ros_std_msgs.Float32,
-        'topic': '/good_sensors/bat_remaining',
-        'msg': ros_std_msgs.Float32(data=123456.789),
-        'property': 'remainingRunTime',
-        'value': pytest.approx(123456.789)
+        "msg_type": ros_std_msgs.Float32,
+        "topic": "/good_sensors/bat_remaining",
+        "msg": ros_std_msgs.Float32(data=123456.789),
+        "property": "remainingRunTime",
+        "value": pytest.approx(123456.789),
     },
     {
-        'msg_type': ros_std_msgs.Float32,
-        'topic': '/good_sensors/load',
-        'msg': ros_std_msgs.Float32(data=49.99),
-        'property': 'loadPercentageStillAvailable',
-        'value': pytest.approx(49.99)
+        "msg_type": ros_std_msgs.Float32,
+        "topic": "/good_sensors/load",
+        "msg": ros_std_msgs.Float32(data=49.99),
+        "property": "loadPercentageStillAvailable",
+        "value": pytest.approx(49.99),
     },
     {
-        'msg_type': ros_nav_msgs.Path,
-        'topic': '/we_b_robots/destinations',
-        'msg': ros_nav_msgs.Path(
-            header=ros_std_msgs.Header(frame_id='floor2'),
+        "msg_type": ros_nav_msgs.Path,
+        "topic": "/we_b_robots/destinations",
+        "msg": ros_nav_msgs.Path(
+            header=ros_std_msgs.Header(frame_id="floor2"),
             poses=[
                 ros_geometry_msgs.PoseStamped(
                     header=ros_std_msgs.Header(
-                        frame_id='floor2', stamp=ros_builtin_msgs.Time(sec=1624401648)),
+                        frame_id="floor2", stamp=ros_builtin_msgs.Time(sec=1624401648)
+                    ),
                     pose=ros_geometry_msgs.Pose(
                         position=ros_geometry_msgs.Point(x=42.0, y=4.0, z=2.0),
-                        orientation=ros_geometry_msgs.Quaternion(x=-1.0, y=9.0, z=-3.0, w=0.1))
+                        orientation=ros_geometry_msgs.Quaternion(
+                            x=-1.0, y=9.0, z=-3.0, w=0.1
+                        ),
+                    ),
                 ),
                 ros_geometry_msgs.PoseStamped(
                     header=ros_std_msgs.Header(
-                        frame_id='floor2', stamp=ros_builtin_msgs.Time(sec=1624402598)),
+                        frame_id="floor2", stamp=ros_builtin_msgs.Time(sec=1624402598)
+                    ),
                     pose=ros_geometry_msgs.Pose(
                         position=ros_geometry_msgs.Point(x=4.0, y=4.0, z=2.0),
-                        orientation=ros_geometry_msgs.Quaternion(x=-1.0, y=1.0, z=-3.0, w=0.1))
+                        orientation=ros_geometry_msgs.Quaternion(
+                            x=-1.0, y=1.0, z=-3.0, w=0.1
+                        ),
+                    ),
                 ),
                 ros_geometry_msgs.PoseStamped(
                     header=ros_std_msgs.Header(
-                        frame_id='floor2', stamp=ros_builtin_msgs.Time(sec=1624403168)),
+                        frame_id="floor2", stamp=ros_builtin_msgs.Time(sec=1624403168)
+                    ),
                     pose=ros_geometry_msgs.Pose(
                         position=ros_geometry_msgs.Point(x=12.0, y=4.0, z=2.0),
-                        orientation=ros_geometry_msgs.Quaternion(x=-1.0, y=9.0, z=-3.0, w=0.4))
+                        orientation=ros_geometry_msgs.Quaternion(
+                            x=-1.0, y=9.0, z=-3.0, w=0.4
+                        ),
+                    ),
                 ),
                 ros_geometry_msgs.PoseStamped(
                     header=ros_std_msgs.Header(
-                        frame_id='floor1', stamp=ros_builtin_msgs.Time(sec=1624404998)),
+                        frame_id="floor1", stamp=ros_builtin_msgs.Time(sec=1624404998)
+                    ),
                     pose=ros_geometry_msgs.Pose(
                         position=ros_geometry_msgs.Point(x=0.0, y=4.0, z=2.0),
-                        orientation=ros_geometry_msgs.Quaternion(x=-1.0, y=9.0, z=-3.0, w=0.1))
-                )
-            ]
+                        orientation=ros_geometry_msgs.Quaternion(
+                            x=-1.0, y=9.0, z=-3.0, w=0.1
+                        ),
+                    ),
+                ),
+            ],
         ),
-        'property': 'destinations',
-        'value': [
+        "property": "destinations",
+        "value": [
             {
-                'timestamp': '2021-06-22T22:40:48+00:00',
-                'x': 42, 'y': 4, 'z': 2,
-                'angle': {'w': 0.1, 'x': -1.0, 'y': 9.0, 'z': -3.0},
-                'planarDatum': '6ec7a6d0-21a9-4f04-b680-e7c640a0687e'
+                "timestamp": "2021-06-22T22:40:48+00:00",
+                "x": 42,
+                "y": 4,
+                "z": 2,
+                "angle": {"w": 0.1, "x": -1.0, "y": 9.0, "z": -3.0},
+                "planarDatum": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
             },
             {
-                'timestamp': '2021-06-22T22:56:38+00:00',
-                'x': 4, 'y': 4, 'z': 2,
-                'angle': {'w': 0.1, 'x': -1.0, 'y': 1.0, 'z': -3.0},
-                'planarDatum': '6ec7a6d0-21a9-4f04-b680-e7c640a0687e'
+                "timestamp": "2021-06-22T22:56:38+00:00",
+                "x": 4,
+                "y": 4,
+                "z": 2,
+                "angle": {"w": 0.1, "x": -1.0, "y": 1.0, "z": -3.0},
+                "planarDatum": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
             },
             {
-                'timestamp': '2021-06-22T23:06:08+00:00',
-                'x': 12, 'y': 4, 'z': 2,
-                'angle': {'w': 0.4, 'x': -1.0, 'y': 9.0, 'z': -3.0},
-                'planarDatum': '6ec7a6d0-21a9-4f04-b680-e7c640a0687e'
+                "timestamp": "2021-06-22T23:06:08+00:00",
+                "x": 12,
+                "y": 4,
+                "z": 2,
+                "angle": {"w": 0.4, "x": -1.0, "y": 9.0, "z": -3.0},
+                "planarDatum": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
             },
             {
-                'timestamp': '2021-06-22T23:36:38+00:00',
-                'x': 0, 'y': 4, 'z': 2,
-                'angle': {'w': 0.1, 'x': -1.0, 'y': 9.0, 'z': -3.0},
-                'planarDatum': '096522ad-61fa-4796-9b31-e35b0f8d0b26'
-            }
-        ]
+                "timestamp": "2021-06-22T23:36:38+00:00",
+                "x": 0,
+                "y": 4,
+                "z": 2,
+                "angle": {"w": 0.1, "x": -1.0, "y": 9.0, "z": -3.0},
+                "planarDatum": "096522ad-61fa-4796-9b31-e35b0f8d0b26",
+            },
+        ],
     },
     {
-        'msg_type': ros_nav_msgs.Path,
-        'topic': '/magic_nav/path',
-        'msg': ros_nav_msgs.Path(
-            header=ros_std_msgs.Header(frame_id='floor2'),
+        "msg_type": ros_nav_msgs.Path,
+        "topic": "/magic_nav/path",
+        "msg": ros_nav_msgs.Path(
+            header=ros_std_msgs.Header(frame_id="floor2"),
             poses=[
                 ros_geometry_msgs.PoseStamped(
                     header=ros_std_msgs.Header(
-                        frame_id='floor2', stamp=ros_builtin_msgs.Time(sec=1624401648)),
+                        frame_id="floor2", stamp=ros_builtin_msgs.Time(sec=1624401648)
+                    ),
                     pose=ros_geometry_msgs.Pose(
                         position=ros_geometry_msgs.Point(x=42.0, y=4.0, z=2.0),
-                        orientation=ros_geometry_msgs.Quaternion(x=-1.0, y=9.0, z=-3.0, w=0.1))
+                        orientation=ros_geometry_msgs.Quaternion(
+                            x=-1.0, y=9.0, z=-3.0, w=0.1
+                        ),
+                    ),
                 ),
                 ros_geometry_msgs.PoseStamped(
                     header=ros_std_msgs.Header(
-                        frame_id='floor2', stamp=ros_builtin_msgs.Time(sec=1624402598)),
+                        frame_id="floor2", stamp=ros_builtin_msgs.Time(sec=1624402598)
+                    ),
                     pose=ros_geometry_msgs.Pose(
                         position=ros_geometry_msgs.Point(x=4.0, y=4.0, z=2.0),
-                        orientation=ros_geometry_msgs.Quaternion(x=-1.0, y=1.0, z=-3.0, w=0.1))
+                        orientation=ros_geometry_msgs.Quaternion(
+                            x=-1.0, y=1.0, z=-3.0, w=0.1
+                        ),
+                    ),
                 ),
                 ros_geometry_msgs.PoseStamped(
                     header=ros_std_msgs.Header(
-                        frame_id='floor2', stamp=ros_builtin_msgs.Time(sec=1624403168)),
+                        frame_id="floor2", stamp=ros_builtin_msgs.Time(sec=1624403168)
+                    ),
                     pose=ros_geometry_msgs.Pose(
                         position=ros_geometry_msgs.Point(x=12.0, y=4.0, z=2.0),
-                        orientation=ros_geometry_msgs.Quaternion(x=-1.0, y=9.0, z=-3.0, w=0.4))
+                        orientation=ros_geometry_msgs.Quaternion(
+                            x=-1.0, y=9.0, z=-3.0, w=0.4
+                        ),
+                    ),
                 ),
                 ros_geometry_msgs.PoseStamped(
                     header=ros_std_msgs.Header(
-                        frame_id='floor1', stamp=ros_builtin_msgs.Time(sec=1624404998)),
+                        frame_id="floor1", stamp=ros_builtin_msgs.Time(sec=1624404998)
+                    ),
                     pose=ros_geometry_msgs.Pose(
                         position=ros_geometry_msgs.Point(x=0.0, y=4.0, z=2.0),
-                        orientation=ros_geometry_msgs.Quaternion(x=-1.0, y=9.0, z=-3.0, w=0.1))
-                )
-            ]
+                        orientation=ros_geometry_msgs.Quaternion(
+                            x=-1.0, y=9.0, z=-3.0, w=0.1
+                        ),
+                    ),
+                ),
+            ],
         ),
-        'property': 'path',
-        'value': [
+        "property": "path",
+        "value": [
             {
-                'timestamp': '2021-06-22T22:40:48+00:00',
-                'x': 42, 'y': 4, 'z': 2,
-                'angle': {'w': 0.1, 'x': -1.0, 'y': 9.0, 'z': -3.0},
-                'planarDatum': '6ec7a6d0-21a9-4f04-b680-e7c640a0687e'
+                "timestamp": "2021-06-22T22:40:48+00:00",
+                "x": 42,
+                "y": 4,
+                "z": 2,
+                "angle": {"w": 0.1, "x": -1.0, "y": 9.0, "z": -3.0},
+                "planarDatum": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
             },
             {
-                'timestamp': '2021-06-22T22:56:38+00:00',
-                'x': 4, 'y': 4, 'z': 2,
-                'angle': {'w': 0.1, 'x': -1.0, 'y': 1.0, 'z': -3.0},
-                'planarDatum': '6ec7a6d0-21a9-4f04-b680-e7c640a0687e'
+                "timestamp": "2021-06-22T22:56:38+00:00",
+                "x": 4,
+                "y": 4,
+                "z": 2,
+                "angle": {"w": 0.1, "x": -1.0, "y": 1.0, "z": -3.0},
+                "planarDatum": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
             },
             {
-                'timestamp': '2021-06-22T23:06:08+00:00',
-                'x': 12, 'y': 4, 'z': 2,
-                'angle': {'w': 0.4, 'x': -1.0, 'y': 9.0, 'z': -3.0},
-                'planarDatum': '6ec7a6d0-21a9-4f04-b680-e7c640a0687e'
+                "timestamp": "2021-06-22T23:06:08+00:00",
+                "x": 12,
+                "y": 4,
+                "z": 2,
+                "angle": {"w": 0.4, "x": -1.0, "y": 9.0, "z": -3.0},
+                "planarDatum": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
             },
             {
-                'timestamp': '2021-06-22T23:36:38+00:00',
-                'x': 0, 'y': 4, 'z': 2,
-                'angle': {'w': 0.1, 'x': -1.0, 'y': 9.0, 'z': -3.0},
-                'planarDatum': '096522ad-61fa-4796-9b31-e35b0f8d0b26'
-            }
-        ]
+                "timestamp": "2021-06-22T23:36:38+00:00",
+                "x": 0,
+                "y": 4,
+                "z": 2,
+                "angle": {"w": 0.1, "x": -1.0, "y": 9.0, "z": -3.0},
+                "planarDatum": "096522ad-61fa-4796-9b31-e35b0f8d0b26",
+            },
+        ],
     },
     {
-        'msg_type': ros_std_msgs.String,
-        'topic': '/troubleshooting/errorcodes',
-        'msg': ros_std_msgs.String(data='error1,error2,error3'),
-        'property': 'errorCodes',
-        'value': ['error1', 'error2', 'error3']
+        "msg_type": ros_std_msgs.String,
+        "topic": "/troubleshooting/errorcodes",
+        "msg": ros_std_msgs.String(data="error1,error2,error3"),
+        "property": "errorCodes",
+        "value": ["error1", "error2", "error3"],
     },
     {
-        'msg_type': ros_std_msgs.String,
-        'topic': '/troubleshooting/errorcodes',
-        'msg': ros_std_msgs.String(data='error1'),
-        'property': 'errorCodes',
-        'value': ['error1']
+        "msg_type": ros_std_msgs.String,
+        "topic": "/troubleshooting/errorcodes",
+        "msg": ros_std_msgs.String(data="error1"),
+        "property": "errorCodes",
+        "value": ["error1"],
     },
     {
-        'msg_type': ros_std_msgs.String,
-        'topic': '/troubleshooting/errorcodes',
-        'msg': ros_std_msgs.String(),
-        'property': 'errorCodes',
-        'value': []
-    }
+        "msg_type": ros_std_msgs.String,
+        "topic": "/troubleshooting/errorcodes",
+        "msg": ros_std_msgs.String(),
+        "property": "errorCodes",
+        "value": [],
+    },
 ]
 
 
 def test_massrobotics_amr_node_status_report_callbacks(event_loop):
     rclpy.init()
     # create the node we want to test
-    node = MassRoboticsAMRInteropNode(parameter_overrides=[
-        Parameter("config_file", value=str(config_file_test))
-    ])
+    node = MassRoboticsAMRInteropNode(
+        parameter_overrides=[Parameter("config_file", value=str(config_file_test))]
+    )
     # also create an additional node to publish messages
-    helper_node = rclpy.create_node('test_helper_node')
+    helper_node = rclpy.create_node("test_helper_node")
 
     for test_data in STATUS_REPORT_TESTS:
 
         publisher = helper_node.create_publisher(
-            msg_type=test_data['msg_type'],
-            topic=test_data['topic'],
-            qos_profile=10)
-        publisher.publish(test_data['msg'])
+            msg_type=test_data["msg_type"], topic=test_data["topic"], qos_profile=10
+        )
+        publisher.publish(test_data["msg"])
 
-        rclpy.spin_once(helper_node, timeout_sec=.1)
-        rclpy.spin_once(node, timeout_sec=.1)
+        rclpy.spin_once(helper_node, timeout_sec=0.1)
+        rclpy.spin_once(node, timeout_sec=0.1)
 
         publisher.destroy()
 
-        result = node.mass_status_report.data[test_data['property']]
-        expected = test_data['value']
+        result = node.mass_status_report.data[test_data["property"]]
+        expected = test_data["value"]
 
         if result != expected:
-            pytest.fail(f"The obtained result '{result}' doesn't match with the "
-                        f"expected output '{expected}'. Test data: {test_data}")
+            pytest.fail(
+                f"The obtained result '{result}' doesn't match with the "
+                f"expected output '{expected}'. Test data: {test_data}"
+            )
 
     event_loop.run_until_complete(node._async_send_report(node.mass_status_report))
     rclpy.shutdown()
@@ -408,13 +465,13 @@ def test_massrobotics_amr_node_status_report_callbacks(event_loop):
 def test_massrobotics_amr_node_status_report_not_sent_on_invalid_schema(event_loop):
     rclpy.init()
     # create the node we want to test
-    node = MassRoboticsAMRInteropNode(parameter_overrides=[
-        Parameter("config_file", value=str(config_file_test))
-    ])
+    node = MassRoboticsAMRInteropNode(
+        parameter_overrides=[Parameter("config_file", value=str(config_file_test))]
+    )
 
-    node.mass_status_report.data['operationalState'] = 'foobar'
+    node.mass_status_report.data["operationalState"] = "foobar"
 
-    rclpy.spin_once(node, timeout_sec=.1)
+    rclpy.spin_once(node, timeout_sec=0.1)
 
     # Try to send a status report with an invalid schema i.e. ``foobar`` operational
     # state is not an allowed value.
