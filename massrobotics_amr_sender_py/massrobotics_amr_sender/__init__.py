@@ -331,7 +331,7 @@ class MassRoboticsAMRInteropNode(Node):
                         "z": pose_orientation.z,
                         "w": pose_orientation.w,
                     },
-                    "planarDatum": self._get_frame_id_from_header(pose),
+                    "planarDatumUUID": self._get_frame_id_from_header(pose),
                 }
             )
 
