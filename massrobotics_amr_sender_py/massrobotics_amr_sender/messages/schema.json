@@ -22,7 +22,8 @@
         "w": {
           "type": "number"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "location": {
       "description": "Location of an object or AMR",
@@ -50,9 +51,11 @@
         "planarDatum": {
           "description": "Id of planarDatum AMR is referencing",
           "type": "string",
-          "format": "uuid"
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "predictedLocation": {
       "description": "Predicted future location of an object or AMR",
@@ -85,8 +88,10 @@
         "planarDatumUUID": {
           "description": "Only necessary if different from AMRs current planarDatum",
           "type": "string",
-          "format": "uuid"
-        }
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "additionalProperties": false
       }
     }
   },
@@ -104,7 +109,8 @@
       "uuid": {
         "description": "UUID specified by RFC4122 that all subsequent messages should reference",
         "type": "string",
-        "format": "uuid"
+        "format": "uuid",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
       },
       "timestamp": {
         "type": "string",
@@ -138,7 +144,8 @@
             "type": "number",
             "default": 0
           }
-        }
+        },
+        "additionalProperties": false
       },
       "maxSpeed": {
         "description": "Max robot speed in m/s",
@@ -196,13 +203,15 @@
             "type": "number",
             "default": 0
           }
-        }
+        },
+        "additionalProperties": false
       },
       "cargoMaxWeight": {
         "description": "Max weight of cargo in kg",
         "type": "string"
       }
-    }
+    },
+    "additionalProperties": false
   },
   "statusReport": {
     "type": "object",
@@ -216,7 +225,8 @@
       "uuid": {
         "description": "UUID specified in the identityAndCapability message",
         "type": "string",
-        "format": "uuid"
+        "format": "uuid",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
       },
       "timestamp": {
         "type": "string",
@@ -231,9 +241,11 @@
           "disabled",
           "offline",
           "charging",
-          "waiting",
+          "waitingHumanEvent",
+          "waitingExternalEvent",
+          "waitingInternalEvent",
           "loadingUnloading",
-          "manualOveride"
+          "manualOverride"
         ]
       },
       "location": {
@@ -255,13 +267,14 @@
             "description": "Angular velocity in quaternions per second",
             "$ref": "#/definitions/quaternion"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "batteryPercentage": {
         "description": "Percentage of battery remaining",
         "type": "number",
         "minimum": 0,
-        "inclusiveMaximum": 100
+        "maximum": 100
       },
       "remainingRunTime": {
         "description": "Estimated remaining runtime in hours",
@@ -272,7 +285,7 @@
         "description": "Percentage of capacity still available",
         "type": "number",
         "minimum": 0,
-        "inclusiveMaximum": 100
+        "maximum": 100
       },
       "errorCodes": {
         "description": "List of current error states - should be omitted for normal operation",
@@ -300,7 +313,8 @@
         "maxItems": 10,
         "uniqueItems": true
       }
-    }
+    },
+    "additionalProperties": false
   },
   "oneOf": [
     {
