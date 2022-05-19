@@ -295,7 +295,6 @@ class MassRoboticsAMRInteropNode(Node):
                 "z": quat[2],
                 "w": quat[3],
             },
-            "planarDatum": frame_id,
         }
 
     def _callback_string_msg(self, param_name, msg_field, data):
@@ -331,7 +330,7 @@ class MassRoboticsAMRInteropNode(Node):
                         "z": pose_orientation.z,
                         "w": pose_orientation.w,
                     },
-                    "planarDatum": self._get_frame_id_from_header(pose),
+                    "planarDatumUUID": self._get_frame_id_from_header(pose),
                 }
             )
 
