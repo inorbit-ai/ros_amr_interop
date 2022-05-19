@@ -294,7 +294,7 @@ class MassRoboticsAMRInteropNode(Node):
                 "y": quat[1],
                 "z": quat[2],
                 "w": quat[3],
-            }
+            },
         }
 
     def _callback_string_msg(self, param_name, msg_field, data):
