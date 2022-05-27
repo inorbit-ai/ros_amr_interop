@@ -28,13 +28,13 @@
 -->
 
 <launch>
-	<arg name="mass_config_file" default="$(find massrobotics_amr_sender)/sample/config.yaml"/>
+  <arg name="mass_config_file" default="$(find massrobotics_amr_sender)/sample/config.yaml"/>
     <arg name="bag_path" default="$(find massrobotics_amr_sender)/sample/rosbag/rosbag_demo.bag"/>
 
-	<!-- Launch Node -->
-	<node name="massrobotics_amr_sender" pkg="massrobotics_amr_sender" type="massrobotics_amr_sender_node.py" output="screen">
-      <param name="config_file" value="$(arg mass_config_file)" type="string" />
-    </node>
+  <!-- Launch Node -->
+  <node name="massrobotics_amr_sender" pkg="massrobotics_amr_sender" type="massrobotics_amr_sender_node.py" output="screen">
+    <param name="config_file" value="$(arg mass_config_file)" type="string" />
+  </node>
 
-    <node name="rosbag" pkg="rosbag" type="play" output="screen" args="--loop $(arg bag_path)" required="true"/>
+  <node name="rosbag" pkg="rosbag" type="play" output="screen" args="--loop $(arg bag_path)" required="true"/>
 </launch>

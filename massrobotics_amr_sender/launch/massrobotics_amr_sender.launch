@@ -28,11 +28,10 @@
 -->
 
 <launch>
-	<arg name="config_file" default="$(find massrobotics_amr_sender)/params/sample_config.yaml"/>
+  <arg name="config_file" default="$(find massrobotics_amr_sender)/params/sample_config.yaml"/>
 
-	<!-- Launch Node -->
-	<node name="massrobotics_amr_sender" pkg="massrobotics_amr_sender" type="massrobotics_amr_sender_node.py" output="screen">
-      <param name="config_file" value="$(arg config_file)" type="string" />
-
-    </node>
+  <!-- Launch Node -->
+  <node name="massrobotics_amr_sender" pkg="massrobotics_amr_sender" type="massrobotics_amr_sender_node.py" output="screen">
+    <param name="config_file" value="$(arg config_file)" type="string" />
+  </node>
 </launch>
