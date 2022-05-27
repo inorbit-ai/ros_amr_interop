@@ -51,4 +51,3 @@ catkin_install_python(
   PROGRAMS
     scripts/massrobotics_amr_sender_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
