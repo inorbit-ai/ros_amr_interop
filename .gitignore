@@ -55,6 +55,7 @@ CATKIN_IGNORE
 
 # VSCode
 workspace.code-workspace
+.vscode/
 
 # rosbag
 *.db3-shm
