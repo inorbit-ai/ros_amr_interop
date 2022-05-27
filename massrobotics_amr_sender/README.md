@@ -32,7 +32,7 @@ A configuration file must be provided to define how ROS1 messages are mapped to 
 The node takes the MassRobotics AMR config file path as parameter. If not provided, it is assumed the file is on the current directory.
 
 ```bash
-# Remember to source the ROS2 environment from the binary installation or your workspace overlay
+# Remember to source the ROS environment from the binary installation or your workspace overlay
 source devel/setup.bash
 # Launch the node pointing to your configuration file
 roslaunch massrobotics_amr_sender massrobotics_amr_sender.launch config_file:=/path/to/config.yaml

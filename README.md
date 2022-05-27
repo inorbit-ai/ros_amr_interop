@@ -12,7 +12,7 @@ The following packages are included in this repository:
 
 ### Mass Robotics AMR Interop Sender for ROS1
 
-The [massrobotics_amr_sender](https://github.com/inorbit-ai/ros_amr_interop/tree/foxy-devel/massrobotics_amr_sender_py#readme)
+The [massrobotics_amr_sender](https://github.com/inorbit-ai/ros_amr_interop/tree/noetic-devel/massrobotics_amr_sender#readme)
 package provides a ROS1 node written in Python that takes input from a
 ROS1 system and publishes it to a [Mass Robotics Interop compliant
 Receiver](https://github.com/MassRobotics-AMR/AMR_Interop_Standard/tree/main/MassRobotics-AMR-Receiver).

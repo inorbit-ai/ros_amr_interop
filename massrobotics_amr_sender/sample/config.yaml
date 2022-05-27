@@ -4,21 +4,21 @@
 #
 # Parameters that are used to configure ROS1 node for connecting to MassRobotics compatible servers.
 # The `server` section expects a string with a WebSocket server URI, while the `mappings` section
-# contains a list of paramaters for configuring the ROS2 node. As per AMR Interop Standard,
+# contains a list of parameters for configuring the ROS1 node. As per AMR Interop Standard,
 # mandatory parameters are `uuid`, `manufacturerName`, `robotModel`, `robotSerialNumber` and
 # `baseRobotEnvelope` (full spec https://github.com/MassRobotics-AMR/AMR_Interop_Standard/).
 #
 # Translation to AMR Interop Standard messages might be direct (i.e. a string to a report message
-# field) or complex in case of ROS2 message having data that maps to many AMR report message fields.
-# For this reason, some configuration parameters below expect a particular ROS2 message type e.g.
-# fields on a ROS2 message of type `sensor_msgs/msg/BatteryState` are translated into AMR Interop
+# field) or complex in case of ROS1 message having data that maps to many AMR report message fields.
+# For this reason, some configuration parameters below expect a particular ROS1 message type e.g.
+# fields on a ROS1 message of type `sensor_msgs/BatteryState` are translated into AMR Interop
 # Status Report fields `batteryPercentage`, `remainingRunTime` and `loadPercentageStillAvailable`.
 #
 # In addition to local values i.e. strings or objects, the `mappings` section supports a variety of
 # sources from where the parameter value can be obtained: `envVar`, `rosTopic` and `rosParameter`.
 
 config:
-  server: "ws://localdev.com:3006/receiver/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb21wYW55QXBpS2V5IjoibU5jUm9pQTRTbUd3RG03MiIsImlhdCI6MTY1MjgxOTUyM30.c0NAyaTpRKVq_pz_0zaYhLo1nYAP2QU52RmV8HjE_Oo"
+  server: "ws://localhost:3000"
   mappings:
     # Mapping definition for Identity report messages
 
@@ -93,13 +93,13 @@ config:
     location:
       valueFrom:
         rosTopic: /location
-        msgType: geometry_msgs/msg/PoseStamped
+        msgType: geometry_msgs/PoseStamped
 
     # Current velocity of AMR
     velocity:
       valueFrom:
         rosTopic: /velocity
-        msgType: geometry_msgs/msg/TwistStamped
+        msgType: geometry_msgs/TwistStamped
 
     # Percentage of battery remaining
     # The ``msgField`` indicates a message field where the battery
@@ -107,7 +107,7 @@ config:
     batteryPercentage:
       valueFrom:
         rosTopic: /battery
-        msgType: sensor_msgs/msg/BatteryState
+        msgType: sensor_msgs/BatteryState
         msgField: percentage
 
     # Estimated remaining runtime in hours
@@ -129,7 +129,7 @@ config:
     errorCodes:
       valueFrom:
         rosTopic: /troubleshooting/errorcodes
-        msgType: std_msgs/msg/String
+        msgType: std_msgs/String
 
     # Target destination(s) of Automated Guided Vehicle (AGV)
     destinations:

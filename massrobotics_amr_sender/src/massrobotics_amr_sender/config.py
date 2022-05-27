@@ -55,7 +55,7 @@ class MassRoboticsAMRInteropConfig:
 
     Parses yaml configuration file and deals with parameters
     with values that are not local i.e. parameter values that
-    are obtained from environment variables or ROS2 topics.
+    are obtained from environment variables or ROS topics.
 
     Attributes
     ----------

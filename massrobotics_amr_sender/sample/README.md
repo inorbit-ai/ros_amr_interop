@@ -31,7 +31,7 @@ topics:      /battery                       111 msgs    : sensor_msgs/BatterySta
              /velocity                     5270 msgs    : geometry_msgs/TwistStamped
 ```
 
-Messages on topics such as `/plan` and `/local_plan` were kept unchanged while messages on `/location` and `/velocity` were crafted by creating `PoseStamped` and `TwistStamped` messages using data from `Odometry` messages on topic `/odom`. The messages on the remaning topics `/battery`, `/battery_runtime`, `/load_perc_available`, `/mode` and `/troubleshooting/errorcodes` as well as all the transformation described above were generated with a small ROS2 node that is available at `synthetic/node.py`.
+Messages on topics such as `/plan` and `/local_plan` were kept unchanged while messages on `/location` and `/velocity` were crafted by creating `PoseStamped` and `TwistStamped` messages using data from `Odometry` messages on topic `/odom`. The messages on the remaining topics `/battery`, `/battery_runtime`, `/load_perc_available`, `/mode` and `/troubleshooting/errorcodes` as well as all the transformation described above were generated with a small ROS1 node that is available at `synthetic/node.py`.
 
 ## How to run
 
