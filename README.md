@@ -10,15 +10,14 @@ standards, with a focus on AMRs (Autonomous Mobile Robots).
 
 The following packages are included in this repository:
 
+### Mass Robotics AMR Interop Sender for ROS1
 
-### Mass Robotics AMR Interop Sender for ROS2
-
-The [massrobotics_amr_sender_py](https://github.com/inorbit-ai/ros_amr_interop/tree/foxy-devel/massrobotics_amr_sender_py#readme)
-package provides a ROS2 node written in Python that takes input from a
-ROS2 system and publishes it to a [Mass Robotics Interop compliant
+The [massrobotics_amr_sender](https://github.com/inorbit-ai/ros_amr_interop/tree/foxy-devel/massrobotics_amr_sender_py#readme)
+package provides a ROS1 node written in Python that takes input from a
+ROS1 system and publishes it to a [Mass Robotics Interop compliant
 Receiver](https://github.com/MassRobotics-AMR/AMR_Interop_Standard/tree/main/MassRobotics-AMR-Receiver).
 
-Mapping of different data elements from the ROS2 system into Mass
+Mapping of different data elements from the ROS1 system into Mass
 Robotics Interop messages can be customized through a YAML configuration
 file.
 
