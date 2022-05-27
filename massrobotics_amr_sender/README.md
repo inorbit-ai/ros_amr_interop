@@ -20,9 +20,8 @@ git clone --branch noetic-devel https://github.com/inorbit-ai/ros_amr_interop.gi
 # Install dependencies
 rosdep update && rosdep install --ignore-src --from-paths src/
 # Run the build
-catkin config --install massrobotics_amr_sender
+catkin config --install
 catkin build
-colcon build --packages-select massrobotics_amr_sender
 ```
 # Node configuration
 
