@@ -5,7 +5,7 @@ Scripts, launch files, recordings and other tools for demoing and testing the `m
 The `rosbag` folder contains a stripped rosbag based on `turtlebot3`. It was built using on the [Gazebo](https://emanual.robotis.com/docs/en/platform/turtlebot3/simulation/#gazebo-simulation), [SLAM](https://emanual.robotis.com/docs/en/platform/turtlebot3/slam_simulation/) and [Navigation](https://emanual.robotis.com/docs/en/platform/turtlebot3/nav_simulation/) simulations.
 
 ```bash
-$ rosbag info rosbag_demo.bag 
+$ rosbag info rosbag_demo.bag
 path:        rosbag_demo.bag
 version:     2.0
 duration:    1:51s (111s)
@@ -20,14 +20,14 @@ types:       geometry_msgs/PoseStamped  [d3812c3cbc69362b77dc0b19b345f8f5]
              sensor_msgs/BatteryState   [4ddae7f048e32fda22cac764685e3974]
              std_msgs/Float32           [73fcbf46b49191e672908e50842a83d4]
              std_msgs/String            [992ce8a1687cec8c8bd883ec73ca41d1]
-topics:      /battery                       111 msgs    : sensor_msgs/BatteryState  
-             /battery_runtime                37 msgs    : std_msgs/Float32          
-             /load_perc_available            22 msgs    : std_msgs/Float32          
-             /local_plan                   1453 msgs    : nav_msgs/Path             
-             /location                     5273 msgs    : geometry_msgs/PoseStamped 
-             /mode                            5 msgs    : std_msgs/String           
-             /plan                           74 msgs    : nav_msgs/Path             
-             /troubleshooting/errorcodes     37 msgs    : std_msgs/String           
+topics:      /battery                       111 msgs    : sensor_msgs/BatteryState
+             /battery_runtime                37 msgs    : std_msgs/Float32
+             /load_perc_available            22 msgs    : std_msgs/Float32
+             /local_plan                   1453 msgs    : nav_msgs/Path
+             /location                     5273 msgs    : geometry_msgs/PoseStamped
+             /mode                            5 msgs    : std_msgs/String
+             /plan                           74 msgs    : nav_msgs/Path
+             /troubleshooting/errorcodes     37 msgs    : std_msgs/String
              /velocity                     5270 msgs    : geometry_msgs/TwistStamped
 ```
 
