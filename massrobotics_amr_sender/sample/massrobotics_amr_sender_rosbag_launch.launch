@@ -29,7 +29,7 @@
 
 <launch>
   <arg name="mass_config_file" default="$(find massrobotics_amr_sender)/sample/config.yaml"/>
-    <arg name="bag_path" default="$(find massrobotics_amr_sender)/sample/rosbag/rosbag_demo.bag"/>
+  <arg name="bag_path" default="$(find massrobotics_amr_sender)/sample/rosbag/rosbag_demo.bag"/>
 
   <!-- Launch Node -->
   <node name="massrobotics_amr_sender" pkg="massrobotics_amr_sender" type="massrobotics_amr_sender_node.py" output="screen">

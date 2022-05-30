@@ -42,7 +42,6 @@ The following is an incomplete and growing list of such related topics:
 
 We expect to keep curating the set of relevant topics with the contribution of the community.
 
-
 ## Development
 
 Install [pre-commit](https://pre-commit.com/) in your computer and then set it up by running `pre-commit install` at the root of the cloned project.

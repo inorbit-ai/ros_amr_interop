@@ -25,7 +25,7 @@ catkin build
 ```
 # Node configuration
 
-A configuration file must be provided to define how ROS1 messages are mapped to different AMR Interop Standard messages. A [sample_config.yaml](https://github.com/inorbit-ai/ros_amr_interop/blob/foxy-devel/massrobotics_amr_sender_py/sample_config.yaml) is provided for reference.
+A configuration file must be provided to define how ROS1 messages are mapped to different AMR Interop Standard messages. A [sample_config.yaml](https://github.com/inorbit-ai/ros_amr_interop/blob/noetic-devel/massrobotics_amr_sender_py/sample_config.yaml) is provided for reference.
 
 # Running the sender node
 
@@ -37,7 +37,6 @@ source devel/setup.bash
 # Launch the node pointing to your configuration file
 roslaunch massrobotics_amr_sender massrobotics_amr_sender.launch config_file:=/path/to/config.yaml
 ```
-
 
 # Tests
 
