@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>massrobotics_amr_sender</name>
+  <version>1.0.0</version>
+  <description>MassRobotics AMR Interop Sender</description>
+  <maintainer email="support@inorbit.ai">InOrbit</maintainer>
+  <license>3-Clause BSD License</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+
+  <build_depend>rospy</build_depend>
+
+  <build_export_depend>rospy</build_export_depend>
+
+  <exec_depend>python3-websockets</exec_depend>
+  <!-- kdl is used for processing Twist messages -->
+  <exec_depend>tf2_kdl</exec_depend>
+  <exec_depend>python3-pykdl</exec_depend>
+  <exec_depend>rospy</exec_depend>
+
+  <test_depend>python3-jsonschema</test_depend>
+  <test_depend>python3-mock</test_depend>
+  <test_depend>python3-pep8</test_depend>
+  <test_depend>python3-pytest</test_depend>
+  <test_depend>python3-pytest-mock</test_depend>
+  <test_depend>python3-yaml</test_depend>
+</package>

@@ -3,7 +3,7 @@ name: Code quality
 on:
   pull_request:
   push:
-    branches: [foxy-devel]
+    branches: [foxy-devel, noetic-devel]
 
 jobs:
   pre-commit:
