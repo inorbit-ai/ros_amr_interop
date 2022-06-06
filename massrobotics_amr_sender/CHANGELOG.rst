@@ -2,8 +2,8 @@
 Changelog for package massrobotics_amr_sender
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.1 (2022-06-06)
+------------------
 * First version of the package in ROS Noetic (`#25 <https://github.com/inorbit-ai/ros_amr_interop/issues/25>`_)
   * Update schema to latest version
   * Fix issue with click dependency
