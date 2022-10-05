@@ -1,0 +1,17 @@
+<library path="test_plugins">
+  <class type="test::StubNavToNode" base_class_type="adapter::NavToNode">
+    <description>StubNavToNode: Stub simplier version of NavToNode handler.</description>
+  </class>
+  <class type="test::StubStateHandlerPub" base_class_type="adapter::StateHandler">
+    <description>StubStateHandlerPub: Stub simplier version of StateHandler handler that creates ROS2 publisher.</description>
+  </class>
+  <class type="test::StubStateHandlerData" base_class_type="adapter::StateHandler">
+    <description>StubStateHandlerData: Stub simplier version of StateHandler handler that modifies global current state.</description>
+  </class>
+  <class type="test::StubVDAActionSub" base_class_type="adapter::VDAAction">
+    <description>StubVDAActionSub: Stub simplier version of VDAAction handler that creates ROS2 subscription.</description>
+  </class>
+  <class type="test::StubVDAActionData" base_class_type="adapter::VDAAction">
+    <description>StubVDAActionData: Stub simplier version of VDAAction handler that modifies global current state.</description>
+  </class>
+</library>

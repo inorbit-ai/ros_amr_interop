@@ -1,0 +1,8 @@
+# Goal
+vda5050_msgs/Action action
+---
+# Result
+vda5050_msgs/CurrentAction result
+---
+# Feedback
+vda5050_msgs/CurrentAction current_action

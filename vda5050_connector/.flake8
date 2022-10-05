@@ -1,0 +1,45 @@
+
+# .flake8
+#
+# DESCRIPTION
+#     Configuration file for the python linter flake8.
+#
+[flake8]
+
+#################### FORMATTING ##########################
+
+# Print the source code generating the error/warning in question.
+show-source = True
+
+# Count the number of occurrences of each error/warning code and print a report.
+statistics = True
+
+################### FILE PATTERNS #########################
+
+# Exclude external files
+exclude =
+    vda5050_connector/rewritten_yaml.py
+
+########## OPTIONS ##########
+
+# Set the maximum length that any line (with some exceptions) may be.
+max-line-length = 99
+
+import-order-style = google
+
+########## RULES ##########
+extend-ignore =
+    B902,
+    C816,
+    D100,
+    D101,
+    D102,
+    D103,
+    D104,
+    D105,
+    D106,
+    D107,
+    D203,
+    D212,
+    D404,
+    I202
