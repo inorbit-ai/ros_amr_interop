@@ -61,7 +61,7 @@ colcon test --packages-select vda5050_connector && colcon test-result --verbose
 
 ## Contributing
 
-Please see [CONTRIBUTING](CONTRIBUTING.md) document.
+Please see the [CONTRIBUTING](CONTRIBUTING.md) document.
 
 ## License
 
