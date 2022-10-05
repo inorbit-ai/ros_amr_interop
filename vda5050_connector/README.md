@@ -10,7 +10,7 @@ The package names itself *Connector*, since it can be thought as a bridge betwee
 
 The connector is composed of three main parts (ROS2 nodes):
 
-- **MQTT_bridge**: Communicates the VDA5050 <> ROS2 topics, translating the [vda5050 msgs](https://github.com/VDA5050/VDA5050/tree/main/json_schemas) into ROS2 [vda5050_msgs](https://github.com/ipa320/vda5050_msgs/tree/ros2-vda5050-v2) and vice versa.
+- **MQTT_bridge**: Communicates the VDA5050 <> ROS2 topics, translating [VDA5050 messages](https://github.com/VDA5050/VDA5050/tree/main/json_schemas) into ROS2 [vda5050_msgs](https://github.com/ipa320/vda5050_msgs/tree/ros2-vda5050-v2) and vice versa.
 - **Controller**: Processes the VDA5050 robot execution as per standard specification. It validates, executes, or rejects orders and instant actions, as well as assembles feedback information to the MC.
 - **Adapter**: Provides the interaction between the controller and the Robot API. The adapter is the one who knows how to send a navigation goal request, execute an action or retrieve specific information robot such as battery or odometry.
 
