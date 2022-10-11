@@ -8,6 +8,13 @@ standards, with a focus on AMRs (Autonomous Mobile Robots).
 
 The following packages are included in this repository:
 
+### VDA5050 connector for ROS2
+
+The [vda5050_connector](https://github.com/inorbit-ai/ros_amr_interop/tree/galactic-devel/vda5050_connector#readme)
+package provides a set of ROS2 nodes for connecting a ROS2-based robot to a [VDA5050 Master Control](https://github.com/VDA5050/VDA5050/blob/main/VDA5050_EN.md#-5-process-and-content-of-communication).
+
+If you want to develop a VDA5050 adapter for your robots, please check out our [VDA5050 Adapter Examples repository](https://github.com/inorbit-ai/vda5050_adapter_examples) to get started.
+
 ### Mass Robotics AMR Interop Sender for ROS2
 
 The [massrobotics_amr_sender_py](https://github.com/inorbit-ai/ros_amr_interop/tree/foxy-devel/massrobotics_amr_sender_py#readme)
@@ -18,11 +25,6 @@ Receiver](https://github.com/MassRobotics-AMR/AMR_Interop_Standard/tree/main/Mas
 Mapping of different data elements from the ROS2 system into Mass
 Robotics Interop messages can be customized through a YAML configuration
 file.
-
-### VDA5050 connector for ROS2
-
-The [vda5050_connector](https://github.com/inorbit-ai/ros_amr_interop/tree/galactic-devel/vda5050_connector#readme)
-package provides a set of ROS2 nodes for connecting a ROS2-based robot to a [VDA5050 Master Control](https://github.com/VDA5050/VDA5050/blob/main/VDA5050_EN.md#-5-process-and-content-of-communication).
 
 ## Related Initiatives
 
