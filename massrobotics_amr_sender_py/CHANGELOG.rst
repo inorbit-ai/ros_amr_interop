@@ -2,8 +2,8 @@
 Changelog for package massrobotics_amr_sender
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.1.0 (2022-10-17)
+------------------
 * Updated schema to match the latest version of the AMR interop standard (May 2022) (`#24 <https://github.com/inorbit-ai/ros_amr_interop/issues/24>`_)
 
   * Renamed planarDatum to planarDatumUUID
