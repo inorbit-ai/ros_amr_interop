@@ -1,10 +1,7 @@
 from setuptools import setup, find_packages
-import xml.etree.ElementTree as ET
 import os
 from glob import glob
 
-# Read version from ``package.xml`` file
-package_xml = ET.parse("package.xml").getroot()
 
 package_name = "massrobotics_amr_sender"
 
@@ -15,7 +12,7 @@ setup(
     packages=find_packages(),
     package_data={"": ["schema.json"]},
     include_package_data=True,
-    version=package_xml.find("version").text,
+    version="1.1.0",
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         (share_dir, ["package.xml"]),
