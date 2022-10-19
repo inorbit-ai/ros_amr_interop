@@ -8,7 +8,7 @@ standards, with a focus on AMRs (Autonomous Mobile Robots).
 
 The following packages are included in this repository:
 
-### VDA5050 connector for ROS2
+### VDA5050 Connector for ROS2
 
 The [vda5050_connector](https://github.com/inorbit-ai/ros_amr_interop/tree/galactic-devel/vda5050_connector#readme)
 package provides a set of ROS2 nodes for connecting a ROS2-based robot to a [VDA5050 Master Control](https://github.com/VDA5050/VDA5050/blob/main/VDA5050_EN.md#-5-process-and-content-of-communication).
@@ -32,6 +32,8 @@ The topic of AMR interoperability is in a fluid state of evolution. For this rea
 
 The following is an incomplete and growing list of such related topics:
 
+ * [Isaac Mission Dispatch](http://github.com/NVIDIA-ISAAC/mission_dispatch) is NVIDIA's
+ open source cloud micro-services enabling fleet management software to submit missions to multiple robots and monitor the robot and mission states. The communication between Mission Dispatch and robots is designed per VDA5050 protocol and uses MQTT.
  * [Open-RMF](https://osrf.github.io/ros2multirobotbook/) (formerly RMF Core) is an
  open source framework based on ROS 2 to enable the interoperability of heterogeneous
  fleets of any type of robotics systems.
