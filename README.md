@@ -32,7 +32,7 @@ The topic of AMR interoperability is in a fluid state of evolution. For this rea
 
 The following is an incomplete and growing list of such related topics:
 
- * [Isaac Mission Dispatch](http://github.com/NVIDIA-ISAAC/mission_dispatch) is NVIDIA's
+ * [Isaac Mission Dispatch](https://github.com/nvidia-isaac/isaac_mission_dispatch) is NVIDIA's
  open source cloud micro-services enabling fleet management software to submit missions to multiple robots and monitor the robot and mission states. The communication between Mission Dispatch and robots is designed per VDA5050 protocol and uses MQTT.
  * [Open-RMF](https://osrf.github.io/ros2multirobotbook/) (formerly RMF Core) is an
  open source framework based on ROS 2 to enable the interoperability of heterogeneous
