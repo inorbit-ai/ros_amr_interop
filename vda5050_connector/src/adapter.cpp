@@ -383,8 +383,7 @@ rclcpp_action::CancelResponse AdapterNode::nav_to_node_handle_cancel(
 void AdapterNode::nav_to_node_handle_accepted(
   const std::shared_ptr<GoalHandleNavigateToNode> goal_handle)
 {
-  std::thread{std::bind(&AdapterNode::execute_nav_to_node, this, std::placeholders::_1),
-              goal_handle}
+  std::thread{std::bind(&AdapterNode::execute_nav_to_node, this, std::placeholders::_1), goal_handle}
     .detach();
 }
 
