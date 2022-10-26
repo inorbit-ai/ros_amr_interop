@@ -16,10 +16,11 @@
   <buildtool_depend>ament_cmake_python</buildtool_depend>
   <buildtool_depend>rosidl_default_generators</buildtool_depend>
 
+  <depend>pluginlib</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>
   <depend>rclpy</depend>
-  <depend>pluginlib</depend>
+  <depend>tf2</depend>
 
   <depend>python3-paho-mqtt</depend>
   <depend>rosidl_runtime_py</depend>
