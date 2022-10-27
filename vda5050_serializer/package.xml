@@ -4,7 +4,7 @@
   <name>vda5050_serializer</name>
   <version>0.0.0</version>
   <description>
-    The serialization/deserialization functions to be loaded into the mqtt_bridge. During (de-)serialization 
+    The serialization/deserialization functions to be loaded into the mqtt_bridge. During (de-)serialization
     the case of the keys is corrected from snake_case on ROS side to dromedaryCase on MQTT/JSON side
   </description>
   <maintainer email="jannik.abbenseth@ipa.fraunhofer.de">Jannik Abbenseth</maintainer>

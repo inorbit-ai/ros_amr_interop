@@ -16,7 +16,7 @@ string order_id                              # Unique order identification
 
 uint32 order_update_id                       # order_update identification. Is unique per order_id. If an order update is
                                              # rejected, this field is to be passed in the rejection message
-                                             
+
 string zone_set_id                           # Unique identifier of the zone set that the AGV has to use for navigation or that was used by master controlfor planning
                                              # Optional: Some master controlsystems do not use zones. Some AGVs do not understand zones. Do not add to message if no zones are used
 
@@ -24,4 +24,3 @@ vda5050_msgs/Node[] nodes                    # Array of nodes to be traversed fo
                                              # in the sequence of the fulfilling.
 
 vda5050_msgs/Edge[] edges                    # Array of edges to be traversed for fulfilling the order
-

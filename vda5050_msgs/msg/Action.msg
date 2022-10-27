@@ -16,15 +16,15 @@ string blocking_type                                            # Enum {NONE, SO
                                                                 # “HARD” - is the only allowd action at that time
 
 
-vda5050_msgs/ActionParameter[] action_parameters                # Array of actionParameter objects for the indicated 
-                                                                # action e. g. deviceId, loadId, external Triggers. 
+vda5050_msgs/ActionParameter[] action_parameters                # Array of actionParameter objects for the indicated
+                                                                # action e. g. deviceId, loadId, external Triggers.
                                                                 # See “Actions and Parameters”.
                                                                 #
                                                                 # Note on Porting to ROS:
-                                                                # Since those parameter vary in type but their 
+                                                                # Since those parameter vary in type but their
                                                                 # serialization is always a json dictionary with "key"
-                                                                # and "value" we decided to serialize the value as 
-                                                                # string. This way the (de-)serialization has to be done by 
+                                                                # and "value" we decided to serialize the value as
+                                                                # string. This way the (de-)serialization has to be done by
                                                                 # the user depending on the key, but the protocol is met
 
 
