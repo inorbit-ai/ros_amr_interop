@@ -159,8 +159,9 @@ INSTANTIATE_TEST_SUITE_P(
     vectorParam{rclcpp::Parameter(
       "state_handler_names", std::vector<std::string>{"test::StubStateHandlerWrong"})},
     vectorParam{rclcpp::Parameter("nav_to_node.handler", "test::StubNavToNodeWrong")},
-    vectorParam{rclcpp::Parameter("vda_action_handlers", std::vector<std::string>{"action_test"}),
-                rclcpp::Parameter("action_test.handler", "test::StubVDAActionWrong")}),
+    vectorParam{
+      rclcpp::Parameter("vda_action_handlers", std::vector<std::string>{"action_test"}),
+      rclcpp::Parameter("action_test.handler", "test::StubVDAActionWrong")}),
   [](const ::testing::TestParamInfo<AdapterThrowTest::ParamType> & info) {
     const std::string name = info.param.at(0).get_name();
     return name == "nav_to_node.handler" ? std::string("nav_to_node") : name;

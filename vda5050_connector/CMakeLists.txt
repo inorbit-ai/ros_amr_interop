@@ -29,6 +29,7 @@ find_package(rclcpp_action REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(tf2 REQUIRED)
 
 find_package(geometry_msgs REQUIRED)
 find_package(vda5050_msgs REQUIRED)
