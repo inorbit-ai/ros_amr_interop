@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>vda5050_serializer</name>
-  <version>0.0.0</version>
+  <version>1.1.0</version>
   <description>
     The serialization/deserialization functions to be loaded into the mqtt_bridge. During (de-)serialization
     the case of the keys is corrected from snake_case on ROS side to dromedaryCase on MQTT/JSON side
