@@ -12,7 +12,7 @@ setup(
     packages=find_packages(),
     package_data={"": ["schema.json"]},
     include_package_data=True,
-    version="1.1.0",
+    version="1.1.1",
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         (share_dir, ["package.xml"]),

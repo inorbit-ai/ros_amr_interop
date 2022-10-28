@@ -2,8 +2,8 @@
 Changelog for package vda5050_connector
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.1.1 (2022-10-28)
+------------------
 * Fixed ROS buildfarm job (`#29 <https://github.com/inorbit-ai/ros_amr_interop/issues/29>`_)
 
 1.1.0 (2022-10-17)
