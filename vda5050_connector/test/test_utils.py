@@ -31,10 +31,10 @@
 
 import pytest
 
-from vda5050_connector.utils import json_camel_to_snake_case
-from vda5050_connector.utils import json_snake_to_camel_case
-from vda5050_connector.utils import get_vda5050_mqtt_topic
-from vda5050_connector.utils import get_vda5050_ros2_topic
+from vda5050_connector_py.utils import json_camel_to_snake_case
+from vda5050_connector_py.utils import json_snake_to_camel_case
+from vda5050_connector_py.utils import get_vda5050_mqtt_topic
+from vda5050_connector_py.utils import get_vda5050_ros2_topic
 
 
 @pytest.mark.parametrize(

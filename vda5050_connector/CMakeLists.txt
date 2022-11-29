@@ -41,7 +41,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "action/ProcessVDAAction.action"
   "srv/GetState.srv"
   "srv/SupportedActions.srv"
-  DEPENDENCIES vda5050_msgs
+  DEPENDENCIES vda5050_msgs tf2
   ADD_LINTER_TESTS
 )
 
@@ -54,9 +54,10 @@ target_include_directories(${library_adapter} PUBLIC
 ament_target_dependencies(${library_adapter}
   ${cpp_dependencies}
   ${msg_dependencies}
+  tf2
 )
-rosidl_target_interfaces(${library_adapter}
-  ${PROJECT_NAME} "rosidl_typesupport_cpp")
+rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_typesupport_cpp")
+target_link_libraries(${library_adapter} "${cpp_typesupport_target}")
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
@@ -80,7 +81,7 @@ install(
 )
 
 ## PYTHON MODULES
-ament_python_install_package(${PROJECT_NAME})
+ament_python_install_package(${PROJECT_NAME}_py)
 
 ## PYTHON EXECUTABLES
 install(PROGRAMS

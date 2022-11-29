@@ -36,11 +36,11 @@ from unittest.mock import MagicMock
 import pytest
 import json
 
-from vda5050_connector.utils import get_vda5050_ts
-from vda5050_connector.mqtt_bridge import generate_vda_order_msg
-from vda5050_connector.mqtt_bridge import generate_vda_instant_action_msg
-from vda5050_connector.mqtt_bridge import MQTTBridge
-from vda5050_connector.utils import convert_ros_message_to_json
+from vda5050_connector_py.utils import get_vda5050_ts
+from vda5050_connector_py.mqtt_bridge import generate_vda_order_msg
+from vda5050_connector_py.mqtt_bridge import generate_vda_instant_action_msg
+from vda5050_connector_py.mqtt_bridge import MQTTBridge
+from vda5050_connector_py.utils import convert_ros_message_to_json
 
 from vda5050_msgs.msg import Order
 from vda5050_msgs.msg import Node

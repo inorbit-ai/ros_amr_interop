@@ -35,12 +35,12 @@ import paho.mqtt.client as mqtt
 import rclpy
 from vda5050_connector.action import NavigateToNode
 from vda5050_connector.action import ProcessVDAAction
-from vda5050_connector.vda5050_controller import DEFAULT_NAV_TO_NODE_ACT_NAME
-from vda5050_connector.vda5050_controller import DEFAULT_VDA_ACTION_ACT_NAME
+from vda5050_connector_py.vda5050_controller import DEFAULT_NAV_TO_NODE_ACT_NAME
+from vda5050_connector_py.vda5050_controller import DEFAULT_VDA_ACTION_ACT_NAME
 from vda5050_connector.srv import GetState
-from vda5050_connector.vda5050_controller import DEFAULT_GET_STATE_SVC_NAME
+from vda5050_connector_py.vda5050_controller import DEFAULT_GET_STATE_SVC_NAME
 from vda5050_connector.srv import SupportedActions
-from vda5050_connector.vda5050_controller import DEFAULT_SUPPORTED_ACTIONS_SVC_NAME
+from vda5050_connector_py.vda5050_controller import DEFAULT_SUPPORTED_ACTIONS_SVC_NAME
 from rclpy.qos import qos_profile_action_status_default
 
 
