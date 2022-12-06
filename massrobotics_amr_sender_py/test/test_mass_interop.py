@@ -191,7 +191,7 @@ STATUS_REPORT_TESTS = [
                 "x": 0.09970865087213879,
                 "y": 0.04972948160146044,
                 "z": -0.0049895912294619805,
-            }
+            },
         },
     },
     {
@@ -455,7 +455,9 @@ def test_massrobotics_amr_node_status_report_callbacks(setup_rclpy, event_loop):
     assert node._wss_conn.send.call_count == 2
 
 
-def test_massrobotics_amr_node_status_report_not_sent_on_invalid_schema(setup_rclpy, event_loop):
+def test_massrobotics_amr_node_status_report_not_sent_on_invalid_schema(
+    setup_rclpy, event_loop
+):
     # create the node we want to test
     node = MassRoboticsAMRInteropNode(
         parameter_overrides=[Parameter("config_file", value=str(config_file_test))]
