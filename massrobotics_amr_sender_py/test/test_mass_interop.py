@@ -111,21 +111,17 @@ def event_loop():
     loop.close()
 
 
-def test_mass_config_load_fails_on_missing_config_file(monkeypatch):
+def test_mass_config_load_fails_on_missing_config_file(monkeypatch, setup_rclpy):
     monkeypatch.delenv("MY_UUID")
-    rclpy.init()
     with pytest.raises(ValueError):
         MassRoboticsAMRInteropNode()
-    rclpy.shutdown()
 
 
-def test_massrobotics_amr_node_init():
-    rclpy.init()
+def test_massrobotics_amr_node_init(setup_rclpy):
     node = MassRoboticsAMRInteropNode(
         parameter_overrides=[Parameter("config_file", value=str(config_file_test))]
     )
     rclpy.spin_once(node, timeout_sec=0.1)
-    rclpy.shutdown()
 
     mass_identity_report = node.mass_identity_report.data
 
@@ -420,8 +416,7 @@ STATUS_REPORT_TESTS = [
 ]
 
 
-def test_massrobotics_amr_node_status_report_callbacks(event_loop):
-    rclpy.init()
+def test_massrobotics_amr_node_status_report_callbacks(setup_rclpy, event_loop):
     # create the node we want to test
     node = MassRoboticsAMRInteropNode(
         parameter_overrides=[Parameter("config_file", value=str(config_file_test))]
@@ -451,7 +446,6 @@ def test_massrobotics_amr_node_status_report_callbacks(event_loop):
             )
 
     event_loop.run_until_complete(node._async_send_report(node.mass_status_report))
-    rclpy.shutdown()
 
     # assert connect method has been called once
     assert websockets.connect.call_count == 1
@@ -462,8 +456,7 @@ def test_massrobotics_amr_node_status_report_callbacks(event_loop):
     assert node._wss_conn.send.call_count == 2
 
 
-def test_massrobotics_amr_node_status_report_not_sent_on_invalid_schema(event_loop):
-    rclpy.init()
+def test_massrobotics_amr_node_status_report_not_sent_on_invalid_schema(setup_rclpy, event_loop):
     # create the node we want to test
     node = MassRoboticsAMRInteropNode(
         parameter_overrides=[Parameter("config_file", value=str(config_file_test))]
@@ -476,8 +469,6 @@ def test_massrobotics_amr_node_status_report_not_sent_on_invalid_schema(event_lo
     # Try to send a status report with an invalid schema i.e. ``foobar`` operational
     # state is not an allowed value.
     event_loop.run_until_complete(node._async_send_report(node.mass_status_report))
-
-    rclpy.shutdown()
 
     # assert connect method has been called once
     assert websockets.connect.call_count == 1
