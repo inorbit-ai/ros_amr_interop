@@ -191,8 +191,7 @@ STATUS_REPORT_TESTS = [
                 "x": 0.09970865087213879,
                 "y": 0.04972948160146044,
                 "z": -0.0049895912294619805,
-            },
-            "planarDatum": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
+            }
         },
     },
     {
@@ -276,7 +275,7 @@ STATUS_REPORT_TESTS = [
                 "y": 4,
                 "z": 2,
                 "angle": {"w": 0.1, "x": -1.0, "y": 9.0, "z": -3.0},
-                "planarDatum": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
+                "planarDatumUUID": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
             },
             {
                 "timestamp": "2021-06-22T22:56:38+00:00",
@@ -284,7 +283,7 @@ STATUS_REPORT_TESTS = [
                 "y": 4,
                 "z": 2,
                 "angle": {"w": 0.1, "x": -1.0, "y": 1.0, "z": -3.0},
-                "planarDatum": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
+                "planarDatumUUID": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
             },
             {
                 "timestamp": "2021-06-22T23:06:08+00:00",
@@ -292,7 +291,7 @@ STATUS_REPORT_TESTS = [
                 "y": 4,
                 "z": 2,
                 "angle": {"w": 0.4, "x": -1.0, "y": 9.0, "z": -3.0},
-                "planarDatum": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
+                "planarDatumUUID": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
             },
             {
                 "timestamp": "2021-06-22T23:36:38+00:00",
@@ -300,7 +299,7 @@ STATUS_REPORT_TESTS = [
                 "y": 4,
                 "z": 2,
                 "angle": {"w": 0.1, "x": -1.0, "y": 9.0, "z": -3.0},
-                "planarDatum": "096522ad-61fa-4796-9b31-e35b0f8d0b26",
+                "planarDatumUUID": "096522ad-61fa-4796-9b31-e35b0f8d0b26",
             },
         ],
     },
@@ -364,7 +363,7 @@ STATUS_REPORT_TESTS = [
                 "y": 4,
                 "z": 2,
                 "angle": {"w": 0.1, "x": -1.0, "y": 9.0, "z": -3.0},
-                "planarDatum": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
+                "planarDatumUUID": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
             },
             {
                 "timestamp": "2021-06-22T22:56:38+00:00",
@@ -372,7 +371,7 @@ STATUS_REPORT_TESTS = [
                 "y": 4,
                 "z": 2,
                 "angle": {"w": 0.1, "x": -1.0, "y": 1.0, "z": -3.0},
-                "planarDatum": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
+                "planarDatumUUID": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
             },
             {
                 "timestamp": "2021-06-22T23:06:08+00:00",
@@ -380,7 +379,7 @@ STATUS_REPORT_TESTS = [
                 "y": 4,
                 "z": 2,
                 "angle": {"w": 0.4, "x": -1.0, "y": 9.0, "z": -3.0},
-                "planarDatum": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
+                "planarDatumUUID": "6ec7a6d0-21a9-4f04-b680-e7c640a0687e",
             },
             {
                 "timestamp": "2021-06-22T23:36:38+00:00",
@@ -388,7 +387,7 @@ STATUS_REPORT_TESTS = [
                 "y": 4,
                 "z": 2,
                 "angle": {"w": 0.1, "x": -1.0, "y": 9.0, "z": -3.0},
-                "planarDatum": "096522ad-61fa-4796-9b31-e35b0f8d0b26",
+                "planarDatumUUID": "096522ad-61fa-4796-9b31-e35b0f8d0b26",
             },
         ],
     },

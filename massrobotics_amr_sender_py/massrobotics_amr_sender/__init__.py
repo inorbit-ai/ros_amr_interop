@@ -276,8 +276,6 @@ class MassRoboticsAMRInteropNode(Node):
                 f"Parameter {param_name} doesn't support `msgField`. Ignoring."
             )
 
-        frame_id = self._get_frame_id_from_header(data)
-
         twist = data.twist
 
         linear_vel = PyKDL.Vector(
