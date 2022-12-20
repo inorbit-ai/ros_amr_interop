@@ -17,8 +17,8 @@ statistics = True
 ################### FILE PATTERNS #########################
 
 # Exclude external files
-exclude =
-    vda5050_connector/rewritten_yaml.py
+extend-exclude =
+    ./vda5050_connector_py/rewritten_yaml.py
 
 ########## OPTIONS ##########
 
