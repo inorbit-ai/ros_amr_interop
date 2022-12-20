@@ -32,7 +32,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import rclpy
-from vda5050_connector.mqtt_bridge import MQTTBridge
+from vda5050_connector_py.mqtt_bridge import MQTTBridge
 
 
 def main(args=None):

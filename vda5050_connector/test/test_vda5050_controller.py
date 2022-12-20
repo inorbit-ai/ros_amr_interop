@@ -35,10 +35,10 @@ from rclpy.task import Future
 
 from uuid import uuid4
 
-from vda5050_connector.vda5050_controller import VDA5050Controller
-from vda5050_connector.vda5050_controller import OrderAcceptModes
-from vda5050_connector.vda5050_controller import OrderRejectErrors
-from vda5050_connector.utils import get_vda5050_ts
+from vda5050_connector_py.vda5050_controller import VDA5050Controller
+from vda5050_connector_py.vda5050_controller import OrderAcceptModes
+from vda5050_connector_py.vda5050_controller import OrderRejectErrors
+from vda5050_connector_py.utils import get_vda5050_ts
 from vda5050_connector.action import NavigateToNode
 
 from vda5050_msgs.msg import Order

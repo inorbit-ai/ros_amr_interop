@@ -37,7 +37,7 @@ from launch.actions import DeclareLaunchArgument
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
-from vda5050_connector.rewritten_yaml import RewrittenYaml
+from vda5050_connector_py.rewritten_yaml import RewrittenYaml
 
 
 def generate_launch_description():
