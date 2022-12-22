@@ -19,7 +19,7 @@ RUN apt-get update \
    software-properties-common \
    sudo \
    tmux \
-   unzip \  
+   unzip \
    vim \
    && rm -r /var/lib/apt/lists/*
 
