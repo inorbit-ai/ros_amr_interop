@@ -72,9 +72,9 @@ def generate_vda_order_msg(order):
     """
     Convert an Order message into a ROS2 Order message represented as a dict.
 
-    Arguments
-    ---------
-        order -- VDA5050 Order message
+    Args:
+    ----
+        order (VDAOrder): VDA5050 Order message
 
     Returns
     -------
@@ -147,11 +147,11 @@ def generate_vda_instant_action_msg(instant_action):
     """
     Convert an Instant Action message into a ROS2 Instant Action message represented as a dict.
 
-    Arguments
-    ---------
-        order -- VDA5050 Instant Action message
+    Args:
+    ----
+        instant_action (VDAInstantActions): VDA5050 Instant Action message
 
-    Return
+    Returns
     -------
         Instant Action dict message for building a ROS2 Instant Action object
 
@@ -440,10 +440,11 @@ class MQTTBridge(Node):
         """
         Publish a ROS2 message to an MQTT topic.
 
-        Arguments
-        ---------
-            msg -- VDA5050 ROS2 message.
-            topic -- topic for publishing the VDA5050 MQTT message.
+        Args:
+        ----
+            msg (Any): VDA5050 ROS2 message.
+            topic (str): topic for publishing the VDA5050 MQTT message.
+
         """
         json_msg = convert_ros_message_to_json(msg)
         self.logger.debug(f"Publishing MQTT message to topic {topic}: {json_msg}")
@@ -453,9 +454,10 @@ class MQTTBridge(Node):
         """
         Publish ROS2 OrderState message to the corresponding VDA5050 MQTT topic.
 
-        Arguments
-        ---------
-            msg -- VDA5050 ROS2 OrderState message.
+        Args:
+        ----
+            msg (VDAOrderState): VDA5050 ROS2 OrderState message.
+
         """
         topic = get_vda5050_mqtt_topic(
             manufacturer=self._manufacturer_name,
@@ -472,9 +474,10 @@ class MQTTBridge(Node):
         of the latest ``header_id`` field. This is used to publish an offline Connection message
         when tearing down the node.
 
-        Arguments
-        ---------
-            msg -- VDA5050 ROS2 Connection message.
+        Args:
+        ----
+            msg (VDAConnection): VDA5050 ROS2 Connection message.
+
         """
         # Update the last connection message
         self._last_connection_msg = msg
@@ -489,9 +492,10 @@ class MQTTBridge(Node):
         """
         Publish ROS2 Visualization message to the corresponding VDA5050 MQTT topic.
 
-        Arguments
-        ---------
-            msg -- VDA5050 ROS2 Visualization message.
+        Args:
+        ----
+            msg (VDAVisualization): VDA5050 ROS2 Visualization message.
+
         """
         topic = get_vda5050_mqtt_topic(
             manufacturer=self._manufacturer_name,

@@ -409,7 +409,7 @@ class VDA5050Controller(Node):
         """
         Update Order State.
 
-        Args
+        Args:
         ----
             partial_state (dict): Dictionary with field value pairs to update.
             publish_now (bool): True to publish, False otherwise (default False).
@@ -428,7 +428,7 @@ class VDA5050Controller(Node):
         """
         Create a list of NodeState objects from Order's nodes.
 
-        Args
+        Args:
         ----
             order (VDAOrder): VDA5050 Order message.
 
@@ -452,7 +452,7 @@ class VDA5050Controller(Node):
         """
         Create a list of EdgeState objects from Order's edges.
 
-        Args
+        Args:
         ----
             order (VDAOrder): VDA5050 Order message.
 
@@ -478,7 +478,7 @@ class VDA5050Controller(Node):
 
         All CurrentAction objects are initialized with status WAITING.
 
-        Args
+        Args:
         ----
             order (VDAOrder): VDA5050 Order message.
 
@@ -514,7 +514,7 @@ class VDA5050Controller(Node):
         """
         Get the action status on the current state given action's ID.
 
-        Args
+        Args:
         ----
             action_id (str): Action ID.
 
@@ -543,7 +543,7 @@ class VDA5050Controller(Node):
         """
         Update action status on the current state given action's ID.
 
-        Args
+        Args:
         ----
             action_id (str): Action ID
             action_status (str): Action status
@@ -596,7 +596,7 @@ class VDA5050Controller(Node):
         """
         Request the adapter's state and updates the current state.
 
-        Args
+        Args:
         ----
             async_call (bool): True to perform an async call to the GetState service.
                 False for a sync call (default False).
@@ -618,7 +618,7 @@ class VDA5050Controller(Node):
         """
         Receive the async call future result, update the current state and publish it.
 
-        Args
+        Args:
         ----
             action (VDAAction): VDA action to update its status on async calls.
             future (Future): Service response future.
@@ -633,7 +633,7 @@ class VDA5050Controller(Node):
         """
         Update current state and visualization msgs based on the adapter's state information.
 
-        Args
+        Args:
         ----
             order_state (VDAOrderState): Adapter's state to update robot specific information.
 
@@ -672,9 +672,9 @@ class VDA5050Controller(Node):
         This is the instant_actions processing entrypoint. It decides how
         the instant_actions will be processed given current controller state.
 
-        Args
+        Args:
         ----
-            msg (VDAInstantActions): VDA5050 InstantActions message.
+            instant_actions (VDAInstantActions): VDA5050 InstantActions message.
 
         """
         msg_is_valid, error = self.instant_action_msg_is_valid(instant_actions)
@@ -723,7 +723,7 @@ class VDA5050Controller(Node):
         """
         Process if a given instant action msg is valid. If not, a proper VDAError is generated.
 
-        Args
+        Args:
         ----
             instant_actions (VDAInstantActions): Instant action msg to validate.
 
@@ -744,7 +744,7 @@ class VDA5050Controller(Node):
 
         If the action is being processed (not in WAITING), the function exits.
 
-        Args
+        Args:
         ----
             action (VDAAction): Action to be executed.
 
@@ -775,7 +775,7 @@ class VDA5050Controller(Node):
         """
         Response callback function for process VDA actions goal request.
 
-        Args
+        Args:
         ----
             action (VDAAction): VDA Action sent as goal.
             future (Future): Action response future.
@@ -805,7 +805,7 @@ class VDA5050Controller(Node):
         """
         Feedback callback function for process VDA actions goal request.
 
-        Args
+        Args:
         ----
             feedback_msg (ProcessVDAAction.Feedback): ProcessVDAAction Action client feedback
             message.
@@ -818,9 +818,10 @@ class VDA5050Controller(Node):
         """
         Process VDA actions goal request.
 
-        Args
+        Args:
         ----
             future (Future): Action result future.
+
         """
         action_result: ProcessVDAAction.Result = future.result().result
         current_action: VDACurrentAction = action_result.result
@@ -839,9 +840,9 @@ class VDA5050Controller(Node):
 
         https://github.com/VDA5050/VDA5050/blob/development/assets/Figure8.png
 
-        Args
+        Args:
         ----
-            msg (VDAOrder): VDA5050 Order message.
+            order (VDAOrder): VDA5050 Order message.
 
         """
         self.logger.info(f"Received order with ID: '{order.order_id}'")
@@ -955,13 +956,14 @@ class VDA5050Controller(Node):
         """
         Validate if first node is in deviation range.
 
-        Args
+        Args:
         ----
             order (VDAOrder): New order to validate first node.
 
-        Return
+        Return:
         ------
             True if first node is in deviation range, False otherwise.
+
         """
         # TODO: Proper implementation
         # first_node = order.nodes[0]
@@ -995,13 +997,14 @@ class VDA5050Controller(Node):
 
         https://github.com/VDA5050/VDA5050/blob/development/assets/Figure8.png
 
-        Args
+        Args:
         ----
             order (VDAOrder): Valid order to process.
             mode (OrderAcceptModes): There are 3 different ways of accepting an order:
                 NEW: the order is different from current order i.e. order_id != current_order_id.
                 UPDATE: when the order's horizon is updated.
                 STITCH: order's base is extended. It may include a new horizon.
+
         """
         self.logger.info(
             f"Order '{order.order_id}' with update id '{order.order_update_id}' accepted!"
@@ -1079,13 +1082,14 @@ class VDA5050Controller(Node):
         """
         Reject order.
 
-        Args
+        Args:
         ----
             order (VDAOrder): Order sent
             error (OrderRejectErrors): Errors
                 VALIDATION_ERROR
                 ORDER_UPDATE_ERROR
                 NO_ROUTE_ERROR
+            description (str): Order rejection description
 
         """
         error_references = []
@@ -1229,7 +1233,7 @@ class VDA5050Controller(Node):
         """
         Process VDA5050 order's node when the robot reaches a given goal.
 
-        Args
+        Args:
         ----
             node (VDANode): Order's node.
 
@@ -1336,7 +1340,7 @@ class VDA5050Controller(Node):
         """
         Send navigation goal to the VDA5050 adapter.
 
-        Args
+        Args:
         ----
             edge (VDAEdge): Order's edge to traverse.
             node (VDANode): Order edge ending node.
@@ -1361,7 +1365,7 @@ class VDA5050Controller(Node):
         """
         Response callback function for navigate to node goal request.
 
-        Args
+        Args:
         ----
             future (Future): Action response future.
 
@@ -1385,7 +1389,7 @@ class VDA5050Controller(Node):
 
         This callback is in charge of triggering next order's node execution.
 
-        Args
+        Args:
         ----
             future (Future): Action result future.
 

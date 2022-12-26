@@ -122,6 +122,7 @@ def json_camel_to_snake_case(s):
     from MQTT topics to ROS2 vda5050_msgs
 
     Args:
+    ----
         s (str|bytes): JSON message as string or bytes
 
     """
@@ -156,7 +157,7 @@ def json_snake_to_camel_case(s):
     case e.g. snake_case to snakeCase. Used to transform ROS2 vda5050_msgs
     messages to VDA5050 MQTT messages.
 
-    Args
+    Args:
     ----
         s (str|bytes): JSON message as string or bytes
 
@@ -206,8 +207,8 @@ def convert_ros_message_to_json(msg):
     """
     Convert a ROS2 message into a JSON for MQTT publishing.
 
-    Arguments
-    ---------
+    Args:
+    ----
         msg (Any): VDA5050 ROS2 message
 
     Returns

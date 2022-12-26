@@ -41,7 +41,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "action/ProcessVDAAction.action"
   "srv/GetState.srv"
   "srv/SupportedActions.srv"
-  DEPENDENCIES vda5050_msgs tf2
+  DEPENDENCIES vda5050_msgs
+  tf2
   ADD_LINTER_TESTS
 )
 
