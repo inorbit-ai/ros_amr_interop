@@ -7,7 +7,7 @@
 # - Changed the parameter intake
 # - Modified and moved the coordinate transformation to RobotCommandHandle
 # - Adapter the initialization
-# 
+#
 # The following is a copy of the original license note:
 #
 # Copyright 2021 Open Source Robotics Foundation, Inc.

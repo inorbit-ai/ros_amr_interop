@@ -6,7 +6,7 @@
 # - Adapted the initialization
 # - Implemented _follow_path() , _dock() , get_position()
 # - Changed the coordinate transformation handling
-# 
+#
 # The following is a copy of the original license note:
 #
 # Copyright 2021 Open Source Robotics Foundation, Inc.
@@ -313,9 +313,10 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
             self.node.get_logger().info(
                 f"Requesting robot {self.robot.name} to dock")
             accepted = self.robot.start_docking(dock_name)
-            
-            if not accepted: 
-                self.node.get_logger().warn(f"Robot {self.robot.name} did not accept the docking request")
+
+            if not accepted:
+                self.node.get_logger().warn(
+                    f"Robot {self.robot.name} did not accept the docking request")
                 self.docking_finished_callback()
                 return
 

@@ -6,7 +6,7 @@
 # The following is a summary of the introduced changes:
 # - Implemented or modified all methods
 # - Modified the intended use of the class to one instance per robot
-# 
+#
 # The following is a copy of the original license note:
 #
 # Copyright 2021 Open Source Robotics Foundation, Inc.
@@ -55,7 +55,7 @@ class RobotAPI:
     })
 
     def __init__(self, api_key: str, name: str, robot_config: dict, max_lin_speed: float, logger: RcutilsLogger, base_url="https://api.inorbit.ai/robots/", threshold_distance=0.22, threshold_angle=0.2):
-        """ 
+        """
         Takes the parameters required to submit requests to InOrbitAPI
 
         Args:
