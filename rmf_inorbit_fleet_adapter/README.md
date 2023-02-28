@@ -5,8 +5,8 @@ Full Control Fleet Adapter for integrating InOrbit with [Robotics Middleware Fra
 ## Overview
 
 The package includes the RMF InOrbit Fleet Adapter, which enables communication between a fleet of robots controlled by InOrbit and RMF core, allowing centralized coordinated control of a fleet of multiple robots. It utilizes the InOrbit REST API to communicate with InOrbit, while the adapter and RMF run on ROS2 in different nodes.
-Demos and a template can be found in the [`rmf_inorbit_examples`](https://github.com/inorbit-ai/rmf-inorbit-internal) repository, containing a usage demonstration of the InOrbit fleet adapter in a simulated environment and a base configuration to be modified for a particular scenario.
-Each instance of this adapter will work for a fleet in one location. For multiple locations, like offices in different buildings, different instances of the adapter have to be configured and run independently. For each adapter modify the [template package](https://github.com/inorbit-ai/rmf-inorbit-internal/tree/main/rmf_inorbit_template) following the instructions in it.
+Demos and a template can be found in the [`rmf_inorbit_examples`](https://github.com/inorbit-ai/rmf_inorbit_examples) repository, containing a usage demonstration of the InOrbit fleet adapter in a simulated environment and a base configuration to be modified for a particular scenario.
+Each instance of this adapter will work for a fleet in one location. For multiple locations, like offices in different buildings, different instances of the adapter have to be configured and run independently. For each adapter modify the [template package](https://github.com/inorbit-ai/rmf_inorbit_examples/tree/main/rmf_inorbit_template) following the instructions in it.
 
 ![mission video](assets/full%20mission.gif)
 
@@ -24,13 +24,11 @@ ROS2 Humble + Ubuntu 22.04 / Docker
 
 ## Setup
 
-To utilize the fleet adapter an InOrbit account must be set up first. To run a demo simulation, take a look at the documentation of the [`rmf_inorbit_demos`](https://github.com/inorbit-ai/rmf-inorbit-internal/tree/main/rmf_inorbit_demos) package at [`rmf_inorbit_examples`](https://github.com/inorbit-ai/rmf-inorbit-internal) for instructions, and to use the fleet adapter in your own environment, visit [`rmf_inorbit_template`](https://github.com/inorbit-ai/rmf-inorbit-internal/tree/main/rmf_inorbit_template) in the same repository.
+To utilize the fleet adapter an InOrbit account must be set up first. To run a demo simulation, take a look at the documentation of the [`rmf_inorbit_demos`](https://github.com/inorbit-ai/rmf_inorbit_examples/tree/main/rmf_inorbit_demos) package at [`rmf_inorbit_examples`](https://github.com/inorbit-ai/rmf_inorbit_examples) for instructions, and to use the fleet adapter in your own environment, visit [`rmf_inorbit_template`](https://github.com/inorbit-ai/rmf_inorbit_examples/tree/main/rmf_inorbit_template) in the same repository.
 
 ## How to use it
 
 The package is prepared to be run in a dockerized environment, but it can also be run on a non docker box.
-
-Binary install: TBD
 
 ### Workspace setup
 
@@ -50,7 +48,7 @@ Run the following script to build the docker image
 ./docker/build.sh
 ```
 
-The image will include useful packages like `tmux`, and also `ROS2 Humble`. Read [README.md file](https://github.com/inorbit-ai/rmf-inorbit-internal/blob/main/docker/README.md) in the docker folder for more information about the docker setup.
+The image will include useful packages like `tmux`, and also `ROS2 Humble`. Read [README.md file](https://github.com/inorbit-ai/ros_amr_interop/blob/main/docker/README.md) in the docker folder for more information about the docker setup.
 
 #### Run the container
 
@@ -200,6 +198,6 @@ All of the topics and services are part of the mentioned nodes. For more informa
 
 ## Configuration
 
-Visit [`rmf_inorbit_examples`](https://github.com/inorbit-ai/rmf-inorbit-internal) to get access to the demos and the template configuration package.
+Visit [`rmf_inorbit_examples`](https://github.com/inorbit-ai/rmf_inorbit_examples) to get access to the demos and the template configuration package.
 
 ![Powered by InOrbit](assets/open%20rmf%20inorbit%20github%20footer.png)
