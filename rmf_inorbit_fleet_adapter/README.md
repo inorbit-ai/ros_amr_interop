@@ -37,28 +37,28 @@ Create the workspace directory tree in your host machine before running the cont
 ```
 mkdir -p inorbit_rmf_ws/src
 cd inorbit_rmf_ws/src
-# TODO(#29): clone all repos.
 ```
 
-#### Build the docker image
+#### Build and run the docker environment
 
-Run the following script to build the docker image
-
-```
-./docker/build.sh
-```
-
-The image will include useful packages like `tmux`, and also `ROS2 Humble`. Read [README.md file](https://github.com/inorbit-ai/ros_amr_interop/blob/main/docker/README.md) in the docker folder for more information about the docker setup.
-
-#### Run the container
-
-Run the following script to run the container and mount the workspace on it
+Run the following script to build the docker image and run a container:
 
 ```
-./docker/run.sh
+cd .ci/docker
+./start_local_dev.sh
 ```
 
-The default entrypoint is a bash shell with the ROS workspace (`~/ws`) as the default location. The user will have the same name as the user that executed the run script, with passwordless sudo.
+Install dependencies:
+
+```
+# Required:
+python3 -m pip install requests
+
+# If you want to be able to edit traffic maps:
+sudo apt update && sudo apt install -y \
+    ros-humble-rmf-traffic-editor \
+    ros-humble-rmf-building-map-tools
+```
 
 #### Non docker setup
 
@@ -69,10 +69,10 @@ If you don't want to use docker, ignore the previous two steps and:
 
 ```
 # Required:
-python3 -m pip requests
+python3 -m pip install requests
 
 # If you want to be able to edit traffic maps:
-sudo apt install -y \
+sudo apt update && sudo apt install -y \
     ros-humble-rmf-traffic-editor \
     ros-humble-rmf-building-map-tools
 ```
