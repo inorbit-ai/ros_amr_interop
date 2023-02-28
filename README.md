@@ -10,7 +10,7 @@ The following packages are included in this repository:
 
 ### Full Control Fleet Adapter for RMF and InOrbit
 
-The [rmf_inorbit_fleet_adapter](https://github.com/inorbit-ai/ros_amr_interop/tree/humble-devel/rmf_inorbit_fleet_adapter#readme) package contains a Full Control [Open-RMF](https://github.com/open-rmf/rmf#robotics-middleware-framework-rmf) Fleet Adapter that allows RMF to control a fleet of autonomous robots through the InOrbit API.
+The [rmf_inorbit_fleet_adapter](https://github.com/inorbit-ai/ros_amr_interop/tree/humble-devel/rmf_inorbit_fleet_adapter) package contains a Full Control [Open-RMF](https://github.com/open-rmf/rmf#robotics-middleware-framework-rmf) Fleet Adapter that allows RMF to control a fleet of autonomous robots through the InOrbit API.
 For demonstrations of this adapter or a template to configure your own fleet, visit the the InOrbit RMF [Fleet Adapter Examples](https://github.com/inorbit-ai/rmf_inorbit_examples) repository.
 
 ### VDA5050 Connector for ROS2
