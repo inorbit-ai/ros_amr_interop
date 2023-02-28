@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # Copyright 2023 InOrbit, Inc.
 
-import math
-
 """Utility functions"""
+
+import math
 
 
 def angle_diff(phi, theta):
