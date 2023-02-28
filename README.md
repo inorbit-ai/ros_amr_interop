@@ -8,6 +8,11 @@ standards, with a focus on AMRs (Autonomous Mobile Robots).
 
 The following packages are included in this repository:
 
+### Full Control Fleet Adapter for RMF and InOrbit
+
+The [rmf_inorbit_fleet_adapter](https://github.com/inorbit-ai/ros_amr_interop/tree/humble-devel/rmf_inorbit_fleet_adapter#readme) package contains a Full Control [Open-RMF](https://github.com/open-rmf/rmf#robotics-middleware-framework-rmf) Fleet Adapter that allows RMF to control a fleet of autonomous robots through the InOrbit API.
+For demonstrations of this adapter or a template to configure your own fleet, visit the the InOrbit RMF [Fleet Adapter Examples](https://github.com/inorbit-ai/rmf_inorbit_examples) repository.
+
 ### VDA5050 Connector for ROS2
 
 The [vda5050_connector](https://github.com/inorbit-ai/ros_amr_interop/tree/galactic-devel/vda5050_connector#readme)
@@ -53,6 +58,7 @@ Install [pre-commit](https://pre-commit.com/) in your computer and then set it u
 
 | Package | Foxy Source | Foxy Debian | Galactic Source | Galactic Debian |
 | :---: | :---: | :---: | :---: | :---: |
+| rmf_inorbit_fleet_adapter | N/A | N/A | N/A | N/A |
 | vda5050_connector | N/A | N/A | [![Build Status](http://build.ros2.org/job/Gsrc_uF__vda5050_connector__ubuntu_focal__source/badge/icon)](http://build.ros2.org/job/Gsrc_uF__vda5050_connector__ubuntu_focal__source/) | [![Build Status](http://build.ros2.org/job/Gbin_uF64__vda5050_connector__ubuntu_focal_amd64__binary/badge/icon)](http://build.ros2.org/job/Gbin_uF64__vda5050_connector__ubuntu_focal_amd64__binary/) |
 | vda5050_msgs | N/A | N/A | [![Build Status](http://build.ros2.org/job/Gsrc_uF__vda5050_msgs__ubuntu_focal__source/badge/icon)](http://build.ros2.org/job/Gsrc_uF__vda5050_msgs__ubuntu_focal__source/) | [![Build Status](http://build.ros2.org/job/Gbin_uF64__vda5050_msgs__ubuntu_focal_amd64__binary/badge/icon)](http://build.ros2.org/job/Gbin_uF64__vda5050_msgs__ubuntu_focal_amd64__binary/) |
 | vda5050_serializer | N/A | N/A | [![Build Status](http://build.ros2.org/job/Gsrc_uF__vda5050_serializer__ubuntu_focal__source/badge/icon)](http://build.ros2.org/job/Gsrc_uF__vda5050_serializer__ubuntu_focal__source/) | [![Build Status](http://build.ros2.org/job/Gbin_uF64__vda5050_serializer__ubuntu_focal_amd64__binary/badge/icon)](http://build.ros2.org/job/Gbin_uF64__vda5050_serializer__ubuntu_focal_amd64__binary/) |
