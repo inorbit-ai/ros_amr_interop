@@ -1,0 +1,12 @@
+<?xml version='1.0' ?>
+
+<!-- Copyright 2023 InOrbit, Inc. -->
+<!-- Launches the InOrbit RMF fleet adapter node -->
+
+<launch>
+  <arg name="api_key" description="InOrbit API key"/>
+  <arg name="adapter_config_file" description="Path to the configuration file of the adapter"/>
+  <arg name="nav_graph_file" description="Path to the navigation graph file for RMF"/>
+
+  <node pkg="rmf_inorbit_fleet_adapter" exec="fleet_adapter" args="-c $(var adapter_config_file) -n $(var nav_graph_file) -k $(var api_key)"/>
+</launch>
