@@ -200,4 +200,12 @@ All of the topics and services are part of the mentioned nodes. For more informa
 
 Visit [`rmf_inorbit_examples`](https://github.com/inorbit-ai/rmf_inorbit_examples) to get access to the demos and the template configuration package.
 
+## Contributing
+
+Please see the [CONTRIBUTING](CONTRIBUTING.md) document.
+
+## License
+
+[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
+
 ![Powered by InOrbit](assets/open%20rmf%20inorbit%20github%20footer.png)
