@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rmf_inorbit_fleet_adapter</name>
+  <version>0.1.0</version>
+  <description>Full Control Fleet Adapter for integrating InOrbit with Open-RMF</description>
+  <author email="julian@inorbit.ai">Julian Cerruti</author>
+  <author email="tomasbadenes@gmail.com">Tomás Badenes</author>
+  <maintainer email="julian@inorbit.ai">Julian Cerruti</maintainer>
+  <url type="repository">https://github.com/inorbit-ai/ros_amr_interop</url>
+  <license file="LICENSE">3-Clause BSD License</license>
+
+  <build_depend>python3-pip</build_depend>
+
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-schema</exec_depend>
+  <exec_depend>ros2launch</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+
+  <exec_depend>rmf_fleet_adapter_python</exec_depend>
+  <exec_depend>rmf_task_msgs</exec_depend>
+  <exec_depend>rmf_traffic_ros2</exec_depend>
+  <exec_depend>rmf_visualization</exec_depend>
+  <exec_depend>rmf_task_ros2</exec_depend>
+
+  <!--
+    Missing packages are installed on docker build
+    If building and running without docker, install missing packages by running
+      sudo apt install python3-pip
+      python3 -m pip requests
+  -->
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
