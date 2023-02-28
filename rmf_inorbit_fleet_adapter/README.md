@@ -143,8 +143,8 @@ It will start the following:
 
 #### Nodes
 
-`/{fleet name}_fleet_adapter`: Instance of the full control fleet adapter node rmf_adapter provides.
-`/inorbit_fleet_command_handle`: Implementation of rmf_adapter.RobotCommandHandle
+- `/{fleet name}_fleet_adapter`: Instance of the full control fleet adapter node rmf_adapter provides.
+- `/inorbit_fleet_command_handle`: Implementation of rmf_adapter.RobotCommandHandle
 
 All of the topics and services are part of the mentioned nodes. For more information about them, visit [rmf_ros2](https://github.com/open-rmf/rmf_ros2).
 
