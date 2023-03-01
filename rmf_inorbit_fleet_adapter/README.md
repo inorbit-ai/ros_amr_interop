@@ -202,7 +202,7 @@ Visit [`rmf_inorbit_examples`](https://github.com/inorbit-ai/rmf_inorbit_example
 
 ## Contributing
 
-Please see the [CONTRIBUTING](CONTRIBUTING.md) document.
+Please see the [CONTRIBUTING](CONTRIBUTING) document.
 
 ## License
 
