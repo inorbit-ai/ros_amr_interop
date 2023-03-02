@@ -119,8 +119,7 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
         self._quit_dock_event = threading.Event()
 
         self.node.get_logger().info(
-            f"The robot is starting at: [{self.position[0]:.2f}, "
-            f"{self.position[1]:.2f}, {self.position[2]:.2f}]")
+            f"({self.robot.name}) The robot is starting at: [{self.position[0]:.2f}, {self.position[1]:.2f}, {self.position[2]:.2f}]")
 
         # Update tracking variables
         if start.lane is not None:  # If the robot is on a lane
@@ -155,7 +154,8 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
     def stop(self):
         # Stop the robot. Tracking variables should remain unchanged.
         while True:
-            self.node.get_logger().info("Requesting robot to stop...")
+            self.node.get_logger().info(
+                f"({self.robot.name}) Requesting robot to stop...")
             if self.robot.stop():
                 break
             self.sleep_for(0.1)
@@ -185,7 +185,8 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
         self.stop()
         self._quit_path_event.clear()
 
-        self.node.get_logger().info("Received new path to follow...")
+        self.node.get_logger().info(
+            f"({self.robot.name}) Received new path to follow...")
 
         self.remaining_waypoints = self.get_remaining_waypoints(waypoints)
         assert next_arrival_estimator is not None
@@ -201,7 +202,7 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
                     self.state == RobotState.WAITING):
                 # Check if we need to abort
                 if self._quit_path_event.is_set():
-                    self.node.get_logger().info("Aborting previously followed "
+                    self.node.get_logger().info(f"({self.robot.name}) Aborting previously followed "
                                                 "path")
                     return
                 # State machine
@@ -211,7 +212,6 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
                     self.path_index = self.remaining_waypoints[0][0]
                     # Move robot to next waypoint
                     target_pose = self.target_waypoint.position
-                    self.node.get_logger().info(f"Coords are: {target_pose}")
                     x, y, theta = self.transform_rmf_to_robot(*target_pose)
                     response = self.robot.navigate([x, y, theta])
 
@@ -235,9 +235,6 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
                                 self.state = RobotState.IDLE
                             else:
                                 if self.path_index is not None:
-                                    self.node.get_logger().info(
-                                        f"Waiting for "
-                                        f"{(waypoint_wait_time - time_now).seconds}s", throttle_duration_sec=1)
                                     self.next_arrival_estimator(
                                         self.path_index, timedelta(seconds=0.0))
 
@@ -283,7 +280,7 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
                                 self.path_index, timedelta(seconds=duration))
             self.path_finished_callback()
             self.node.get_logger().info(
-                f"Robot {self.robot.name} has successfully navigated along "
+                f"Robot [{self.robot.name}] has successfully navigated along "
                 f"requested path.")
 
         self._follow_path_thread = threading.Thread(
@@ -311,7 +308,7 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
         def _dock():
             # Request the robot to start the relevant process
             self.node.get_logger().info(
-                f"Requesting robot {self.robot.name} to dock")
+                f"Requesting robot [{self.robot.name}] to dock")
             accepted = self.robot.start_docking(dock_name)
 
             if not accepted:
@@ -327,16 +324,19 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
             while (not self.robot.is_robot_charging()):
                 # Check if we need to abort
                 if self._quit_dock_event.is_set():
-                    self.node.get_logger().info("Aborting docking")
+                    self.node.get_logger().info(
+                        f"({self.robot.name}) Aborting docking")
                     return
-                self.node.get_logger().info("Robot is docking...", throttle_duration_sec=2)
+                self.node.get_logger().info(
+                    f"({self.robot.name}) Robot is docking...", throttle_duration_sec=2)
                 self.sleep_for(0.5)
 
             with self._lock:
                 self.on_waypoint = self.dock_waypoint_index
                 self.dock_waypoint_index = None
                 self.docking_finished_callback()
-                self.node.get_logger().info("Docking completed")
+                self.node.get_logger().info(
+                    f"({self.robot.name}) Docking completed")
 
         self._dock_thread = threading.Thread(target=_dock)
         self._dock_thread.start()
@@ -380,7 +380,7 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
             if ("max_delay" in self.robot.robot_config.keys()):
                 max_delay = self.robot.robot_config["max_delay"]
                 self.node.get_logger().info(
-                    f"Setting max delay to {max_delay}s")
+                    f"({self.robot.name}) Setting max delay to {max_delay}s")
                 self.update_handle.set_maximum_delay(max_delay)
             if (self.charger_waypoint_index < self.graph.num_waypoints):
                 self.update_handle.set_charger_waypoint(
