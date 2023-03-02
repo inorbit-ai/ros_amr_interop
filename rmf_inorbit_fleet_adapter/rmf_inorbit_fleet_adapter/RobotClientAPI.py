@@ -129,7 +129,6 @@ class RobotAPI:
         if not response:
             return None
         res_json = response.json()
-        self.logger.info(f"position response: {res_json}")
         if response.status_code != 200:
             return None
         return [res_json['x'], res_json['y'], res_json['theta']]
@@ -139,14 +138,12 @@ class RobotAPI:
             and theta are in the robot's coordinate convention. This function
             should return True if the robot has accepted the request,
             else False'''
-        self.logger.info(f"nav request: {pose}")
         self.last_requested_pose = pose
         response = self.requester.robot_post_request(
             "/navigation/waypoints", json={'waypoints': [{'x': pose[0], 'y': pose[1], 'theta': pose[2]}]})
         if not response:
             return False
         res_json = response.json()
-        self.logger.info(f"nav response: {res_json}")
         return response.status_code == 200
 
     def start_docking(self, dock_name: str) -> bool:
@@ -180,7 +177,6 @@ class RobotAPI:
             return None
 
         res_json = response.json()
-        self.logger.info(f"Charging status response: {res_json}")
         if not isinstance(res_json['value'], str):
             return None
 
@@ -194,7 +190,6 @@ class RobotAPI:
         if not response:
             return False
         res_json = response.json()
-        self.logger.info(f"Stop response: {res_json}")
         return response.status_code == 200
 
     def navigation_remaining_duration(self):
@@ -209,7 +204,6 @@ class RobotAPI:
             self.logger.error("Cannot estimate remaining duration")
             return 0.0
         duration = distance_left / self.max_lin_speed
-        self.logger.info(f"Navigation remaining duration: {duration}s")
         return duration
 
     def navigation_completed(self) -> list | None:
@@ -223,7 +217,6 @@ class RobotAPI:
         [bx, by, btheta] = self.position()
         res = (euc_distance(ax, ay, bx, by) < self.threshold_distance and
                math.fabs(angle_diff(atheta, btheta)) < self.threshold_angle)
-        self.logger.info(f"Navigation completed: {res}")
         return res
 
     def battery_soc(self) -> int | None:
@@ -234,7 +227,6 @@ class RobotAPI:
         if not response:
             return None
         res_json = response.json()
-        self.logger.info(f"battery SOC response: {res_json}")
         if response.status_code != 200:
             return None
         return res_json['value']

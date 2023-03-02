@@ -211,7 +211,6 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
                     self.path_index = self.remaining_waypoints[0][0]
                     # Move robot to next waypoint
                     target_pose = self.target_waypoint.position
-                    self.node.get_logger().info(f"Coords are: {target_pose}")
                     x, y, theta = self.transform_rmf_to_robot(*target_pose)
                     response = self.robot.navigate([x, y, theta])
 
@@ -235,9 +234,6 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
                                 self.state = RobotState.IDLE
                             else:
                                 if self.path_index is not None:
-                                    self.node.get_logger().info(
-                                        f"Waiting for "
-                                        f"{(waypoint_wait_time - time_now).seconds}s", throttle_duration_sec=1)
                                     self.next_arrival_estimator(
                                         self.path_index, timedelta(seconds=0.0))
 
