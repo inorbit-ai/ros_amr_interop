@@ -64,8 +64,8 @@ class RobotAPI:
             robot_config (dict): Robot config set in the adapter configuration. The required keys are:
                 max_delay (float): Allowed seconds of delay of the current itinerary before it gets interrupted and replanned (will not affect RobotAPI)
                 robot_id (str): InOrbit robot id
-                battery_charge_attribute_id (str): InOrbit attribute definition for battery charge
-                charging_status_attribute_id (str): InOrbit attribute definition for charging status
+                battery_charge_attribute_id (str): InOrbit attribute ID for battery charge
+                charging_status_attribute_id (str): InOrbit attribute ID for charging status
                 actions (dict?): Optional. Information about each defined action. Currently supported actions:
                     dock (dict):
                         action_id (str): Action ID of the docking action
