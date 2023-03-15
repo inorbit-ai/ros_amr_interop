@@ -7,7 +7,7 @@
   <arg name="api_key" description="InOrbit API key"/>
   <arg name="adapter_config_file" description="Path to the configuration file of the adapter"/>
   <arg name="nav_graph_file" description="Path to the navigation graph file for RMF"/>
-  <arg name="server_uri" description="WS server URI to receive status updates" default=""/>
+  <arg name="server_uri" description="Websocket server URI to receive status updates" default=""/>
 
   <node pkg="rmf_inorbit_fleet_adapter" exec="fleet_adapter" args="-c $(var adapter_config_file) -n $(var nav_graph_file) -k $(var api_key) -s $(var server_uri)"/>
 </launch>
