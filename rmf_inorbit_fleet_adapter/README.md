@@ -131,6 +131,9 @@ Arguments (pass arguments as '<name>:=<value>'):
     'nav_graph_file':
         Path to the navigation graph file for RMF
 
+    'server_uri':
+        Websocket server URI to receive status updates
+        (default: '')
 ```
 
 To launch just the adapter (note that it will eventually stop if the underlying infrastructure is not running):
