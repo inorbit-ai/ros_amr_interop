@@ -182,7 +182,8 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
             next_arrival_estimator,
             path_finished_callback):
 
-        self.stop()
+        if self.state.MOVING:
+            self.stop()
         self._quit_path_event.clear()
 
         self.node.get_logger().info(
@@ -196,6 +197,7 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
 
         def _follow_path():
             target_pose = []
+            sleep_time = 0.1
             while (
                     self.remaining_waypoints or
                     self.state == RobotState.MOVING or
@@ -221,12 +223,12 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
                     else:
                         self.node.get_logger().info(
                             f"Robot {self.robot.name} failed to navigate to "
-                            f"[{x:.0f}, {y:.0f}, {theta:.0f}] coordinates. "
+                            f"[{x:.2f}, {y:.2f}, {theta:.2f}] coordinates. "
                             f"Retrying...")
-                        self.sleep_for(0.1)
+                        self.sleep_for(sleep_time)
 
                 elif self.state == RobotState.WAITING:
-                    self.sleep_for(0.1)
+                    self.sleep_for(sleep_time)
                     time_now = self.adapter.now()
                     with self._lock:
                         if self.target_waypoint is not None:
@@ -239,7 +241,7 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
                                         self.path_index, timedelta(seconds=0.0))
 
                 elif self.state == RobotState.MOVING:
-                    self.sleep_for(0.1)
+                    self.sleep_for(sleep_time)
                     # Check if we have reached the target
                     with self._lock:
                         if (self.robot.navigation_completed()):
