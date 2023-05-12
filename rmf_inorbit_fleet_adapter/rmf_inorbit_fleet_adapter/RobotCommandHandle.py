@@ -467,8 +467,17 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
         may be modified if waypoints in a path need to be filtered.
         '''
         assert (len(waypoints) > 0)
-        remaining_waypoints = []
 
+        # Occasionally, RMF will send two consecutive waypoints with the same values in the `waypoints` argument
+        # of RobotCommandHandle::follow_new_path(), causing an excess of navigation requests from the fleet adapter
+        # The following lines will filter them out
+        for i in range(1, len(waypoints)):
+            self.node.get_logger().info("Found duplicated consecutive waypoints in waypoints list")
+            if (waypoints[i-1].position == waypoints[i].position).all():
+                waypoints.pop(i)
+                i -= 1
+
+        remaining_waypoints = []
         for i in range(len(waypoints)):
             remaining_waypoints.append((i, waypoints[i]))
         return remaining_waypoints
