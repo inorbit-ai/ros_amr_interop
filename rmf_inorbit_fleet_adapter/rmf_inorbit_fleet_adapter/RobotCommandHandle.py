@@ -247,7 +247,7 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
                         if (self.robot.navigation_completed()):
                             self.node.get_logger().info(
                                 f"Robot [{self.robot.name}] has reached its target "
-                                f"waypoint")
+                                f"waypoint {self.target_waypoint.position}")
                             self.state = RobotState.WAITING
                             if (self.target_waypoint.graph_index is not None):
                                 self.on_waypoint = \
@@ -468,12 +468,13 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
         '''
         assert (len(waypoints) > 0)
 
-        # Occasionally, RMF will send two consecutive waypoints with the same values in the `waypoints` argument
-        # of RobotCommandHandle::follow_new_path(), causing an excess of navigation requests from the fleet adapter
+        # Occasionally, RMF will send two consecutive waypoints with the same position 
+        # and time values in the `waypoints` argument of RobotCommandHandle::follow_new_path(),
+        # causing an excess of navigation requests from the fleet adapter
         # The following lines will filter them out
         for i in range(1, len(waypoints)):
-            self.node.get_logger().info("Found duplicated consecutive waypoints in waypoints list")
-            if (waypoints[i-1].position == waypoints[i].position).all():
+            if (waypoints[i-1].position == waypoints[i].position).all() and (waypoints[i-1].time == waypoints[i].time):
+                self.node.get_logger().info(f"Found duplicated consecutive waypoints in waypoints list: {waypoints[i].position} {waypoints[i].time}, {waypoints[i-1].time}")
                 waypoints.pop(i)
                 i -= 1
 
