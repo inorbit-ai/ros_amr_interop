@@ -468,9 +468,9 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
         '''
         assert (len(waypoints) > 0)
 
-        # When the "responsive wait" feature is enabled, RMF will send two consecutive identical 
+        # When the "responsive wait" feature is enabled, RMF will send two consecutive identical
         # waypoints with a 30" timestamp difference.
-        # The following lines filter the first waypoint of these pairs to prevent an excess of 
+        # The following lines filter the first waypoint of these pairs to prevent an excess of
         # navigation requests from the fleet adapter
         for i in range(1, len(waypoints)):
             if (waypoints[i-1].position == waypoints[i].position).all():
