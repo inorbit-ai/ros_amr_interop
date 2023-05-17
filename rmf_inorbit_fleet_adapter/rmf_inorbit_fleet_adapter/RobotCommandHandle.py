@@ -472,7 +472,6 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
         # waypoints with a 30" timestamp difference.
         # The following lines filter the first waypoint of these pairs to prevent an excess of 
         # navigation requests from the fleet adapter
-        # More information in this issue: https://github.com/inorbit-ai/ros_amr_interop/pull/41
         for i in range(1, len(waypoints)):
             if (waypoints[i-1].position == waypoints[i].position).all():
                 self.node.get_logger().info(f"Found duplicated consecutive waypoints in waypoints list: {waypoints[i].position}; {waypoints[i].time}, {waypoints[i-1].time}")
