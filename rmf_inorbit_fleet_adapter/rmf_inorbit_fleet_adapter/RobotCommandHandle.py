@@ -469,7 +469,7 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
         assert (len(waypoints) > 0)
 
         # When the "responsive wait" feature is enabled, RMF will send two consecutive identical 
-        # waypoints with a 30" timestamp difference with the same position.
+        # waypoints with a 30" timestamp difference.
         # The following lines filter the first waypoint of these pairs to prevent an excess of 
         # navigation requests from the fleet adapter
         # More information in this issue: https://github.com/inorbit-ai/ros_amr_interop/pull/41
