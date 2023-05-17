@@ -468,13 +468,14 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
         '''
         assert (len(waypoints) > 0)
 
-        # Occasionally, RMF will send two consecutive waypoints with the same position 
-        # and time values in the `waypoints` argument of RobotCommandHandle::follow_new_path(),
-        # causing an excess of navigation requests from the fleet adapter
-        # The following lines will filter them out
+        # When the "responsive wait" feature is enabled, RMF will send two consecutive identical 
+        # waypoints with a 30" timestamp difference with the same position.
+        # The following lines filter the first waypoint of these pairs to prevent an excess of 
+        # navigation requests from the fleet adapter
+        # More information in this issue: https://github.com/inorbit-ai/ros_amr_interop/pull/41
         for i in range(1, len(waypoints)):
-            if (waypoints[i-1].position == waypoints[i].position).all() and (waypoints[i-1].time == waypoints[i].time):
-                self.node.get_logger().info(f"Found duplicated consecutive waypoints in waypoints list: {waypoints[i].position} {waypoints[i].time}, {waypoints[i-1].time}")
+            if (waypoints[i-1].position == waypoints[i].position).all():
+                self.node.get_logger().info(f"Found duplicated consecutive waypoints in waypoints list: {waypoints[i].position}; {waypoints[i].time}, {waypoints[i-1].time}")
                 waypoints.pop(i)
                 i -= 1
 
