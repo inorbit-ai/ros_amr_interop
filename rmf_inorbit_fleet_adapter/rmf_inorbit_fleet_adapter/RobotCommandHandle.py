@@ -472,13 +472,11 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
         # waypoints with a 30" timestamp difference.
         # The following lines filter the first waypoint of these pairs to prevent an excess of
         # navigation requests from the fleet adapter
+        final_waypoints = [waypoints[0]]
         for i in range(1, len(waypoints)):
             if (waypoints[i-1].position == waypoints[i].position).all():
                 self.node.get_logger().info(f"Found duplicated consecutive waypoints in waypoints list: {waypoints[i].position}; {waypoints[i].time}, {waypoints[i-1].time}")
-                waypoints.pop(i)
-                i -= 1
+            else:
+                final_waypoints.append(waypoints[i])
 
-        remaining_waypoints = []
-        for i in range(len(waypoints)):
-            remaining_waypoints.append((i, waypoints[i]))
-        return remaining_waypoints
+        return list(enumerate(final_waypoints))
