@@ -442,7 +442,7 @@ class VDA5050Controller(Node):
                 node_id=node.node_id,
                 sequence_id=node.sequence_id,
                 node_description=node.node_description,
-                position=node.node_position,
+                node_position=node.node_position,
                 released=node.released,
             )
             for node in order.nodes
@@ -1016,10 +1016,10 @@ class VDA5050Controller(Node):
 
             # Clear horizon on current state
             # Avoid copying the stitching node twice
-            self._current_state.nodes_states = [
+            self._current_state.node_states = [
                 node_state
                 for node_state in self._current_state.node_states
-                if node_state.released and node_state.sequenceId != order.nodes[0].sequenceId
+                if node_state.released and node_state.sequence_id != order.nodes[0].sequence_id
             ]
             self._current_state.edge_states = [
                 edge_state for edge_state in self._current_state.edge_states if edge_state.released
@@ -1030,7 +1030,7 @@ class VDA5050Controller(Node):
             base_order_nodes = [
                 node
                 for node in order.nodes
-                if node.released and node.sequenceId != order.nodes[0].sequenceId
+                if node.released and node.sequence_id != order.nodes[0].sequence_id
             ]
             base_order_edges = [edge for edge in order.edges if edge.released]
 
@@ -1068,7 +1068,7 @@ class VDA5050Controller(Node):
                 + self._get_edge_states(order),
                 "action_states": self._current_state.action_states
                 + self._get_action_states(order),
-                "new_base_requested": False,
+                "new_base_request": False,
             }
         )
 
@@ -1185,7 +1185,7 @@ class VDA5050Controller(Node):
         # the cancel order will be mark as finished
 
         # Delete remaining node / edge states
-        self._update_state({"new_base_requested": False, "node_states": [], "edge_states": []})
+        self._update_state({"new_base_request": False, "node_states": [], "edge_states": []})
         self._update_action_status(self._cancel_action.action_id, VDACurrentAction.FINISHED)
         self._current_order = VDAOrder(order_id="-1")
         self._cancel_action = None
@@ -1318,9 +1318,9 @@ class VDA5050Controller(Node):
             return
 
         if not next_edge.released:
-            if not self._current_state.new_base_requested:
+            if not self._current_state.new_base_request:
                 self.logger.warn("Next edge is part of the horizon. Stopping traversing of nodes.")
-                self._update_state({"new_base_requested": True}, publish_now=True)
+                self._update_state({"new_base_request": True}, publish_now=True)
             return
 
         # After a released edge there is always a released node.
