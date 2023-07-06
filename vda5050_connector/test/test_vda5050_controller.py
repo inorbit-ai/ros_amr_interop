@@ -411,7 +411,95 @@ def test_vda5050_controller_node_update_order(
     assert node._current_state.last_node_id == "node2"
     assert node._current_state.last_node_sequence_id == 10
 
+def test_vda5050_controller_node_stitch_order(
+    mocker,
+    adapter_node,
+    action_server_nav_to_node,
+    action_server_process_vda_action,
+    service_get_state,
+    service_supported_actions,
+):
+    node = VDA5050Controller()
+    node.logger.set_level(LoggingSeverity.DEBUG)
 
+    # add a spy to validate used navigation goal parameters
+    spy_send_adapter_navigate_to_node = mocker.spy(
+        node, "send_adapter_navigate_to_node"
+    )
+
+    # add a spy to validate accept order is called correctly
+    spy_accept_order = mocker.spy(node, "_accept_order")
+
+    # Send first new order
+    order_id = str(uuid4())
+    order = get_order_new(order_id)
+    node.process_order(order)
+
+    rclpy.spin_once(node)
+    rclpy.spin_once(adapter_node)
+
+    # Simulate the adapter reached navigation goals
+    future = Future()
+    future.set_result(result=NavigateToNode.Result())
+
+    # The NEW order contains 5 nodes and 4 edges. The first node (in deviation range)
+    # is processed and remove, and 4 nodes are send to navigate to.
+    node._navigate_to_node_result_callback(future)
+    node._on_active_order()
+    node._navigate_to_node_result_callback(future)
+    node._on_active_order()
+    node._navigate_to_node_result_callback(future)
+    node._on_active_order()
+    # Finish initial order
+
+    spy_accept_order.reset_mock()
+    spy_send_adapter_navigate_to_node.reset_mock()
+
+    # Send update order
+    order = get_order_update(order_id, 1)  # Same order id
+    node.process_order(order)
+    
+    node._navigate_to_node_result_callback(future)
+    node._on_active_order()
+
+    spy_accept_order.assert_called_once_with(order=order, mode=OrderAcceptModes.STITCH)
+
+    # check node states were properly updated
+    assert node._current_order.nodes == order
+    
+    
+    
+    
+    assert node._current_state.order_id == order_id
+    assert node._current_state.order_update_id == 1
+
+    # The order has 2 nodes and 1 edges but the first edge and node
+    # are processed as soon as the order is accepted.
+    assert len(node._current_state.node_states) == 1
+    assert len(node._current_state.edge_states) == 1
+
+    assert node._current_state.last_node_id == "node1"
+    assert node._current_state.last_node_sequence_id == 8
+
+    # Assert the first navigation goal was sent to the adapter,
+    # and that the parameters matches order's first edge and second node.
+    # Note: the standard assumes the vehicle is on the first node already,
+    # so the first navigation command is to the second order node.
+    spy_send_adapter_navigate_to_node.assert_called_once_with(
+        edge=order.edges[0], node=order.nodes[1]
+    )
+
+    # Future for invoking adapter navigation goal result callback
+    future = Future()
+    future.set_result(result=NavigateToNode.Result())
+
+    # Simulate the adapter reached navigation goal
+    node._navigate_to_node_result_callback(future)
+    assert len(node._current_state.node_states) == 0
+    assert len(node._current_state.edge_states) == 0
+    assert node._current_state.last_node_id == "node2"
+    assert node._current_state.last_node_sequence_id == 10
+    
 def test_vda5050_controller_node_reject_order(
     mocker,
     adapter_node,
