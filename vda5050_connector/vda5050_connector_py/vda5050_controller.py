@@ -499,6 +499,7 @@ class VDA5050Controller(Node):
         return [
             VDACurrentAction(
                 action_id=action.action_id,
+                action_type=action.action_type,
                 action_description=action.action_description,
                 action_status=VDACurrentAction.WAITING,
             )
@@ -696,6 +697,7 @@ class VDA5050Controller(Node):
             # Add action to action_states
             action_state = VDACurrentAction(
                 action_id=action.action_id,
+                action_type=action.action_type,
                 action_description=action.action_description,
                 action_status=VDACurrentAction.WAITING,
             )
