@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import rclpy
+import copy
 from rclpy.logging import LoggingSeverity
 from rclpy.task import Future
 
@@ -284,6 +285,7 @@ def test_vda5050_controller_node_new_order(
     spy_send_adapter_navigate_to_node.assert_called_once_with(
         edge=order.edges[1], node=order.nodes[2]
     )
+
     assert len(node._current_state.node_states) == 3
     assert len(node._current_state.edge_states) == 3
     assert node._current_state.last_node_id == "node2"
@@ -297,6 +299,7 @@ def test_vda5050_controller_node_new_order(
     spy_send_adapter_navigate_to_node.assert_called_once_with(
         edge=order.edges[2], node=order.nodes[3]
     )
+
     assert len(node._current_state.node_states) == 2
     assert len(node._current_state.edge_states) == 2
     assert node._current_state.last_node_id == "node3"
@@ -411,6 +414,7 @@ def test_vda5050_controller_node_update_order(
     assert node._current_state.last_node_id == "node2"
     assert node._current_state.last_node_sequence_id == 10
 
+
 def test_vda5050_controller_node_stitch_order(
     mocker,
     adapter_node,
@@ -443,33 +447,37 @@ def test_vda5050_controller_node_stitch_order(
     future.set_result(result=NavigateToNode.Result())
 
     # The NEW order contains 5 nodes and 4 edges. The first node (in deviation range)
-    # is processed and remove, and 4 nodes are send to navigate to.
+    # is processed and remove, and 3 nodes are send to navigate to.
     node._navigate_to_node_result_callback(future)
     node._on_active_order()
     node._navigate_to_node_result_callback(future)
     node._on_active_order()
     node._navigate_to_node_result_callback(future)
     node._on_active_order()
-    # Finish initial order
 
     spy_accept_order.reset_mock()
     spy_send_adapter_navigate_to_node.reset_mock()
 
-    # Send update order
+    # Send update order before the first is finished
+    stitched_order = copy.deepcopy(order)
     order = get_order_update(order_id, 1)  # Same order id
+
+    stitched_order.nodes.pop()
+    stitched_order.nodes += copy.deepcopy(order.nodes)
+    stitched_order.edges += copy.deepcopy(order.edges)
+    stitched_order.order_update_id = copy.deepcopy(order.order_update_id)
+    stitched_order.zone_set_id = copy.deepcopy(order.zone_set_id)
+
     node.process_order(order)
-    
+
     node._navigate_to_node_result_callback(future)
     node._on_active_order()
 
     spy_accept_order.assert_called_once_with(order=order, mode=OrderAcceptModes.STITCH)
 
     # check node states were properly updated
-    assert node._current_order.nodes == order
-    
-    
-    
-    
+    assert node._current_order == stitched_order
+
     assert node._current_state.order_id == order_id
     assert node._current_state.order_update_id == 1
 
@@ -499,7 +507,8 @@ def test_vda5050_controller_node_stitch_order(
     assert len(node._current_state.edge_states) == 0
     assert node._current_state.last_node_id == "node2"
     assert node._current_state.last_node_sequence_id == 10
-    
+
+
 def test_vda5050_controller_node_reject_order(
     mocker,
     adapter_node,

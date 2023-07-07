@@ -1029,10 +1029,10 @@ class VDA5050Controller(Node):
             # Avoid copying the stitching node twice
             base_order_nodes = [
                 node
-                for node in order.nodes
+                for node in self._current_order.nodes
                 if node.released and node.sequence_id != order.nodes[0].sequence_id
             ]
-            base_order_edges = [edge for edge in order.edges if edge.released]
+            base_order_edges = [edge for edge in self._current_order.edges if edge.released]
 
             self._current_order.order_update_id = order.order_update_id
             self._current_order.zone_set_id = order.zone_set_id
@@ -1396,8 +1396,6 @@ class VDA5050Controller(Node):
         """
         # TODO: Check when the goal fails
         self._navigate_to_node_goal_handle = None
-        result = future.result().result
-        self.logger.info(f"Navigate to node result: {result}.")
 
         # When the order is cancelled, this callback should avoid continuing its logic
         if self._canceling_order():
