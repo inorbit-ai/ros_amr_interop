@@ -573,7 +573,7 @@ class VDA5050Controller(Node):
             )
             error = VDAError(
                 error_type=ActionErrors.ACTION_NOT_FOUND.value,
-                description=(
+                error_description=(
                     f"VDA5050 action with id {action_id} not found to update"
                     f" its state: {action_status}"
                 ),
