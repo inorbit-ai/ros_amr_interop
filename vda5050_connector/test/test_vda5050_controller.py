@@ -462,7 +462,10 @@ def test_vda5050_controller_node_stitch_order(
     stitched_order = copy.deepcopy(order)
     order = get_order_update(order_id, 1)  # Same order id
 
+    # Create Stitched order from the previous order and the update
+    # Remove the last node as it's in the update
     stitched_order.nodes.pop()
+    # Add the new updates
     stitched_order.nodes += copy.deepcopy(order.nodes)
     stitched_order.edges += copy.deepcopy(order.edges)
     stitched_order.order_update_id = copy.deepcopy(order.order_update_id)
