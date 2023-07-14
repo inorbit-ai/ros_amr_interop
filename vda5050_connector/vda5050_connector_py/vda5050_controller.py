@@ -148,6 +148,7 @@ class VDA5050Controller(Node):
 
         self._cancel_action = None
         self._current_node_actions = []
+        self._current_node_goal = None
         self._current_order = VDAOrder(order_id="-1")
         self._current_state = VDAOrderState(
             header_id=0,
@@ -1332,10 +1333,12 @@ class VDA5050Controller(Node):
             for node in self._current_order.nodes
             if node.sequence_id == self._current_state.last_node_sequence_id + 2
         )
-        self.logger.info(f"Processing node: {next_node}")
-
-        self.send_adapter_navigate_to_node(edge=next_edge, node=next_node)
-
+        if next_node != self._current_node_goal:
+            self.logger.info(f"Processing node: {next_node}")
+    
+            self.send_adapter_navigate_to_node(edge=next_edge, node=next_node)
+        else:
+            self.logger.error(f"{next_node} Already current goal")
     # ---- Navigate to node: send goals ----
 
     def send_adapter_navigate_to_node(self, edge: VDAEdge, node: VDANode):
@@ -1358,6 +1361,7 @@ class VDA5050Controller(Node):
 
         # Send goal to action server
         self.logger.info("Navigate to node goal request sent.")
+        self._current_node_goal = node
         _send_goal_future = self._navigate_to_node_act_cli.send_goal_async(goal_msg)
 
         # Register callback to be executed when the goal is accepted
@@ -1398,6 +1402,7 @@ class VDA5050Controller(Node):
         """
         # TODO: Check when the goal fails
         self._navigate_to_node_goal_handle = None
+        self._current_node_goal = None
 
         # When the order is cancelled, this callback should avoid continuing its logic
         if self._canceling_order():
