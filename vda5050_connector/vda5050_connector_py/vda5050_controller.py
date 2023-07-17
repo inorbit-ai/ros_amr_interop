@@ -1264,6 +1264,7 @@ class VDA5050Controller(Node):
             self.logger.info(
                 f"Processing last order's node. Order {self._current_order.order_id} finished."
             )
+        self._current_node_goal = None
 
     def _execute_node_actions(self):
         """
@@ -1380,6 +1381,7 @@ class VDA5050Controller(Node):
         if not self._navigate_to_node_goal_handle.accepted:
             self.logger.error("Navigate to node goal request rejected by adapter. Trying again.")
             self._navigate_to_node_goal_handle = None
+            self._current_node_goal = None
             return
 
         self.logger.info("Navigate to node goal request accepted by adapter.")
@@ -1402,7 +1404,6 @@ class VDA5050Controller(Node):
         """
         # TODO: Check when the goal fails
         self._navigate_to_node_goal_handle = None
-        self._current_node_goal = None
 
         # When the order is cancelled, this callback should avoid continuing its logic
         if self._canceling_order():
