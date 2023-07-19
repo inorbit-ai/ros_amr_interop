@@ -93,7 +93,8 @@ DEFAULT_NAMESPACE = "vda5050"
 DEFAULT_ROBOT_NAME = "robot_1"
 DEFAULT_MANUFACTURER_NAME = "robots"
 DEFAULT_SERIAL_NUMBER = "robot_1"
-DEFAULT_PROTOCOL_VERSION = "2.0.0"
+DEFAULT_PROTOCOL_VERSION = "1.1.0"
+DEFAULT_STARTING_NODE_ID = ""
 
 DEFAULT_GET_STATE_SVC_NAME = "adapter/get_state"
 DEFAULT_SUPPORTED_ACTIONS_SVC_NAME = "adapter/supported_actions"
@@ -155,6 +156,7 @@ class VDA5050Controller(Node):
             version=self._protocol_version,
             manufacturer=self._manufacturer_name,
             serial_number=self._serial_number,
+            last_node_id=self._starting_node_id,
             operating_mode=VDAOrderState.AUTOMATIC,
             safety_state=VDASafetyState(e_stop=VDASafetyState.NONE, field_violation=False),
         )
@@ -190,6 +192,7 @@ class VDA5050Controller(Node):
         """Read and load ROS parameters."""
         # Robot information
         self._robot_name = read_str_parameter(self, "robot_name", DEFAULT_ROBOT_NAME)
+        self._starting_node_id = read_str_parameter(self, "starting_node_id", DEFAULT_STARTING_NODE_ID)
         self._manufacturer_name = read_str_parameter(
             self, "manufacturer_name", DEFAULT_MANUFACTURER_NAME
         )
