@@ -192,7 +192,8 @@ class VDA5050Controller(Node):
         """Read and load ROS parameters."""
         # Robot information
         self._robot_name = read_str_parameter(self, "robot_name", DEFAULT_ROBOT_NAME)
-        self._starting_node_id = read_str_parameter(self, "starting_node_id", DEFAULT_STARTING_NODE_ID)
+        self._starting_node_id = read_str_parameter(self, "starting_node_id",
+                                                    DEFAULT_STARTING_NODE_ID)
         self._manufacturer_name = read_str_parameter(
             self, "manufacturer_name", DEFAULT_MANUFACTURER_NAME
         )
@@ -1339,7 +1340,7 @@ class VDA5050Controller(Node):
         )
         if next_node != self._current_node_goal:
             self.logger.info(f"Processing node: {next_node}")
-    
+
             self.send_adapter_navigate_to_node(edge=next_edge, node=next_node)
         else:
             self.logger.error(f"{next_node} Already current goal")
