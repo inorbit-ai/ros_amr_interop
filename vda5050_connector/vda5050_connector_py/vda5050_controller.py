@@ -1406,7 +1406,7 @@ class VDA5050Controller(Node):
             return
 
         if not self._is_navigation_active():
-            self._process_next_edge()
+            self._process_next_navigation()
 
     def _process_node(self, node: VDANode):
         """
@@ -1514,7 +1514,7 @@ class VDA5050Controller(Node):
         return released_edges
     
     def _get_released_nodes(self):
-        # List of nodes that are released in a row that don't have HARD actions on.
+        # List of edges that are released in a row that don't have HARD actions on.
         released_nodes = []
         
         for node in self._current_order.nodes:
@@ -1527,26 +1527,13 @@ class VDA5050Controller(Node):
                 else:
                     # There are no released nodes after a non released node
                     break
+                
         return released_nodes
         
     def _process_next_navigation(self):
-        """
-        Process VDA5050 order's edges and nodes:  
-        The edges and nodes are checked to see if they're released.
-        Multiple released nodes/edges are sent to the navigate through nodes actions.
-        Any node/edge actions that are hard will be the end of a single navigate.
-        """
-        # What does this need to do??
-        # Create list of edges and nodes that will be traversed in a row. - DONE
-        # If it's only a list of 1 then I guess pass to the previous fn and use their logic... - DONE
-        # else 
-        # Send to the navigate through nodes functions with whatever logic works with that...
-        # Nav through nodes - send action normally - like before
-        # get start response same as before
-        # Nav to pose Result callback logic should be separated and can be called from feedback callback.
-        # HOW DO WE UPDATE ON THE FLY?
-        # 
-
+        
+        
+        
         released_edges = self._get_released_edges()
         if len(released_edges) == 0:
             # This only happens when there is no order or it has finished,
@@ -1562,24 +1549,19 @@ class VDA5050Controller(Node):
             return
         else:
             next_node = released_nodes[0]   
-            
+        
         if next_node != self._current_node_goal:
-            if self._enable_nav_through_nodes and len(released_nodes) > 1:
-                # Do the nav through nodes as long as there's more than one node...
-                pass
-            else:
-                # Otherwise we can just 
-                self.logger.info(f"Processing node: {next_node}")
-                self.send_adapter_navigate_to_node(edge=next_edge, node=next_node)
+            self.logger.info(f"Processing node: {next_node}")
+            self.send_adapter_navigate_to_node(edge=next_edge, node=next_node)
         else:
             self.logger.error(f"{next_node} Already current goal")
     
     # ---- Navigate to node: send goals ----    
-        # self.logger.info(f"Current Order yo: {self._current_order}")
-        # self.logger.info(f"Released edges yo: {released_edges}")
-        # self.logger.info(f"Released Nodes yo: {released_nodes}")
+        self.logger.info(f"Current Order yo: {self._current_order}")
+        self.logger.info(f"Released edges yo: {released_edges}")
+        self.logger.info(f"Released Nodes yo: {released_nodes}")
 
-    def _process_next_edge(self): # TODO - GET RID OF THIS METHOD, REPLACE WITH _process_next_navigation
+    def _process_next_edge(self):
         """Process VDA5050 order's edge."""
         # Get next edge to be processed by looking for an edge
         # with sequence_id equal to last_node_sequence_id + 1.
