@@ -1234,7 +1234,7 @@ class VDA5050Controller(Node):
             return
 
         if not self._is_navigation_active():
-            self._process_next_edge()
+            self._process_next_navigation()
 
     def _process_node(self, node: VDANode):
         """
@@ -1308,6 +1308,86 @@ class VDA5050Controller(Node):
         # Execute parallel (soft and none) actions
         for action in execution_list["soft"] + execution_list["none"]:
             self.send_adapter_process_vda_action(action)
+
+    def _check_hard_actions(self, action_list):
+        _hard_action_found = False
+        for action in action_list:
+            # Hard actions should be the last in the list 
+            # because they must be the only thing running
+            if action.blocking_type == VDAAction.HARD:
+                _hard_action_found = True
+                break
+        return _hard_action_found    
+       
+    def _get_released_edges(self):
+        # List of edges that are released in a row that don't have HARD actions on.
+        released_edges = []
+        
+        for edge in self._current_order.edges:
+            if edge.sequence_id >= self._current_state.last_node_sequence_id + 1:
+                if edge.released:
+                    released_edges.append(edge)
+                    # if we find a hard action break
+                    if self._check_hard_actions(edge.actions):
+                        break
+                elif len(released_edges) == 0:
+                    # If there's no released edge available then request more and break
+                    if not self._current_state.new_base_request:
+                        self.logger.warn("Next edge is part of the horizon. Stopping traversing of nodes.")
+                        self._update_state({"new_base_request": True}, publish_now=True)
+                    break
+                else:
+                    # There are no released edges after a non released edge
+                    break
+        return released_edges
+    
+    def _get_released_nodes(self):
+        # List of edges that are released in a row that don't have HARD actions on.
+        released_nodes = []
+        
+        for node in self._current_order.nodes:
+            if node.sequence_id >= self._current_state.last_node_sequence_id + 2:
+                if node.released:
+                    released_nodes.append(node)
+                    # if we find a hard action break
+                    if self._check_hard_actions(node.actions):
+                        break
+                else:
+                    # There are no released nodes after a non released node
+                    break
+                
+        return released_nodes
+        
+    def _process_next_navigation(self):
+        
+        
+        
+        released_edges = self._get_released_edges()
+        if len(released_edges) == 0:
+            # This only happens when there is no order or it has finished,
+            # but there is an active instant action running.
+            # In this case, just exit.
+            return
+        else:
+            next_edge = released_edges[0]   
+        
+        released_nodes = self._get_released_nodes()
+        if len(released_nodes) == 0:
+            # Shouldn't happen if we got this far, but just checking for safety
+            return
+        else:
+            next_node = released_nodes[0]   
+        
+        if next_node != self._current_node_goal:
+            self.logger.info(f"Processing node: {next_node}")
+            self.send_adapter_navigate_to_node(edge=next_edge, node=next_node)
+        else:
+            self.logger.error(f"{next_node} Already current goal")
+    
+    # ---- Navigate to node: send goals ----    
+        self.logger.info(f"Current Order yo: {self._current_order}")
+        self.logger.info(f"Released edges yo: {released_edges}")
+        self.logger.info(f"Released Nodes yo: {released_nodes}")
 
     def _process_next_edge(self):
         """Process VDA5050 order's edge."""
