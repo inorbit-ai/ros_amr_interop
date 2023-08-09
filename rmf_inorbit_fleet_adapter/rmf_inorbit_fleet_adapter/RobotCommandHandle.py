@@ -182,7 +182,8 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
             next_arrival_estimator,
             path_finished_callback):
 
-        self.stop()
+        if self.state.MOVING:
+            self.stop()
         self._quit_path_event.clear()
 
         self.node.get_logger().info(
@@ -196,6 +197,7 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
 
         def _follow_path():
             target_pose = []
+            sleep_time = 0.1
             while (
                     self.remaining_waypoints or
                     self.state == RobotState.MOVING or
@@ -221,12 +223,12 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
                     else:
                         self.node.get_logger().info(
                             f"Robot {self.robot.name} failed to navigate to "
-                            f"[{x:.0f}, {y:.0f}, {theta:.0f}] coordinates. "
+                            f"[{x:.2f}, {y:.2f}, {theta:.2f}] coordinates. "
                             f"Retrying...")
-                        self.sleep_for(0.1)
+                        self.sleep_for(sleep_time)
 
                 elif self.state == RobotState.WAITING:
-                    self.sleep_for(0.1)
+                    self.sleep_for(sleep_time)
                     time_now = self.adapter.now()
                     with self._lock:
                         if self.target_waypoint is not None:
@@ -239,13 +241,13 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
                                         self.path_index, timedelta(seconds=0.0))
 
                 elif self.state == RobotState.MOVING:
-                    self.sleep_for(0.1)
+                    self.sleep_for(sleep_time)
                     # Check if we have reached the target
                     with self._lock:
                         if (self.robot.navigation_completed()):
                             self.node.get_logger().info(
                                 f"Robot [{self.robot.name}] has reached its target "
-                                f"waypoint")
+                                f"waypoint {self.target_waypoint.position}")
                             self.state = RobotState.WAITING
                             if (self.target_waypoint.graph_index is not None):
                                 self.on_waypoint = \
@@ -465,8 +467,16 @@ class RobotCommandHandle(adpt.RobotCommandHandle):
         may be modified if waypoints in a path need to be filtered.
         '''
         assert (len(waypoints) > 0)
-        remaining_waypoints = []
 
-        for i in range(len(waypoints)):
-            remaining_waypoints.append((i, waypoints[i]))
-        return remaining_waypoints
+        # When the "responsive wait" feature is enabled, RMF will send two consecutive identical
+        # waypoints with a 30" timestamp difference.
+        # The following lines filter the first waypoint of these pairs to prevent an excess of
+        # navigation requests from the fleet adapter
+        final_waypoints = [waypoints[0]]
+        for i in range(1, len(waypoints)):
+            if (waypoints[i-1].position == waypoints[i].position).all():
+                self.node.get_logger().info(f"Found duplicated consecutive waypoints in waypoints list: {waypoints[i].position}; {waypoints[i].time}, {waypoints[i-1].time}")
+            else:
+                final_waypoints.append(waypoints[i])
+
+        return list(enumerate(final_waypoints))
