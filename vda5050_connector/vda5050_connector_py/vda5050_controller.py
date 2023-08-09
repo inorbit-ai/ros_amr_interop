@@ -1046,8 +1046,8 @@ class VDA5050Controller(Node):
                 return False
 
             # If the action has different number of parameter return False
-            if len(last_node_actions.action_parameters) != \
-            len(stitch_node_actions.action_parameters):
+            if (len(last_node_actions.action_parameters) !=
+                len(stitch_node_actions.action_parameters)):
                 self.logger.error((
                     "Error while validating stitch node: Number"
                     " of parameters on node actions differ"
@@ -1086,9 +1086,9 @@ class VDA5050Controller(Node):
             and last_node_position.y == stitch_node_position.y
             and last_node_position.theta == stitch_node_position.theta
             and (last_node_position.allowed_deviation_x_y ==
-                stitch_node_position.allowed_deviation_x_y)
+                 stitch_node_position.allowed_deviation_x_y)
             and (last_node_position.allowed_deviation_theta ==
-                stitch_node_position.allowed_deviation_theta)
+                 stitch_node_position.allowed_deviation_theta)
             and last_node_position.map_id == stitch_node_position.map_id
             and last_node_position.map_description == stitch_node_position.map_description
         )
