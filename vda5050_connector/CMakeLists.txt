@@ -109,7 +109,7 @@ if(BUILD_TESTING)
   ament_flake8("--config" ${CMAKE_CURRENT_SOURCE_DIR}/.flake8)
   ament_pep257()
   ament_copyright()
-  
+
   set(_pytest_tests
     test/test_vda5050_controller.py
   )
