@@ -1047,7 +1047,7 @@ class VDA5050Controller(Node):
 
             # If the action has different number of parameter return False
             if (len(last_node_actions.action_parameters) !=
-                len(stitch_node_actions.action_parameters)):
+                    len(stitch_node_actions.action_parameters)):
                 self.logger.error((
                     "Error while validating stitch node: Number"
                     " of parameters on node actions differ"
