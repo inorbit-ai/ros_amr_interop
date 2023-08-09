@@ -1085,10 +1085,10 @@ class VDA5050Controller(Node):
             and last_node_position.y == stitch_node_position.y
             and last_node_position.y == stitch_node_position.y
             and last_node_position.theta == stitch_node_position.theta
-            and last_node_position.allowed_deviation_x_y == \
-            stitch_node_position.allowed_deviation_x_y
-            and last_node_position.allowed_deviation_theta == \
-            stitch_node_position.allowed_deviation_theta
+            and (last_node_position.allowed_deviation_x_y ==
+                stitch_node_position.allowed_deviation_x_y)
+            and (last_node_position.allowed_deviation_theta ==
+                stitch_node_position.allowed_deviation_theta)
             and last_node_position.map_id == stitch_node_position.map_id
             and last_node_position.map_description == stitch_node_position.map_description
         )
