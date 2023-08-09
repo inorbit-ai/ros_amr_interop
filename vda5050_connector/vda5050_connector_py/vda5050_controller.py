@@ -960,22 +960,22 @@ class VDA5050Controller(Node):
         has_nodes_and_edges = (
             len(self._current_state.node_states) and len(self._current_state.edge_states)
         )
-        
+
         if has_nodes_and_edges:
             self.logger.debug((
                 "Found nodes and edges while validating if there's an active order."
                 f" Nodes: {self._current_state.node_states}."
                 f" Edges: {self._current_state.edge_states}."
             ), throttle_duration_sec=5)
-        
+
         if has_running_actions:
             running_actions = [
                 action_state
                 for action_state in self._current_state.action_states
                 if action_state.action_id != action_id_cancel and
-                    action_state.action_status not in [
-                        VDACurrentAction.FINISHED, VDACurrentAction.FAILED
-                    ]
+                action_state.action_status not in [
+                    VDACurrentAction.FINISHED, VDACurrentAction.FAILED
+                ]
             ]
             self.logger.debug((
                 "Found running actions while validating if there's an active order."
@@ -1046,7 +1046,9 @@ class VDA5050Controller(Node):
                 return False
             
             # If the action has different number of parameter return False
-            if len(last_node_actions.action_parameters) != len(stitch_node_actions.action_parameters):
+            if len(
+                last_node_actions.action_parameters) != len(stitch_node_actions.action_parameters
+            ):
                 self.logger.error((
                     "Error while validating stitch node: Number of parameters on node actions differ"
                 ))
