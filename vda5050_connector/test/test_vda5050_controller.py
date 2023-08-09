@@ -33,6 +33,7 @@ import rclpy
 import copy
 from rclpy.logging import LoggingSeverity
 from rclpy.task import Future
+from rclpy.parameter import Parameter
 
 from uuid import uuid4
 
@@ -220,6 +221,125 @@ def get_order_update(order_id=str(uuid4()), order_update_id=0):
         ],
     )
 
+def get_order_w_unreleased_new(order_id=str(uuid4()), order_update_id=0):
+    return Order(
+        header_id=0,
+        timestamp=get_vda5050_ts(),
+        version="1.1.1",
+        manufacturer="MANUFACTURER",
+        serial_number="SERIAL_NUMBER",
+        order_id=order_id,
+        order_update_id=order_update_id,
+        nodes=[
+            Node(
+                node_id="node1",
+                sequence_id=0,
+                released=True,
+                node_position=NodePosition(
+                    x=2.0,
+                    y=0.95,
+                    theta=-0.66,
+                    allowed_deviation_x_y=0.0,
+                    allowed_deviation_theta=0.0,
+                    map_id="map",
+                ),
+            ),
+            Node(
+                node_id="node2",
+                sequence_id=2,
+                released=True,
+                node_position=NodePosition(
+                    x=1.18,
+                    y=-1.76,
+                    theta=0.0,
+                    allowed_deviation_x_y=0.0,
+                    allowed_deviation_theta=0.0,
+                    map_id="map",
+                ),
+            ),
+            Node(
+                node_id="node3",
+                sequence_id=4,
+                released=True,
+                node_position=NodePosition(
+                    x=-0.38,
+                    y=1.89,
+                    theta=0.0,
+                    allowed_deviation_x_y=0.0,
+                    allowed_deviation_theta=0.0,
+                    map_id="map",
+                ),
+            ),
+            Node(
+                node_id="node4",
+                sequence_id=6,
+                released=True,
+                node_position=NodePosition(
+                    x=-0.17,
+                    y=1.74,
+                    theta=-2.6,
+                    allowed_deviation_x_y=0.0,
+                    allowed_deviation_theta=0.0,
+                    map_id="map",
+                ),
+            ),
+            Node(
+                node_id="node1",
+                sequence_id=8,
+                released=False,
+                node_position=NodePosition(
+                    x=2.0,
+                    y=0.95,
+                    theta=-0.66,
+                    allowed_deviation_x_y=0.0,
+                    allowed_deviation_theta=0.0,
+                    map_id="map",
+                ),
+            ),
+        ],
+        edges=[
+            Edge(
+                edge_id="edge1",
+                sequence_id=1,
+                released=True,
+                start_node_id="node1",
+                end_node_id="node2",
+                max_speed=10.0,
+                max_height=10.0,
+                min_height=1.0,
+            ),
+            Edge(
+                edge_id="edge2",
+                sequence_id=3,
+                released=True,
+                start_node_id="node2",
+                end_node_id="node3",
+                max_speed=10.0,
+                max_height=10.0,
+                min_height=1.0,
+            ),
+            Edge(
+                edge_id="edge3",
+                sequence_id=5,
+                released=True,
+                start_node_id="node3",
+                end_node_id="node4",
+                max_speed=10.0,
+                max_height=10.0,
+                min_height=1.0,
+            ),
+            Edge(
+                edge_id="edge4",
+                sequence_id=7,
+                released=False,
+                start_node_id="node4",
+                end_node_id="node1",
+                max_speed=10.0,
+                max_height=10.0,
+                min_height=1.0,
+            ),
+        ],
+    )
 
 def test_vda5050_controller_node_new_order(
     mocker,
@@ -555,3 +675,111 @@ def test_vda5050_controller_node_reject_order(
         error=OrderRejectErrors.ORDER_UPDATE_ERROR,
         description="New update id 0 lower than old update id 1",
     )
+
+def test_vda5050_controller_node_new_order_nav_through_nodes(
+    mocker,
+    adapter_node,
+    action_server_nav_to_node,
+    action_server_process_vda_action,
+    service_get_state,
+    service_supported_actions,
+):
+    nav_through_nodes_param = Parameter("enable_nav_through_nodes", type_=Parameter.Type.BOOL, value=True)
+    node = VDA5050Controller(parameter_overrides=[nav_through_nodes_param])
+    node.logger.set_level(LoggingSeverity.DEBUG)
+
+    # add a spy to validate used navigation goal parameters
+    spy_send_adapter_navigate_to_node = mocker.spy(
+        node, "send_adapter_navigate_to_node"
+    )
+
+    # add a spy to validate accept order is called correctly
+    spy_accept_order = mocker.spy(node, "_accept_order")
+
+    # generate an order and let the node process it
+    order_id = str(uuid4())
+    order = get_order_w_unreleased_new(order_id)
+    node.process_order(order)
+
+    rclpy.spin_once(node)
+
+    spy_accept_order.assert_called_once_with(order=order, mode=OrderAcceptModes.NEW)
+
+    rclpy.spin_once(adapter_node)
+
+    # check node states were properly updated
+    assert node._current_order == order
+    assert node._current_state.order_id == order_id
+    assert node._current_state.order_update_id == 0
+
+    # The order has 5 nodes and 4 edges but the first edge and node
+    # are processed as soon as the order is accepted.
+    assert len(node._current_state.node_states) == 4
+    assert len(node._current_state.edge_states) == 4
+
+    assert node._current_state.last_node_id == "node1"
+    assert node._current_state.last_node_sequence_id == 0
+
+    # Assert the first navigation goal was sent to the adapter,
+    # and that the parameters matches order's first edge and second node.
+    # Note: the standard assumes the vehicle is on the first node already,
+    # so the first navigation command is to the second order node.
+    spy_send_adapter_navigate_to_node.assert_called_once_with(
+        edge=order.edges[0], node=order.nodes[1]
+    )
+
+    # Future for invoking adapter navigation goal result callback
+    future = Future()
+    future.set_result(result=NavigateToNode.Result())
+
+    spy_send_adapter_navigate_to_node.reset_mock()
+    # Simulate the adapter reached navigation goal
+    node._navigate_to_node_result_callback(future)
+    node._on_active_order()
+
+    spy_send_adapter_navigate_to_node.assert_called_once_with(
+        edge=order.edges[1], node=order.nodes[2]
+    )
+
+    assert len(node._current_state.node_states) == 3
+    assert len(node._current_state.edge_states) == 3
+    assert node._current_state.last_node_id == "node2"
+    assert node._current_state.last_node_sequence_id == 2
+
+    spy_send_adapter_navigate_to_node.reset_mock()
+    # Simulate the adapter reached navigation goal
+    node._navigate_to_node_result_callback(future)
+    node._on_active_order()
+
+    spy_send_adapter_navigate_to_node.assert_called_once_with(
+        edge=order.edges[2], node=order.nodes[3]
+    )
+
+    assert len(node._current_state.node_states) == 2
+    assert len(node._current_state.edge_states) == 2
+    assert node._current_state.last_node_id == "node3"
+    assert node._current_state.last_node_sequence_id == 4
+
+    spy_send_adapter_navigate_to_node.reset_mock()
+    # Simulate the adapter reached navigation goal
+    node._navigate_to_node_result_callback(future)
+    node._on_active_order()
+
+    spy_send_adapter_navigate_to_node.assert_called_once_with(
+        edge=order.edges[3], node=order.nodes[4]
+    )
+    assert len(node._current_state.node_states) == 1
+    assert len(node._current_state.edge_states) == 1
+    assert node._current_state.last_node_id == "node4"
+    assert node._current_state.last_node_sequence_id == 6
+
+    spy_send_adapter_navigate_to_node.reset_mock()
+    # Simulate the adapter reached navigation goal
+    node._navigate_to_node_result_callback(future)
+    node._on_active_order()
+
+    assert len(node._current_state.node_states) == 0
+    assert len(node._current_state.edge_states) == 0
+    assert node._current_state.last_node_id == "node1"
+    assert node._current_state.last_node_sequence_id == 8
+
