@@ -97,8 +97,7 @@ DEFAULT_MANUFACTURER_NAME = "robots"
 DEFAULT_SERIAL_NUMBER = "robot_1"
 DEFAULT_PROTOCOL_VERSION = "2.0.0"
 DEFAULT_STARTING_NODE_ID = ""
-SUPPORTED_PROTOCOL_VERSIONS = ["1.1.0", "2.0.0"]
-DEFAULT_INTERFACE_NAME = "uagv"
+DEFAULT_NAV_THROUGH_NODES = False
 
 DEFAULT_GET_STATE_SVC_NAME = "adapter/get_state"
 DEFAULT_SUPPORTED_ACTIONS_SVC_NAME = "adapter/supported_actions"
@@ -207,6 +206,8 @@ class VDA5050Controller(Node):
         self._protocol_version = read_str_parameter(
             self, "protocol_version", DEFAULT_PROTOCOL_VERSION
         )
+        self._enable_nav_through_nodes = read_bool_parameter(
+            self, "enable_nav_through_nodes", DEFAULT_NAV_THROUGH_NODES)
         # ROS interfaces names
         self._get_state_svc_name = read_str_parameter(
             self, "get_state_svc_name", DEFAULT_GET_STATE_SVC_NAME
@@ -1565,7 +1566,7 @@ class VDA5050Controller(Node):
         if next_node != self._current_node_goal:
             if self._enable_nav_through_nodes and len(released_nodes) > 1:
                 # Do the nav through nodes as long as there's more than one node...
-                self.send_adapter_navigate_through_nodes(edges=released_edges, nodes=released_nodes)
+                pass
             else:
                 # Otherwise we can just 
                 self.logger.info(f"Processing node: {next_node}")
@@ -1573,9 +1574,12 @@ class VDA5050Controller(Node):
         else:
             self.logger.error(f"{next_node} Already current goal")
     
-    # ---- Navigate to node: send goals ----
+    # ---- Navigate to node: send goals ----    
+        # self.logger.info(f"Current Order yo: {self._current_order}")
+        # self.logger.info(f"Released edges yo: {released_edges}")
+        # self.logger.info(f"Released Nodes yo: {released_nodes}")
 
-    def _process_next_edge(self):
+    def _process_next_edge(self): # TODO - GET RID OF THIS METHOD, REPLACE WITH _process_next_navigation
         """Process VDA5050 order's edge."""
         # Get next edge to be processed by looking for an edge
         # with sequence_id equal to last_node_sequence_id + 1.
