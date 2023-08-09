@@ -46,7 +46,7 @@ bool paused                                          # True: AGV is currently in
                                                      # because of an instantAction. The AGV can resume the order.
                                                      # False: The AGV is currently not in a paused state
 
-bool new_base_requested                              # True: AGV is almost at the end of the base and will reduce speed if no new base is transmitted. Trigger for MC to send ne base
+bool new_base_request                                # True: AGV is almost at the end of the base and will reduce speed if no new base is transmitted. Trigger for MC to send ne base
                                                      # False: no base update required
 
 float64 distance_since_last_node                     # Used by line guided vehicles to indicate the distance it has been driving past the last_node_id. Distance is in meters

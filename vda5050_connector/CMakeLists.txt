@@ -104,11 +104,23 @@ if(BUILD_TESTING)
   find_package(ament_cmake_flake8 REQUIRED)
   find_package(ament_cmake_pep257 REQUIRED)
   find_package(ament_cmake_copyright REQUIRED)
+  find_package(ament_cmake_pytest REQUIRED)
   ament_clang_format("--config" ${CMAKE_CURRENT_SOURCE_DIR}/.clang-format)
   ament_flake8("--config" ${CMAKE_CURRENT_SOURCE_DIR}/.flake8)
   ament_pep257()
   ament_copyright()
 
+  set(_pytest_tests
+    test/test_vda5050_controller.py
+  )
+  foreach(_test_path ${_pytest_tests})
+    get_filename_component(_test_name ${_test_path} NAME_WE)
+    ament_add_pytest_test(${_test_name} ${_test_path}
+      APPEND_ENV PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
+      TIMEOUT 60
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+  endforeach()
   add_subdirectory(test/adapter)
   pluginlib_export_plugin_description_file(vda5050_connector test/adapter/plugins_test.xml)
 endif()
