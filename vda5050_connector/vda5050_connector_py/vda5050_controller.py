@@ -1044,16 +1044,16 @@ class VDA5050Controller(Node):
                     f" action on stitch node '{stitch_node_actions}'"
                 ))
                 return False
-            
+
             # If the action has different number of parameter return False
-            if len(
-                last_node_actions.action_parameters) != len(stitch_node_actions.action_parameters
-            ):
+            if len(last_node_actions.action_parameters) != \
+                len(stitch_node_actions.action_parameters):
                 self.logger.error((
-                    "Error while validating stitch node: Number of parameters on node actions differ"
+                    "Error while validating stitch node: Number"
+                    " of parameters on node actions differ"
                 ))
                 return False
-            
+
             # If any of the parameters of an action are not the same return False
             if any([
                 last_node_action_action_parameter != stitch_node_action_action_parameter
@@ -1061,7 +1061,8 @@ class VDA5050Controller(Node):
                 in zip(last_node_actions.action_parameters, stitch_node_actions.action_parameters)
             ]):
                 self.logger.error((
-                    "Error while validating stitch node: Parameters on one of the node actions differ."
+                    "Error while validating stitch node: Parameters"
+                    " on one of the node actions differ."
                     f" Last node action parameters: '{last_node_actions.action_parameters}'"
                     f" Stitch node action parameters: '{stitch_node_actions.action_parameters}'"
                 ))
@@ -1072,7 +1073,9 @@ class VDA5050Controller(Node):
         has_same_sequence_id = last_node.sequence_id == stitch_node.sequence_id
 
         if not has_same_node_id or not has_same_sequence_id:
-            self.logger.error("Error while validating stitch node: Node ID or Sequence ID mismatch")
+            self.logger.error(
+                ("Error while validating stitch node: Node ID or Sequence ID mismatch")
+            )
         # Calculate if both nodes positions are the same
         last_node_position = last_node.node_position
         stitch_node_position = stitch_node.node_position
@@ -1082,8 +1085,10 @@ class VDA5050Controller(Node):
             and last_node_position.y == stitch_node_position.y
             and last_node_position.y == stitch_node_position.y
             and last_node_position.theta == stitch_node_position.theta
-            and last_node_position.allowed_deviation_x_y == stitch_node_position.allowed_deviation_x_y
-            and last_node_position.allowed_deviation_theta == stitch_node_position.allowed_deviation_theta
+            and last_node_position.allowed_deviation_x_y == \
+                stitch_node_position.allowed_deviation_x_y
+            and last_node_position.allowed_deviation_theta == \
+                stitch_node_position.allowed_deviation_theta
             and last_node_position.map_id == stitch_node_position.map_id
             and last_node_position.map_description == stitch_node_position.map_description
         )
