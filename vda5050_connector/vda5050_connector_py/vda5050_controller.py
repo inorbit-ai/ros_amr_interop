@@ -84,6 +84,7 @@ from vda5050_msgs.msg import WheelDefinition as VDAWheelDefinition
 from vda5050_connector.srv import GetState
 from vda5050_connector.srv import SupportedActions
 
+from vda5050_connector.action import NavigateThroughNodes
 from vda5050_connector.action import NavigateToNode
 from vda5050_connector.action import ProcessVDAAction
 
@@ -101,6 +102,7 @@ DEFAULT_GET_STATE_SVC_NAME = "adapter/get_state"
 DEFAULT_SUPPORTED_ACTIONS_SVC_NAME = "adapter/supported_actions"
 DEFAULT_VDA_ACTION_ACT_NAME = "adapter/vda_action"
 DEFAULT_NAV_TO_NODE_ACT_NAME = "adapter/nav_to_node"
+DEFAULT_NAV_THROUGH_NODES_ACT_NAME = "adapter/nav_through_nodes"
 
 DEFAULT_STATE_PUB_PERIOD = 5.0  # sec
 DEFAULT_CONNECTION_PUB_PERIOD = 15.0  # sec
@@ -217,6 +219,9 @@ class VDA5050Controller(Node):
         self._nav_to_node_act_name = read_str_parameter(
             self, "nav_to_node_act_name", DEFAULT_NAV_TO_NODE_ACT_NAME
         )
+        self._nav_through_nodes_act_name = read_str_parameter(
+            self, "nav_through_nodes_act_name", DEFAULT_NAV_THROUGH_NODES_ACT_NAME
+        )
         # Timer periods
         self._state_pub_period = read_double_parameter(
             self, "state_pub_period", DEFAULT_STATE_PUB_PERIOD
@@ -248,6 +253,19 @@ class VDA5050Controller(Node):
             self.logger.error(
                 "NavigateToNode adapter action server not available, waiting again..."
             )
+        
+        if self._enable_nav_through_nodes:
+            # Action client for sending NavigateThroughNodes goals to adapter
+            self._navigate_through_nodes_act_cli = ActionClient(
+                node=self,
+                action_type=NavigateThroughNodes,
+                action_name=base_interface_name + self._nav_through_nodes_act_name,
+            )
+            while not self._navigate_through_nodes_act_cli.wait_for_server(timeout_sec=1.0):
+                self.logger.error(
+                    "NavigateThroughNodes adapter action server not available, waiting again..."
+                )
+                
         self._navigate_to_node_goal_handle = None
 
         # Action client for sending ProcessVDAAction goals to adapter
@@ -1397,7 +1415,7 @@ class VDA5050Controller(Node):
         if next_node != self._current_node_goal:
             if self._enable_nav_through_nodes and len(released_nodes) > 1:
                 # Do the nav through nodes as long as there's more than one node...
-                pass
+                self.send_adapter_navigate_through_nodes(edges=released_edges, nodes=released_nodes)
             else:
                 # Otherwise we can just 
                 self.logger.info(f"Processing node: {next_node}")
@@ -1538,7 +1556,35 @@ class VDA5050Controller(Node):
             }
         )
         self._process_node(node=last_node)
+        
+    def send_adapter_navigate_through_nodes(self, edges: list[VDAEdge], nodes: list[VDANode]):
+        """
+        Send navigation goal to the VDA5050 adapter.
 
+        Args:
+        ----
+            edges (VDAEdge): Order's list edge to traverse.
+            nodes (VDANode): Order list edge ending node.
+
+        """
+        # Create goal message with edge and node parameters
+        goal_msg = NavigateThroughNodes.Goal()
+        goal_msg.edges = edges
+        goal_msg.nodes = nodes
+        
+        # self.send_adapter_navigate_to_node(edge=edges[0], node=nodes[0])
+
+        # Wait for NavigateThroughNodes action server to be ready
+        self._navigate_through_nodes_act_cli.wait_for_server()
+
+        # Send goal to action server
+        self.logger.info("Navigate through nodes goal request sent.")
+        self._current_node_goal = nodes[0]
+        _send_goal_future = self._navigate_through_nodes_act_cli.send_goal_async(goal_msg)
+        
+        # Register callback to be executed when the goal is accepted
+        _send_goal_future.add_done_callback(self._navigate_to_node_goal_response_callback)
+        
     def _is_navigation_active(self) -> bool:
         """
         Indicate if the robot was commanded to navigate to a node.

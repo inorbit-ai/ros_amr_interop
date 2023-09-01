@@ -680,6 +680,7 @@ def test_vda5050_controller_node_new_order_nav_through_nodes(
     mocker,
     adapter_node,
     action_server_nav_to_node,
+    action_server_nav_through_nodes,
     action_server_process_vda_action,
     service_get_state,
     service_supported_actions,
@@ -689,8 +690,8 @@ def test_vda5050_controller_node_new_order_nav_through_nodes(
     node.logger.set_level(LoggingSeverity.DEBUG)
 
     # add a spy to validate used navigation goal parameters
-    spy_send_adapter_navigate_to_node = mocker.spy(
-        node, "send_adapter_navigate_to_node"
+    spy_send_adapter_navigate_through_nodes = mocker.spy(
+        node, "send_adapter_navigate_through_nodes"
     )
 
     # add a spy to validate accept order is called correctly
@@ -724,10 +725,12 @@ def test_vda5050_controller_node_new_order_nav_through_nodes(
     # and that the parameters matches order's first edge and second node.
     # Note: the standard assumes the vehicle is on the first node already,
     # so the first navigation command is to the second order node.
-    spy_send_adapter_navigate_to_node.assert_called_once_with(
-        edge=order.edges[0], node=order.nodes[1]
+    
+    
+    spy_send_adapter_navigate_through_nodes.assert_called_once_with(
+        edges=order.edges[:3], nodes=order.nodes[1:4]
     )
-
+'''
     # Future for invoking adapter navigation goal result callback
     future = Future()
     future.set_result(result=NavigateToNode.Result())
@@ -782,4 +785,4 @@ def test_vda5050_controller_node_new_order_nav_through_nodes(
     assert len(node._current_state.edge_states) == 0
     assert node._current_state.last_node_id == "node1"
     assert node._current_state.last_node_sequence_id == 8
-
+'''

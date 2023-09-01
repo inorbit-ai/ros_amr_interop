@@ -34,8 +34,10 @@ import paho.mqtt.client as mqtt
 
 import rclpy
 from vda5050_connector.action import NavigateToNode
+from vda5050_connector.action import NavigateThroughNodes
 from vda5050_connector.action import ProcessVDAAction
 from vda5050_connector_py.vda5050_controller import DEFAULT_NAV_TO_NODE_ACT_NAME
+from vda5050_connector_py.vda5050_controller import DEFAULT_NAV_THROUGH_NODES_ACT_NAME
 from vda5050_connector_py.vda5050_controller import DEFAULT_VDA_ACTION_ACT_NAME
 from vda5050_connector.srv import GetState
 from vda5050_connector_py.vda5050_controller import DEFAULT_GET_STATE_SVC_NAME
@@ -94,7 +96,56 @@ class MockActionServerNavigateToNode:
         )
         self.feedback_pub.publish(feedback_message)
 
+class MockActionServerNavigateThroughNodes:
+    def __init__(self, node):
+        self.logger = node.get_logger()
+        self.goal_srv = node.create_service(
+            NavigateThroughNodes.Impl.SendGoalService,
+            f"/vda5050/robots/robot_1/{DEFAULT_NAV_THROUGH_NODES_ACT_NAME}/_action/send_goal",
+            self.goal_callback,
+        )
+        self.cancel_srv = node.create_service(
+            NavigateThroughNodes.Impl.CancelGoalService,
+            f"/vda5050/robots/robot_1/{DEFAULT_NAV_THROUGH_NODES_ACT_NAME}/_action/cancel_goal",
+            self.cancel_callback,
+        )
+        self.result_srv = node.create_service(
+            NavigateThroughNodes.Impl.GetResultService,
+            f"/vda5050/robots/robot_1/{DEFAULT_NAV_THROUGH_NODES_ACT_NAME}/_action/get_result",
+            self.result_callback,
+        )
+        self.feedback_pub = node.create_publisher(
+            NavigateThroughNodes.Impl.FeedbackMessage,
+            f"/vda5050/robots/robot_1/{DEFAULT_NAV_THROUGH_NODES_ACT_NAME}/_action/feedback",
+            1,
+        )
+        self.goal_status_pub = node.create_publisher(
+            NavigateThroughNodes.Impl.GoalStatusMessage,
+            f"/vda5050/robots/robot_1/{DEFAULT_NAV_THROUGH_NODES_ACT_NAME}/_action/status",
+            qos_profile_action_status_default,
+        )
 
+    def goal_callback(self, request, response):
+        # Save goal ID to send feedback later
+        self.goal_id = request.goal_id
+        response.accepted = True
+        self.logger.info(f"Goal received {response}")
+        return response
+
+    def cancel_callback(self, request, response):
+        response.goals_canceling.append(request.goal_info)
+        return response
+
+    def result_callback(self, request, response):
+        self.logger.info(f"Result callback: {response}")
+        return response
+
+    def publish_feedback(self, feedback):
+        feedback_message = NavigateThroughNodes.Impl.FeedbackMessage(
+            goal_id=self.goal_id, feedback=feedback
+        )
+        self.feedback_pub.publish(feedback_message)
+        
 class MockActionServerProcessVDAAction:
     def __init__(self, node):
         self.logger = node.get_logger()
@@ -162,6 +213,9 @@ def adapter_node(setup_rclpy):
 def action_server_nav_to_node(adapter_node):
     return MockActionServerNavigateToNode(adapter_node)
 
+@pytest.fixture()
+def action_server_nav_through_nodes(adapter_node):
+    return MockActionServerNavigateThroughNodes(adapter_node)
 
 @pytest.fixture()
 def action_server_process_vda_action(adapter_node):
