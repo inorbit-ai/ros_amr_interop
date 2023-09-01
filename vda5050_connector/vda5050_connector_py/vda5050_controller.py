@@ -85,6 +85,7 @@ from action_msgs.msg import GoalStatus
 from vda5050_connector.srv import GetState
 from vda5050_connector.srv import SupportedActions
 
+from vda5050_connector.action import NavigateThroughNodes
 from vda5050_connector.action import NavigateToNode
 from vda5050_connector.action import ProcessVDAAction
 
@@ -103,6 +104,7 @@ DEFAULT_GET_STATE_SVC_NAME = "adapter/get_state"
 DEFAULT_SUPPORTED_ACTIONS_SVC_NAME = "adapter/supported_actions"
 DEFAULT_VDA_ACTION_ACT_NAME = "adapter/vda_action"
 DEFAULT_NAV_TO_NODE_ACT_NAME = "adapter/nav_to_node"
+DEFAULT_NAV_THROUGH_NODES_ACT_NAME = "adapter/nav_through_nodes"
 
 DEFAULT_STATE_PUB_PERIOD = 5.0  # sec
 DEFAULT_CONNECTION_PUB_PERIOD = 15.0  # sec
@@ -218,6 +220,9 @@ class VDA5050Controller(Node):
         self._nav_to_node_act_name = read_str_parameter(
             self, "nav_to_node_act_name", DEFAULT_NAV_TO_NODE_ACT_NAME
         )
+        self._nav_through_nodes_act_name = read_str_parameter(
+            self, "nav_through_nodes_act_name", DEFAULT_NAV_THROUGH_NODES_ACT_NAME
+        )
         # Timer periods
         self._state_pub_period = read_double_parameter(
             self, "state_pub_period", DEFAULT_STATE_PUB_PERIOD
@@ -251,6 +256,19 @@ class VDA5050Controller(Node):
             self.logger.error(
                 "NavigateToNode adapter action server not available, waiting again..."
             )
+        
+        if self._enable_nav_through_nodes:
+            # Action client for sending NavigateThroughNodes goals to adapter
+            self._navigate_through_nodes_act_cli = ActionClient(
+                node=self,
+                action_type=NavigateThroughNodes,
+                action_name=base_interface_name + self._nav_through_nodes_act_name,
+            )
+            while not self._navigate_through_nodes_act_cli.wait_for_server(timeout_sec=1.0):
+                self.logger.error(
+                    "NavigateThroughNodes adapter action server not available, waiting again..."
+                )
+                
         self._navigate_to_node_goal_handle = None
 
         # Action client for sending ProcessVDAAction goals to adapter
@@ -1462,6 +1480,101 @@ class VDA5050Controller(Node):
         for action in execution_list["soft"] + execution_list["none"]:
             self.send_adapter_process_vda_action(action)
 
+    def _check_hard_actions(self, action_list):
+        _hard_action_found = False
+        for action in action_list:
+            # Hard actions should be the last in the list 
+            # because they must be the only thing running
+            if action.blocking_type == VDAAction.HARD:
+                _hard_action_found = True
+                break
+        return _hard_action_found    
+       
+    def _get_released_edges(self):
+        # List of edges that are released in a row that don't have HARD actions on.
+        released_edges = []
+        
+        for edge in self._current_order.edges:
+            if edge.sequence_id >= self._current_state.last_node_sequence_id + 1:
+                if edge.released:
+                    released_edges.append(edge)
+                    # if we find a hard action break
+                    if self._check_hard_actions(edge.actions):
+                        break
+                elif len(released_edges) == 0:
+                    # If there's no released edge available then request more and break
+                    if not self._current_state.new_base_request:
+                        self.logger.warn("Next edge is part of the horizon. Stopping traversing of nodes.")
+                        self._update_state({"new_base_request": True}, publish_now=True)
+                    break
+                else:
+                    # There are no released edges after a non released edge
+                    break
+        return released_edges
+    
+    def _get_released_nodes(self):
+        # List of nodes that are released in a row that don't have HARD actions on.
+        released_nodes = []
+        
+        for node in self._current_order.nodes:
+            if node.sequence_id >= self._current_state.last_node_sequence_id + 2:
+                if node.released:
+                    released_nodes.append(node)
+                    # if we find a hard action break
+                    if self._check_hard_actions(node.actions):
+                        break
+                else:
+                    # There are no released nodes after a non released node
+                    break
+        return released_nodes
+        
+    def _process_next_navigation(self):
+        """
+        Process VDA5050 order's edges and nodes:  
+        The edges and nodes are checked to see if they're released.
+        Multiple released nodes/edges are sent to the navigate through nodes actions.
+        Any node/edge actions that are hard will be the end of a single navigate.
+        """
+        # What does this need to do??
+        # Create list of edges and nodes that will be traversed in a row. - DONE
+        # If it's only a list of 1 then I guess pass to the previous fn and use their logic... - DONE
+        # else 
+        # Send to the navigate through nodes functions with whatever logic works with that...
+        # Nav through nodes - send action normally - like before
+        # get start response same as before
+        # Nav to pose Result callback logic should be separated and can be called from feedback callback.
+        # HOW DO WE UPDATE ON THE FLY?
+        # 
+
+        released_edges = self._get_released_edges()
+        if len(released_edges) == 0:
+            # This only happens when there is no order or it has finished,
+            # but there is an active instant action running.
+            # In this case, just exit.
+            return
+        else:
+            next_edge = released_edges[0]   
+        
+        released_nodes = self._get_released_nodes()
+        if len(released_nodes) == 0:
+            # Shouldn't happen if we got this far, but just checking for safety
+            return
+        else:
+            next_node = released_nodes[0]   
+            
+        if next_node != self._current_node_goal:
+            if self._enable_nav_through_nodes and len(released_nodes) > 1:
+                # Do the nav through nodes as long as there's more than one node...
+                self.send_adapter_navigate_through_nodes(edges=released_edges, nodes=released_nodes)
+            else:
+                # Otherwise we can just 
+                self.logger.info(f"Processing node: {next_node}")
+                self.send_adapter_navigate_to_node(edge=next_edge, node=next_node)
+        else:
+            self.logger.error(f"{next_node} Already current goal")
+    
+    # ---- Navigate to node: send goals ----
+
     def _process_next_edge(self):
         """Process VDA5050 order's edge."""
         # Get next edge to be processed by looking for an edge
@@ -1610,7 +1723,35 @@ class VDA5050Controller(Node):
             }
         )
         self._process_node(node=last_node)
+        
+    def send_adapter_navigate_through_nodes(self, edges: list[VDAEdge], nodes: list[VDANode]):
+        """
+        Send navigation goal to the VDA5050 adapter.
 
+        Args:
+        ----
+            edges (VDAEdge): Order's list edge to traverse.
+            nodes (VDANode): Order list edge ending node.
+
+        """
+        # Create goal message with edge and node parameters
+        goal_msg = NavigateThroughNodes.Goal()
+        goal_msg.edges = edges
+        goal_msg.nodes = nodes
+        
+        # self.send_adapter_navigate_to_node(edge=edges[0], node=nodes[0])
+
+        # Wait for NavigateThroughNodes action server to be ready
+        self._navigate_through_nodes_act_cli.wait_for_server()
+
+        # Send goal to action server
+        self.logger.info("Navigate through nodes goal request sent.")
+        self._current_node_goal = nodes[0]
+        _send_goal_future = self._navigate_through_nodes_act_cli.send_goal_async(goal_msg)
+        
+        # Register callback to be executed when the goal is accepted
+        _send_goal_future.add_done_callback(self._navigate_to_node_goal_response_callback)
+        
     def _is_navigation_active(self) -> bool:
         """
         Indicate if the robot was commanded to navigate to a node.
