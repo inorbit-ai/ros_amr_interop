@@ -590,7 +590,7 @@ def test_vda5050_controller_node_stitch_order(
     future.set_result(result=NavigateToNode.Result())
 
     # The base order contains 2 nodes and 1 edge. The first node (in deviation range)
-    # is processed and remove, and 1 node is send to navigate to.
+    # is processed and removed, and 1 node is sent to navigate to.
     node._navigate_to_node_result_callback(future)
 
     assert len(node._current_order.nodes) == 2
