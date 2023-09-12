@@ -197,19 +197,19 @@ class MockActionServerProcessVDAAction:
         self.feedback_pub.publish(feedback_message)
 
 
-@pytest.fixture()
+@pytest.fixture
 def setup_rclpy():
     rclpy.init()
     yield
     rclpy.shutdown()
 
 
-@pytest.fixture()
+@pytest.fixture
 def adapter_node(setup_rclpy):
     return rclpy.create_node("FakeAdapter")
 
 
-@pytest.fixture()
+@pytest.fixture
 def action_server_nav_to_node(adapter_node):
     return MockActionServerNavigateToNode(adapter_node)
 
@@ -217,12 +217,12 @@ def action_server_nav_to_node(adapter_node):
 def action_server_nav_through_nodes(adapter_node):
     return MockActionServerNavigateThroughNodes(adapter_node)
 
-@pytest.fixture()
+@pytest.fixture
 def action_server_process_vda_action(adapter_node):
     return MockActionServerProcessVDAAction(adapter_node)
 
 
-@pytest.fixture()
+@pytest.fixture
 def service_get_state(adapter_node):
     return adapter_node.create_service(
         GetState,
@@ -231,7 +231,7 @@ def service_get_state(adapter_node):
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def service_supported_actions(adapter_node):
     return adapter_node.create_service(
         SupportedActions,

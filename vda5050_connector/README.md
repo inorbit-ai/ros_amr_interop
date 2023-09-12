@@ -39,23 +39,33 @@ To do this this, you can check the [vda5050_examples](https://github.com/inorbit
 
 ### Compilation
 
-Download `vda5050_msgs` package into your ROS2 workspace
+Start a docker container with the required packages mounted on `dev_ws`:
 
 ```bash
-cd ~/dev_ws/ &&
-git clone --branch ros2-vda5050-v2 https://github.com/ipa320/vda5050_msgs.git \
-    && mv vda5050_msgs/vda5050_msgs ./src/vda5050_msgs \
-    && mv vda5050_msgs/vda5050_serializer ./src/vda5050_serializer \
-    && rm -rf vda5050_msgs
+# Go to the repository root folder and execute
+docker run -ti --rm \
+    --workdir /dev_ws/ \
+    -v ./vda5050_msgs:/dev_ws/src/vda5050_msgs \
+    -v ./vda5050_serializer:/dev_ws/src/vda5050_serializer \
+    -v ./vda5050_connector:/dev_ws/src/vda5050_connector \
+    osrf/ros:humble-desktop-full
 ```
 
-Then download this package into the ROS2 workspace `src` folder and compile it using `colcon build`.
+Now build the package:
+
+```bash
+apt update && apt install ros-humble-ament* -y
+cd /dev_ws/
+colcon build --symlink-install
+```
 
 ### Testing
 
 The package provides several lint test (`ament_pep257` and `ament_flake8` for Python, `ament_clang_format` for C++ and `ament_copyright`), as well as specific unit tests to check the correct functionality of the different modules. To run the tests, execute:
 
 ```sh
+cd /dev_ws/
+rosdep install --from-paths src -y --ignore-src
 colcon test --packages-select vda5050_connector && colcon test-result --verbose
 ```
 

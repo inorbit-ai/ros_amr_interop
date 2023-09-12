@@ -907,7 +907,7 @@ class VDA5050Controller(Node):
         else:
             # Same order graph (Same order_id)
             update_id_diff = order.order_update_id - self._current_order.order_update_id
-            match_last_new_base_nodes = self._match_base_nodes(order)
+            match_last_new_base_nodes = self._match_stitch_nodes(order)
 
             if update_id_diff == 0:
                 # Same update id, discard the msg
@@ -917,7 +917,7 @@ class VDA5050Controller(Node):
                 # Reject if update id is lower or if last and new base nodes doesn't match
                 error_description = (
                     f"New base start node [{order.nodes[0].node_id}] doesn't match with old base"
-                    f" last node [{self._current_order.nodes[0].node_id}]"
+                    f" last node [{self._current_order.nodes[-1].node_id}]"
                     if not match_last_new_base_nodes
                     else (
                         f"New update id {order.order_update_id} lower than old update id"
@@ -967,6 +967,7 @@ class VDA5050Controller(Node):
         action_id_cancel = -1
         if self._canceling_order():
             action_id_cancel = self._cancel_action.action_id
+
         has_running_actions = any(
             [
                 action_state.action_status
@@ -975,10 +976,34 @@ class VDA5050Controller(Node):
                 if action_state.action_id != action_id_cancel
             ]
         )
+
         # If there are no actions, but there are node / edge states, there is an active order
-        return has_running_actions or (
+        has_nodes_and_edges = (
             len(self._current_state.node_states) and len(self._current_state.edge_states)
         )
+
+        if has_nodes_and_edges:
+            self.logger.debug((
+                "Found nodes and edges while validating if there's an active order."
+                f" Nodes: {self._current_state.node_states}."
+                f" Edges: {self._current_state.edge_states}."
+            ), throttle_duration_sec=5)
+
+        if has_running_actions:
+            running_actions = [
+                action_state
+                for action_state in self._current_state.action_states
+                if action_state.action_id != action_id_cancel and
+                action_state.action_status not in [
+                    VDACurrentAction.FINISHED, VDACurrentAction.FAILED
+                ]
+            ]
+            self.logger.debug((
+                "Found running actions while validating if there's an active order."
+                f" Actions: {running_actions}"
+            ), throttle_duration_sec=5)
+
+        return has_running_actions or has_nodes_and_edges
 
     def _first_node_in_deviation_range(self, order: VDAOrder) -> bool:
         """
@@ -1003,7 +1028,7 @@ class VDA5050Controller(Node):
         # deviation of theta
         return True
 
-    def _match_base_nodes(self, order: VDAOrder):
+    def _match_stitch_nodes(self, order: VDAOrder):
         """
         Validate if the last node from the old base matches the first node on the new base.
 
@@ -1016,8 +1041,88 @@ class VDA5050Controller(Node):
             True if last <> first base nodes match, False otherwise.
 
         """
-        # TODO: Proper implementation
-        return True
+        last_node = self._current_order.nodes[-1]
+        stitch_node = order.nodes[0]
+
+        # Return False if node actions differ
+        if len(last_node.actions) != len(stitch_node.actions):
+            self.logger.error("Error while validating stitch node: number of actions don't match")
+            return False
+
+        # Evaluate all actions are equal and in the same order
+        for last_node_actions, stitch_node_actions in zip(last_node.actions, stitch_node.actions):
+            # Return False if action_type, action_id, blocking_type or action_description
+            # of an action are not the same
+            if (
+                last_node_actions.action_type != stitch_node_actions.action_type or
+                last_node_actions.action_id != stitch_node_actions.action_id or
+                last_node_actions.blocking_type != stitch_node_actions.blocking_type or
+                last_node_actions.action_description != stitch_node_actions.action_description
+            ):
+                self.logger.error((
+                    "Error while validating stitch node: actions don't match."
+                    f" action on last node '{last_node_actions}' differs from "
+                    f" action on stitch node '{stitch_node_actions}'"
+                ))
+                return False
+
+            # If the action has different number of parameter return False
+            if (len(last_node_actions.action_parameters) !=
+                    len(stitch_node_actions.action_parameters)):
+                self.logger.error((
+                    "Error while validating stitch node: Number"
+                    " of parameters on node actions differ"
+                ))
+                return False
+
+            # If any of the parameters of an action are not the same return False
+            if any([
+                last_node_action_action_parameter != stitch_node_action_action_parameter
+                for last_node_action_action_parameter, stitch_node_action_action_parameter
+                in zip(last_node_actions.action_parameters, stitch_node_actions.action_parameters)
+            ]):
+                self.logger.error((
+                    "Error while validating stitch node: Parameters"
+                    " on one of the node actions differ."
+                    f" Last node action parameters: '{last_node_actions.action_parameters}'"
+                    f" Stitch node action parameters: '{stitch_node_actions.action_parameters}'"
+                ))
+                return False
+
+        # Calculate if node_id and sequence_id matches
+        has_same_node_id = last_node.node_id == stitch_node.node_id
+        has_same_sequence_id = last_node.sequence_id == stitch_node.sequence_id
+
+        if not has_same_node_id or not has_same_sequence_id:
+            self.logger.error(
+                ("Error while validating stitch node: Node ID or Sequence ID mismatch")
+            )
+        # Calculate if both nodes positions are the same
+        last_node_position = last_node.node_position
+        stitch_node_position = stitch_node.node_position
+
+        has_same_node_position = (
+            last_node_position.x == stitch_node_position.x
+            and last_node_position.y == stitch_node_position.y
+            and last_node_position.y == stitch_node_position.y
+            and last_node_position.theta == stitch_node_position.theta
+            and (last_node_position.allowed_deviation_x_y ==
+                 stitch_node_position.allowed_deviation_x_y)
+            and (last_node_position.allowed_deviation_theta ==
+                 stitch_node_position.allowed_deviation_theta)
+            and last_node_position.map_id == stitch_node_position.map_id
+            and last_node_position.map_description == stitch_node_position.map_description
+        )
+
+        if not has_same_node_position:
+            self.logger.error((
+                "Error while validating stitch node: Node position mismatch."
+                f" Last node position '{last_node_position}'."
+                f" Stitch node position '{stitch_node_position}'."
+            ))
+
+        # Return True if both nodes have same id, sequence_id and position
+        return has_same_node_id and has_same_sequence_id and has_same_node_position
 
     def _accept_order(self, order: VDAOrder, mode: OrderAcceptModes):
         """
@@ -1094,7 +1199,7 @@ class VDA5050Controller(Node):
                 + self._get_node_states(order),
                 "edge_states": (mode == OrderAcceptModes.STITCH) * self._current_state.edge_states
                 + self._get_edge_states(order),
-                "action_states": self._current_state.action_states
+                "action_states": self._current_state.action_states[:-len(order.nodes[0].actions)]
                 + self._get_action_states(order),
                 "new_base_request": False,
             }
@@ -1143,7 +1248,7 @@ class VDA5050Controller(Node):
         order_error.error_type = error.value
         order_error.error_description = (
             f"VDA5050 order {order.order_id} with update ID"
-            f" {order.order_update_id} rejected [{description}]."
+            f" {order.order_update_id} rejected. Reason: {description}"
         )
         order_error.error_level = VDAError.WARNING
         order_error.error_references = error_references
