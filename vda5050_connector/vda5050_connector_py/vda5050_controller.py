@@ -1677,28 +1677,10 @@ class VDA5050Controller(Node):
         # When the order is cancelled, this callback should avoid continuing its logic
         if self._canceling_order():
             return
-
-        # Check if goal failed
-        status = future.result().status
-        if status == GoalStatus.STATUS_ABORTED:
-            self.logger.info("Failed to reach goal. Order aborted.")
-
-            # Notify master of the failure
-            error = VDAError()
-            error.error_type = OrderRejectErrors.NO_ROUTE_ERROR.value
-            error.error_description = "Failed to reach current node."
-            error.error_level = VDAError.FATAL
-            error.error_references = [
-                VDAErrorReference(
-                    reference_key="node_id", reference_value=self._current_node_goal.node_id
-                )
-            ]
-
-            current_errors = self._current_state.errors
-            self._update_state({"errors": current_errors + [error]}, publish_now=True)
-
-            return
-
+        
+        self._process_last_edge_node()
+    
+    def _process_last_edge_node(self):
         last_edge = next(
             edge
             for edge in self._current_order.edges
@@ -1747,10 +1729,34 @@ class VDA5050Controller(Node):
         # Send goal to action server
         self.logger.info("Navigate through nodes goal request sent.")
         self._current_node_goal = nodes[0]
-        _send_goal_future = self._navigate_through_nodes_act_cli.send_goal_async(goal_msg)
+        _send_goal_future = self._navigate_through_nodes_act_cli.send_goal_async(goal_msg, 
+                                            feedback_callback=self._navigate_through_nodes_feedback_callback)
         
         # Register callback to be executed when the goal is accepted
         _send_goal_future.add_done_callback(self._navigate_to_node_goal_response_callback)
+    
+    def _navigate_through_nodes_feedback_callback(self, feedback_msg):
+        if feedback_msg.feedback.last_node == self._current_node_goal:
+        
+            self._process_last_edge_node()
+        
+            released_edges = self._get_released_edges()
+            if len(released_edges) == 0:
+                # This only happens when there is no order or it has finished,
+                # but there is an active instant action running.
+                # In this case, just exit.
+                return
+            else:
+                next_edge = released_edges[0]   
+        
+            released_nodes = self._get_released_nodes()
+            if len(released_nodes) == 0:
+                # Shouldn't happen if we got this far, but just checking for safety
+                return
+            else:
+                next_node = released_nodes[0]  
+        
+            self._current_node_goal = next_node
         
     def _is_navigation_active(self) -> bool:
         """
