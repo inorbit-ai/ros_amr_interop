@@ -787,7 +787,8 @@ def test_vda5050_controller_node_reject_order(
         error=OrderRejectErrors.ORDER_UPDATE_ERROR,
         description="New update id 0 lower than old update id 1",
     )
-
+    
+# Tests the original node list with the nav through nodes functionality
 def test_vda5050_controller_node_new_order_nav_through_nodes(
     mocker,
     adapter_node,
