@@ -222,6 +222,7 @@ def get_order_update(order_id=str(uuid4()), order_update_id=0):
         ],
     )
 
+
 def get_order_w_unreleased_new(order_id=str(uuid4()), order_update_id=0):
     return Order(
         header_id=0,
@@ -341,6 +342,7 @@ def get_order_w_unreleased_new(order_id=str(uuid4()), order_update_id=0):
             ),
         ],
     )
+
 
 def get_stitch_orders(order_id=str(uuid4())):
     action1 = Action(
@@ -787,8 +789,8 @@ def test_vda5050_controller_node_reject_order(
         error=OrderRejectErrors.ORDER_UPDATE_ERROR,
         description="New update id 0 lower than old update id 1",
     )
-    
-# Tests the original node list with the nav through nodes functionality
+
+
 def test_vda5050_controller_node_new_order_nav_through_nodes(
     mocker,
     adapter_node,
@@ -798,7 +800,9 @@ def test_vda5050_controller_node_new_order_nav_through_nodes(
     service_get_state,
     service_supported_actions,
 ):
-    nav_through_nodes_param = Parameter("enable_nav_through_nodes", type_=Parameter.Type.BOOL, value=True)
+    """Tests the original node list with the nav through nodes functionality."""
+    nav_through_nodes_param = Parameter(
+        "enable_nav_through_nodes", type_=Parameter.Type.BOOL, value=True)
     node = VDA5050Controller(parameter_overrides=[nav_through_nodes_param])
     node.logger.set_level(LoggingSeverity.DEBUG)
 
@@ -806,7 +810,7 @@ def test_vda5050_controller_node_new_order_nav_through_nodes(
     spy_send_adapter_navigate_through_nodes = mocker.spy(
         node, "send_adapter_navigate_through_nodes"
     )
-    
+
     spy_process_last_edge_node = mocker.spy(
         node, "_process_last_edge_node"
     )
@@ -842,31 +846,31 @@ def test_vda5050_controller_node_new_order_nav_through_nodes(
     # and that the parameters matches order's released edges
     # Note: the standard assumes the vehicle is on the first node already,
     # so the first navigation command is to the second order node.
-    
+
     spy_send_adapter_navigate_through_nodes.assert_called_once_with(
         edges=order.edges[:4], nodes=order.nodes[1:5]
     )
-    
+
     feedback_msg = NavigateThroughNodes.Impl.FeedbackMessage()
     # Check that a feedback of the current node doesn't affect the current state
     feedback_msg.feedback.last_node = order.nodes[0]
     node._navigate_through_nodes_feedback_callback(feedback_msg)
-    
+
     spy_process_last_edge_node.assert_not_called()
     spy_process_last_edge_node.reset_mock()
-    
+
     assert len(node._current_state.node_states) == 4
     assert len(node._current_state.edge_states) == 4
     assert node._current_state.last_node_id == "node1"
     assert node._current_state.last_node_sequence_id == 0
-    
+
     # Next node has been reached and a feedback message is published
     feedback_msg.feedback.last_node = order.nodes[1]
     node._navigate_through_nodes_feedback_callback(feedback_msg)
-    
+
     spy_process_last_edge_node.assert_called_once()
     spy_process_last_edge_node.reset_mock()
-    
+
     assert len(node._current_state.node_states) == 3
     assert len(node._current_state.edge_states) == 3
     assert node._current_state.last_node_id == "node2"
@@ -875,22 +879,22 @@ def test_vda5050_controller_node_new_order_nav_through_nodes(
     # Next node has been reached and a feedback message is published
     feedback_msg.feedback.last_node = order.nodes[2]
     node._navigate_through_nodes_feedback_callback(feedback_msg)
-    
+
     spy_process_last_edge_node.assert_called_once()
     spy_process_last_edge_node.reset_mock()
-    
+
     assert len(node._current_state.node_states) == 2
     assert len(node._current_state.edge_states) == 2
     assert node._current_state.last_node_id == "node3"
     assert node._current_state.last_node_sequence_id == 4
-    
+
     # Next node has been reached and a feedback message is published
     feedback_msg.feedback.last_node = order.nodes[3]
     node._navigate_through_nodes_feedback_callback(feedback_msg)
-    
+
     spy_process_last_edge_node.assert_called_once()
     spy_process_last_edge_node.reset_mock()
-    
+
     assert len(node._current_state.node_states) == 1
     assert len(node._current_state.edge_states) == 1
     assert node._current_state.last_node_id == "node4"
@@ -898,21 +902,20 @@ def test_vda5050_controller_node_new_order_nav_through_nodes(
 
     # Last node reached as indicated by the result coming through
     # A feedback message shouldn't be published for the final node in a navigation order
-    
+
     # Simulate the adapter reached navigation goals
     future = Future()
     future.set_result(result=NavigateThroughNodes.Result())
     node._navigate_to_node_result_callback(future)
-    
+
     spy_process_last_edge_node.assert_called_once()
     spy_process_last_edge_node.reset_mock()
     assert len(node._current_state.node_states) == 0
     assert len(node._current_state.edge_states) == 0
     assert node._current_state.last_node_id == "node1"
     assert node._current_state.last_node_sequence_id == 8
-    
-    
-# Tests the scenario where there are some unreleased nodes on the horizon and navigate through nodes is required
+
+
 def test_vda5050_controller_node_new_order_nav_through_nodes_unreleased_nodes(
     mocker,
     adapter_node,
@@ -922,7 +925,9 @@ def test_vda5050_controller_node_new_order_nav_through_nodes_unreleased_nodes(
     service_get_state,
     service_supported_actions,
 ):
-    nav_through_nodes_param = Parameter("enable_nav_through_nodes", type_=Parameter.Type.BOOL, value=True)
+    """Tests with some unreleased nodes on the horizon and navigate through nodes."""
+    nav_through_nodes_param = Parameter(
+        "enable_nav_through_nodes", type_=Parameter.Type.BOOL, value=True)
     node = VDA5050Controller(parameter_overrides=[nav_through_nodes_param])
     node.logger.set_level(LoggingSeverity.DEBUG)
 
@@ -930,7 +935,7 @@ def test_vda5050_controller_node_new_order_nav_through_nodes_unreleased_nodes(
     spy_send_adapter_navigate_through_nodes = mocker.spy(
         node, "send_adapter_navigate_through_nodes"
     )
-    
+
     spy_process_last_edge_node = mocker.spy(
         node, "_process_last_edge_node"
     )
@@ -966,31 +971,31 @@ def test_vda5050_controller_node_new_order_nav_through_nodes_unreleased_nodes(
     # and that the parameters matches order's released edges
     # Note: the standard assumes the vehicle is on the first node already,
     # so the first navigation command is to the second order node.
-    
+
     spy_send_adapter_navigate_through_nodes.assert_called_once_with(
         edges=order.edges[:3], nodes=order.nodes[1:4]
     )
-    
+
     feedback_msg = NavigateThroughNodes.Impl.FeedbackMessage()
     # Check that a feedback of the current node doesn't affect the current state
     feedback_msg.feedback.last_node = order.nodes[0]
     node._navigate_through_nodes_feedback_callback(feedback_msg)
-    
+
     spy_process_last_edge_node.assert_not_called()
     spy_process_last_edge_node.reset_mock()
-    
+
     assert len(node._current_state.node_states) == 4
     assert len(node._current_state.edge_states) == 4
     assert node._current_state.last_node_id == "node1"
     assert node._current_state.last_node_sequence_id == 0
-    
+
     # Next node has been reached and a feedback message is published
     feedback_msg.feedback.last_node = order.nodes[1]
     node._navigate_through_nodes_feedback_callback(feedback_msg)
-    
+
     spy_process_last_edge_node.assert_called_once()
     spy_process_last_edge_node.reset_mock()
-    
+
     assert len(node._current_state.node_states) == 3
     assert len(node._current_state.edge_states) == 3
     assert node._current_state.last_node_id == "node2"
@@ -999,10 +1004,10 @@ def test_vda5050_controller_node_new_order_nav_through_nodes_unreleased_nodes(
     # Next node has been reached and a feedback message is published
     feedback_msg.feedback.last_node = order.nodes[2]
     node._navigate_through_nodes_feedback_callback(feedback_msg)
-    
+
     spy_process_last_edge_node.assert_called_once()
     spy_process_last_edge_node.reset_mock()
-    
+
     assert len(node._current_state.node_states) == 2
     assert len(node._current_state.edge_states) == 2
     assert node._current_state.last_node_id == "node3"
@@ -1010,19 +1015,20 @@ def test_vda5050_controller_node_new_order_nav_through_nodes_unreleased_nodes(
 
     # Last node reached as indicated by the result coming through
     # A feedback message shouldn't be published for the final node in a navigation order
-    
+
     # Simulate the adapter reached navigation goals
     future = Future()
     future.set_result(result=NavigateThroughNodes.Result())
     node._navigate_to_node_result_callback(future)
-    
+
     spy_process_last_edge_node.assert_called_once()
     spy_process_last_edge_node.reset_mock()
     assert len(node._current_state.node_states) == 1
     assert len(node._current_state.edge_states) == 1
     assert node._current_state.last_node_id == "node4"
     assert node._current_state.last_node_sequence_id == 6
-    
-    # This is the final node with a released horizon. Therefore a request should be flagged on the next tick
+
+    # This is the final node with a released horizon.
+    # Therefore a request should be flagged on the next tick
     node._on_active_order()
-    assert node._current_state.new_base_request == True
+    assert node._current_state.new_base_request is True
