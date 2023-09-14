@@ -96,6 +96,7 @@ class MockActionServerNavigateToNode:
         )
         self.feedback_pub.publish(feedback_message)
 
+
 class MockActionServerNavigateThroughNodes:
     def __init__(self, node):
         self.logger = node.get_logger()
@@ -145,7 +146,8 @@ class MockActionServerNavigateThroughNodes:
             goal_id=self.goal_id, feedback=feedback
         )
         self.feedback_pub.publish(feedback_message)
-        
+
+
 class MockActionServerProcessVDAAction:
     def __init__(self, node):
         self.logger = node.get_logger()
@@ -213,9 +215,11 @@ def adapter_node(setup_rclpy):
 def action_server_nav_to_node(adapter_node):
     return MockActionServerNavigateToNode(adapter_node)
 
+
 @pytest.fixture()
 def action_server_nav_through_nodes(adapter_node):
     return MockActionServerNavigateThroughNodes(adapter_node)
+
 
 @pytest.fixture
 def action_server_process_vda_action(adapter_node):
