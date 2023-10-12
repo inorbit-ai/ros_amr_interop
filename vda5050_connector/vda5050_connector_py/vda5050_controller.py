@@ -1435,23 +1435,24 @@ class VDA5050Controller(Node):
         for action in execution_list["soft"] + execution_list["none"]:
             self.send_adapter_process_vda_action(action)
 
-    def _check_hard_actions(self, action_list):
+    def _check_hard_soft_actions(self, action_list):
         """
-        Check a list of actions for HARD actions.
+        Check a list of actions for HARD or SOFT actions.
 
         Returns
         -------
-        True if an action in the list is HARD blocking
+        True if an action in the list is HARD or SOFT blocking
 
         """
-        _hard_action_found = False
+        _hard_soft_action_found = False
         for action in action_list:
-            # Hard actions should be the last in the list
-            # because they must be the only thing running
-            if action.blocking_type == VDAAction.HARD:
-                _hard_action_found = True
+            # Hard or SOFT actions should be the last in the list
+            # because they cannot be performed when driving
+            if action.blocking_type == VDAAction.HARD or \
+               action.blocking_type == VDAAction.SOFT:
+                _hard_soft_action_found = True
                 break
-        return _hard_action_found
+        return _hard_soft_action_found
 
     def _get_released_edges(self):
         """
@@ -1473,8 +1474,8 @@ class VDA5050Controller(Node):
             if edge.sequence_id >= self._current_state.last_node_sequence_id + 1:
                 if edge.released:
                     released_edges.append(edge)
-                    # if we find a hard action break
-                    if self._check_hard_actions(edge.actions):
+                    # if we find a hard or soft action break
+                    if self._check_hard_soft_actions(edge.actions):
                         break
                 elif len(released_edges) == 0:
                     # If there's no released edge available then request more and break
@@ -1508,8 +1509,8 @@ class VDA5050Controller(Node):
             if node.sequence_id >= self._current_state.last_node_sequence_id + 2:
                 if node.released:
                     released_nodes.append(node)
-                    # if we find a hard action break
-                    if self._check_hard_actions(node.actions):
+                    # if we find a hard or soft action break
+                    if self._check_hard_soft_actions(node.actions):
                         break
                 else:
                     # There are no released nodes after a non released node
@@ -1522,7 +1523,7 @@ class VDA5050Controller(Node):
 
         The edges and nodes are checked to see if they're released.
         Multiple released nodes/edges are sent to the navigate through nodes actions.
-        Any node/edge actions that are hard will be the end of a single navigate.
+        Any node/edge actions that are hard or soft will be the end of a single navigate.
         """
         released_edges = self._get_released_edges()
         if len(released_edges) == 0:
