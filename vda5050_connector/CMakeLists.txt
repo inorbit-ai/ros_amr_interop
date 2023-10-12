@@ -37,6 +37,7 @@ find_package(vda5050_msgs REQUIRED)
 # BUILD
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "action/NavigateThroughNodes.action"
   "action/NavigateToNode.action"
   "action/ProcessVDAAction.action"
   "srv/GetState.srv"

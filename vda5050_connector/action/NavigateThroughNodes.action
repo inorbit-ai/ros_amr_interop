@@ -1,0 +1,11 @@
+# Goal
+vda5050_msgs/Edge[] edges
+vda5050_msgs/Node[] nodes
+---
+# Result
+std_msgs/Empty result
+---
+# Feedback
+vda5050_msgs/AGVPosition position
+vda5050_msgs/Velocity velocity
+vda5050_msgs/Node last_node
