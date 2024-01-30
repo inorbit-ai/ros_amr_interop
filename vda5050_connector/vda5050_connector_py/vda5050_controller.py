@@ -665,7 +665,7 @@ class VDA5050Controller(Node):
                 "distance_since_last_node": order_state.state.distance_since_last_node,
                 "battery_state": order_state.state.battery_state,
                 "errors": current_errors + order_state.state.errors,
-                "informations": order_state.state.informations
+                "information": order_state.state.information
             }
         )
 

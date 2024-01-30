@@ -97,13 +97,13 @@ public:
   }
 
   /**
-   * @brief Add a new information msg into the informations array of the order state
+   * @brief Add a new information msg into the information array of the order state
    * Only one thread/writer can modify the order_state.
    */
   void add_information(const vda5050_msgs::msg::Info & info)
   {
     std::unique_lock lock(mutex);
-    order_state_.informations.push_back(info);
+    order_state_.information.push_back(info);
   }
 
   /**
@@ -127,14 +127,14 @@ public:
   }
 
   /**
-   * @brief Clear the order state arrays (load, informations and errors).
+   * @brief Clear the order state arrays (load, information and errors).
    * Only one thread/writer can clear the order_state.
    */
   void clear()
   {
     std::unique_lock lock(mutex);
     order_state_.loads.clear();
-    order_state_.informations.clear();
+    order_state_.information.clear();
     order_state_.errors.clear();
   }
 
