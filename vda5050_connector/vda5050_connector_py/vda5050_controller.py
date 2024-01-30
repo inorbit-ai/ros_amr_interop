@@ -1171,8 +1171,8 @@ class VDA5050Controller(Node):
         # Only on stitching updates the node and edges base states are kept
         self._update_state(
             {
-                "order_id": order.order_id,
-                "order_update_id": order.order_update_id,
+                "orderId": order.order_id,
+                "orderUpdateId": order.order_update_id,
                 "errors": errors,
                 "node_states": (mode == OrderAcceptModes.STITCH) * self._current_state.node_states
                 + self._get_node_states(order),
@@ -1208,19 +1208,18 @@ class VDA5050Controller(Node):
         if error == OrderRejectErrors.ORDER_UPDATE_ERROR:
             # On orderUpdateError send orderUpdateId and orderId as reference
 
-            # TODO: Question: camelCase or snakeCase (order_id or orderId)
             error_references.append(
-                VDAErrorReference(reference_key="order_id", reference_value=order.order_id)
+                VDAErrorReference(reference_key="orderId", reference_value=order.order_id)
             )
             error_references.append(
                 VDAErrorReference(
-                    reference_key="order_update_id", reference_value=str(order.order_update_id)
+                    reference_key="orderUpdateId", reference_value=str(order.order_update_id)
                 )
             )
         elif error == OrderRejectErrors.NO_ROUTE_ERROR:
             # On noRouteError send 1st node as reference
             error_references.append(
-                VDAErrorReference(reference_key="node_id", reference_value=order.nodes[0].node_id)
+                VDAErrorReference(reference_key="nodeId", reference_value=order.nodes[0].node_id)
             )
 
         order_error = VDAError()
