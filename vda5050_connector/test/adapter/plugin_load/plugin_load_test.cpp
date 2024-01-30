@@ -105,7 +105,7 @@ TEST_F(AdapterTest, HandlerLoadHandlers)
 
   // Check handlers could modify global current state on configure
   auto order_state = adapter_node->get_current_state();
-  EXPECT_EQ(static_cast<int>(order_state.informations.size()), 1);
+  EXPECT_EQ(static_cast<int>(order_state.information.size()), 1);
   EXPECT_FLOAT_EQ(order_state.distance_since_last_node, 10.0);
   EXPECT_EQ(order_state.paused, true);
 

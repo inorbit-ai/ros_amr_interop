@@ -72,14 +72,14 @@ TEST_F(AdapterTest, HandlerExecution)
 
   // Check handlers could modify global current state on configure
   auto order_state = adapter_node->get_current_state();
-  EXPECT_EQ(static_cast<int>(order_state.informations.size()), 1);
+  EXPECT_EQ(static_cast<int>(order_state.information.size()), 1);
   EXPECT_FLOAT_EQ(static_cast<int>(order_state.battery_state.battery_charge), 100.0);
 
   // Check handlers could modify global current state on execute
   ASSERT_NO_THROW(adapter_node->call_update_current_state());
   order_state = adapter_node->get_current_state();
-  // Update current state should clear previous loads, error and informations
-  EXPECT_EQ(static_cast<int>(order_state.informations.size()), 1);
+  // Update current state should clear previous loads, error and information
+  EXPECT_EQ(static_cast<int>(order_state.information.size()), 1);
   EXPECT_FLOAT_EQ(static_cast<int>(order_state.battery_state.battery_charge), 90.0);
 
   // Test vda action execute state machine: Transitions and call of state funcs
