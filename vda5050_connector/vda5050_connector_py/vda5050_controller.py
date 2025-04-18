@@ -96,6 +96,7 @@ DEFAULT_SERIAL_NUMBER = "robot_1"
 DEFAULT_PROTOCOL_VERSION = "2.0.0"
 DEFAULT_STARTING_NODE_ID = ""
 SUPPORTED_PROTOCOL_VERSIONS = ["1.1.0", "2.0.0"]
+DEFAULT_INTERFACE_NAME = "uagv"
 
 DEFAULT_GET_STATE_SVC_NAME = "adapter/get_state"
 DEFAULT_SUPPORTED_ACTIONS_SVC_NAME = "adapter/supported_actions"
@@ -228,6 +229,8 @@ class VDA5050Controller(Node):
         self._execute_order_period = read_double_parameter(
             self, "execute_order_period", DEFAULT_EXECUTE_ORDER_PERIOD
         )
+        self._interface_name = read_str_parameter(self, "interface_name", DEFAULT_INTERFACE_NAME)
+
 
     # ---- Configure ROS interfaces ----
 
@@ -292,6 +295,7 @@ class VDA5050Controller(Node):
                 manufacturer=self._manufacturer_name,
                 serial_number=self._serial_number,
                 topic="order",
+                interface_name=self._interface_name
             ),
             callback=self.process_order,
             qos_profile=10,
@@ -304,6 +308,7 @@ class VDA5050Controller(Node):
                 manufacturer=self._manufacturer_name,
                 serial_number=self._serial_number,
                 topic="instantActions",
+                interface_name=self._interface_name
             ),
             callback=self.process_instant_actions,
             qos_profile=10,
@@ -318,6 +323,7 @@ class VDA5050Controller(Node):
                 manufacturer=self._manufacturer_name,
                 serial_number=self._serial_number,
                 topic="state",
+                interface_name=self._interface_name
             ),
             qos_profile=10,
         )
@@ -329,6 +335,7 @@ class VDA5050Controller(Node):
                 manufacturer=self._manufacturer_name,
                 serial_number=self._serial_number,
                 topic="connection",
+                interface_name=self._interface_name
             ),
             qos_profile=10,
         )
@@ -340,6 +347,7 @@ class VDA5050Controller(Node):
                 manufacturer=self._manufacturer_name,
                 serial_number=self._serial_number,
                 topic="visualization",
+                interface_name=self._interface_name
             ),
             qos_profile=10,
         )
@@ -351,6 +359,7 @@ class VDA5050Controller(Node):
                 manufacturer=self._manufacturer_name,
                 serial_number=self._serial_number,
                 topic="factsheet",
+                interface_name=self._interface_name
             ),
             qos_profile=10,
         )
