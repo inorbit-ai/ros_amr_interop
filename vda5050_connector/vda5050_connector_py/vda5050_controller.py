@@ -80,6 +80,7 @@ from vda5050_msgs.msg import Timing as VDATiming
 from vda5050_msgs.msg import TypeSpecification as VDATypeSpecification
 from vda5050_msgs.msg import Visualization as VDAVisualization
 from vda5050_msgs.msg import WheelDefinition as VDAWheelDefinition
+from action_msgs.msg import GoalStatus
 
 from vda5050_connector.srv import GetState
 from vda5050_connector.srv import SupportedActions
@@ -1522,11 +1523,31 @@ class VDA5050Controller(Node):
             future (Future): Action result future.
 
         """
-        # TODO: Check when the goal fails
         self._navigate_to_node_goal_handle = None
 
         # When the order is cancelled, this callback should avoid continuing its logic
         if self._canceling_order():
+            return
+
+        # Check if goal failed
+        status = future.result().status
+        if status == GoalStatus.STATUS_ABORTED:
+            self.logger.info("Failed to reach goal. Order aborted.")
+
+            # Notify master of the failure
+            error = VDAError()
+            error.error_type = OrderRejectErrors.NO_ROUTE_ERROR.value
+            error.error_description = "Failed to reach current node."
+            error.error_level = VDAError.FATAL
+            error.error_references = [
+                VDAErrorReference(
+                    reference_key="node_id", reference_value=self._current_node_goal.node_id
+                )
+            ]
+
+            current_errors = self._current_state.errors
+            self._update_state({"errors": current_errors + [error]}, publish_now=True)
+
             return
 
         last_edge = next(
