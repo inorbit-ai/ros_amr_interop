@@ -133,6 +133,7 @@ def generate_vda_order_msg(order):
                     VDAControlPoint(
                         x=float(cp["x"]),
                         y=float(cp["y"]),
+                        orientation=float(cp["orientation"]),
                         weight=float(cp.get("weight", 1)),
                     )
                     for cp in edge["trajectory"]["control_points"]
