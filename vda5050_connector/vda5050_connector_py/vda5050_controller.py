@@ -1032,7 +1032,10 @@ class VDA5050Controller(Node):
             True if last <> first base nodes match, False otherwise.
 
         """
-        last_node = self._current_order.nodes[-1]
+        base_order_nodes = [
+            node for node in self._current_order.nodes if node.released
+        ]
+        last_node = base_order_nodes[-1]
         stitch_node = order.nodes[0]
 
         # Return False if node actions differ
