@@ -1035,6 +1035,9 @@ class VDA5050Controller(Node):
         base_order_nodes = [
             node for node in self._current_order.nodes if node.released
         ]
+        if not base_order_nodes:
+            self.logger.error("Error while validating stitch node: current order does not have any node.")
+            return False
         last_node = base_order_nodes[-1]
         stitch_node = order.nodes[0]
 
