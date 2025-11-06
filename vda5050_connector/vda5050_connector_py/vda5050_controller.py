@@ -114,6 +114,7 @@ class ActionErrors(Enum):
     """Action Error types."""
 
     ACTION_NOT_FOUND = "actionNotFound"
+    ACTION_FAILED = "actionFailed"
     NO_ORDER_TO_CANCEL = "noOrderToCancel"
 
 
@@ -556,7 +557,7 @@ class VDA5050Controller(Node):
         )
         return action_state.action_status
 
-    def _update_action_status(self, action_id: str, action_status: str):
+    def _update_action_status(self, action_id: str, action_status: str, result_description: str = ""):
         """
         Update action status on the current state given action's ID.
 
@@ -604,8 +605,10 @@ class VDA5050Controller(Node):
             self._update_state({"errors": current_errors})
             return
 
-        # If found, update action status
+        # If found, update action status and result description
         action_state.action_status = action_status
+        if action_status == VDACurrentAction.FINISHED:
+            action_state.result_description = result_description
 
     # ---- Adapter's state ----
 
@@ -642,7 +645,7 @@ class VDA5050Controller(Node):
 
         """
         if action:
-            self._update_action_status(action.action_id, VDACurrentAction.FINISHED)
+            self._update_action_status(action.action_id, VDACurrentAction.FINISHED, action.result_description)
         self._update_state_from_adapter(future.result())
         self._publish_state()
 
@@ -845,8 +848,22 @@ class VDA5050Controller(Node):
         action_result: ProcessVDAAction.Result = future.result().result
         current_action: VDACurrentAction = action_result.result
         self._process_vda_action_goal_handle_dict.pop(current_action.action_id)
-        self._update_action_status(current_action.action_id, current_action.action_status)
+        self._update_action_status(current_action.action_id, current_action.action_status, current_action.result_description)
         self.logger.info(f"VDA Action finished. Result: {current_action}")
+
+        # Create an error entry for failed action
+        if current_action.action_status == VDACurrentAction.FAILED:
+            error = VDAError(
+                error_type=ActionErrors.ACTION_FAILED.value,
+                error_description=current_action.result_description,
+                error_level=VDAError.FATAL,
+                error_references=[
+                    VDAErrorReference(reference_key="action_id", reference_value=current_action.action_id)
+                ],
+            )
+            current_errors = self._current_state.errors
+            self._update_state({"errors": current_errors + [error]}, publish_now=True)
+            self._update_state({"errors": current_errors})
 
     # Order
 
