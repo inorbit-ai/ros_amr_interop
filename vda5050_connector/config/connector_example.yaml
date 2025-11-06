@@ -1,20 +1,21 @@
 mqtt_bridge:
   ros__parameters:
+    vda5050_protocol_version: "2.0.0"
     mqtt_address: "localhost"
     mqtt_port: 1883
     mqtt_username: ""
     mqtt_password: ""
-    manufacturer_name: "robots"
-    serial_number: "robot_1"
+    manufacturer_name: "agilex"
+    serial_number: "e42069"
 
 controller:
   ros__parameters:
-    robot_name: "robot_1"
-    manufacturer_name: "robots"
-    serial_number: "robot_1"
+    robot_name: "agv_franklin"
+    manufacturer_name: "agilex"
+    serial_number: "e42069"
 
 adapter:
   ros__parameters:
-    robot_name: "robot_1"
-    manufacturer_name: "robots"
-    serial_number: "robot_1"
+    robot_name: "agv_franklin"
+    manufacturer_name: "agilex"
+    serial_number: "e42069"
