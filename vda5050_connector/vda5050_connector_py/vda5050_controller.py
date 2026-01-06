@@ -1328,11 +1328,23 @@ class VDA5050Controller(Node):
             self._navigate_to_node_goal_handle.cancel_goal_async()
             return
 
+        # Delete remaining node / edge states / clear errors related to the order
+        errors = [
+            error
+            for error in self._current_state.errors
+            if error.error_type not in [e.value for e in OrderRejectErrors]
+        ]
+
         # Once all the VDA actions and navigation goal requests have finished,
         # the cancel order will be mark as finished
-
-        # Delete remaining node / edge states
-        self._update_state({"new_base_request": False, "node_states": [], "edge_states": []})
+        self._update_state(
+            {
+                "errors": errors,
+                "new_base_request": False,
+                "node_states": [],
+                "edge_states": [],
+            }
+        )
         self._update_action_status(self._cancel_action.action_id, VDACurrentAction.FINISHED)
         self._current_order = VDAOrder(order_id="-1")
         self._cancel_action = None
