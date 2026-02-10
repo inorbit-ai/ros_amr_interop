@@ -1496,7 +1496,7 @@ class VDA5050Controller(Node):
 
             self.send_adapter_navigate_to_node(edge=next_edge, node=next_node)
         else:
-            self.logger.error(f"{next_node} Already current goal")
+            self.logger.error(f"{next_node} Already current goal", throttle_duration_sec=5)
     # ---- Navigate to node: send goals ----
 
     def send_adapter_navigate_to_node(self, edge: VDAEdge, node: VDANode):
