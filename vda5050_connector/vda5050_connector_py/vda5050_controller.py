@@ -1348,6 +1348,7 @@ class VDA5050Controller(Node):
         self._update_action_status(self._cancel_action.action_id, VDACurrentAction.FINISHED)
         self._current_order = VDAOrder(order_id="-1")
         self._cancel_action = None
+        self._current_node_goal = None
         self._current_node_actions = []
 
         self.logger.info("Finished executing cancelOrder.")
