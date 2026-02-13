@@ -1348,6 +1348,7 @@ class VDA5050Controller(Node):
         self._update_action_status(self._cancel_action.action_id, VDACurrentAction.FINISHED)
         self._current_order = VDAOrder(order_id="-1")
         self._cancel_action = None
+        self._current_node_goal = None
         self._current_node_actions = []
 
         self.logger.info("Finished executing cancelOrder.")
@@ -1495,7 +1496,7 @@ class VDA5050Controller(Node):
 
             self.send_adapter_navigate_to_node(edge=next_edge, node=next_node)
         else:
-            self.logger.error(f"{next_node} Already current goal")
+            self.logger.error(f"{next_node} Already current goal", throttle_duration_sec=5)
     # ---- Navigate to node: send goals ----
 
     def send_adapter_navigate_to_node(self, edge: VDAEdge, node: VDANode):
