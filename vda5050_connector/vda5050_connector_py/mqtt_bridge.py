@@ -296,17 +296,40 @@ class MQTTBridge(Node):
         self._last_connection_msg = None
 
         # Connect to MQTT broker
-        self.mqtt_client.connect_async(host=mqtt_address, port=int(mqtt_port))
+        self._mqtt_address = mqtt_address
+        self._mqtt_port = int(mqtt_port)
+        self._connect_to_broker()
+
         self.mqtt_client.loop_start()
+
+        self._connect_timer = self.create_timer(
+            timer_period_sec=5.0,
+            callback=self._connect_to_broker
+        )
 
         self.on_configure()
 
         self.logger.info(f"Node {NODE_NAME} has started successfully.")
 
+    def _connect_to_broker(self):
+        """Attempts to connect to the MQTT broker."""
+        if not self.mqtt_client.is_connected():
+            try:
+                self.mqtt_client.connect_async(host=self._mqtt_address, port=self._mqtt_port)
+                self.logger.info(f"Attempting to connect to MQTT broker at {self._mqtt_address}:{self._mqtt_port}...")
+            except Exception as e:
+                self.logger.error(f"Error during connection attempt: {e}. Will retry again.")
+                pass
+
     def on_connect_mqtt(self, client, userdata, flags, rc):
         """MQTT client connect callback."""
         if rc == 0:
             self.logger.info("Connected to MQTT Broker!")
+
+            # Cancel the connection timer
+            if hasattr(self, '_connect_timer'):
+                self._connect_timer.cancel()
+
             self.mqtt_client.subscribe(
                 get_vda5050_mqtt_topic(
                     manufacturer=self._manufacturer_name,
@@ -367,11 +390,6 @@ class MQTTBridge(Node):
             self.logger.info(
                 f"MQTT client disconnected (rc: {rc}, {error_string(rc)}). Trying to reconnect."
             )
-            while not self.mqtt_client.is_connected():
-                try:
-                    self.mqtt_client.reconnect()
-                except OSError:
-                    pass
         else:
             self.logger.info("Disconnected from MQTT Broker!")
 
