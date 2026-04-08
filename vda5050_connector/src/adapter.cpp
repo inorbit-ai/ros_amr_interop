@@ -60,6 +60,7 @@ AdapterNode::~AdapterNode()
   state_handlers_.clear();
   vda_actions_.clear();
   nav_to_node_ = nullptr;
+  nav_through_nodes_ = nullptr;
 }
 
 void AdapterNode::on_configure()
@@ -83,6 +84,11 @@ void AdapterNode::on_configure()
   nav_to_node_loader_ = std::make_unique<pluginlib::ClassLoader<adapter::NavToNode>>(
     plugin_package_, nav_to_node_class_plugin_);
 
+  // Create nav through nodes pluginlib loader
+  nav_through_nodes_loader_ =
+    std::make_unique<pluginlib::ClassLoader<adapter::NavThroughNodes>>(
+      plugin_package_, nav_through_nodes_class_plugin_);
+
   std::string base_interface_name = std::string(get_namespace()) + "/";
   base_interface_name += manufacturer_name_ + std::string("/");
   base_interface_name += robot_name_ + std::string("/");
@@ -102,6 +108,12 @@ void AdapterNode::on_configure()
     std::bind(&AdapterNode::nav_to_node_handle_goal, this, _1, _2),
     std::bind(&AdapterNode::nav_to_node_handle_cancel, this, _1),
     std::bind(&AdapterNode::nav_to_node_handle_accepted, this, _1));
+
+  nav_through_nodes_act_srv_ = rclcpp_action::create_server<NavigateThroughNodes>(
+    this, base_interface_name + nav_through_nodes_act_name_,
+    std::bind(&AdapterNode::nav_through_nodes_handle_goal, this, _1, _2),
+    std::bind(&AdapterNode::nav_through_nodes_handle_cancel, this, _1),
+    std::bind(&AdapterNode::nav_through_nodes_handle_accepted, this, _1));
 
   vda_action_act_srv_ = rclcpp_action::create_server<ProcessVDAAction>(
     this, base_interface_name + vda_action_act_name_,
@@ -124,12 +136,15 @@ void AdapterNode::read_node_parameters()
   get_state_svc_name_ = read_str_parameter(this, "get_state_svc_name", get_state_svc_name_);
   vda_action_act_name_ = read_str_parameter(this, "vda_action_act_name", vda_action_act_name_);
   nav_to_node_act_name_ = read_str_parameter(this, "nav_to_node_act_name", nav_to_node_act_name_);
+  nav_through_nodes_act_name_ =
+    read_str_parameter(this, "nav_through_nodes_act_name", nav_through_nodes_act_name_);
 }
 
 void AdapterNode::read_plugin_parameters()
 {
   process_state_handler_parameters();
   process_nav_to_node_parameters();
+  process_nav_through_nodes_parameters();
   process_vda_action_parameters();
 }
 
@@ -154,6 +169,19 @@ void AdapterNode::process_nav_to_node_parameters()
     return;
   }
   set_nav_to_node_handler(handler_name);
+}
+
+void AdapterNode::process_nav_through_nodes_parameters()
+{
+  const std::string handler_name =
+    vda5050_connector::utils::read_str_parameter(this, "nav_through_nodes.handler", "");
+  if (handler_name == "") {
+    RCLCPP_INFO(
+      get_logger(),
+      "No nav_through_nodes handler configured. NavigateThroughNodes goals will be rejected.");
+    return;
+  }
+  set_nav_through_nodes_handler(handler_name);
 }
 
 void AdapterNode::process_vda_action_parameters()
@@ -247,6 +275,16 @@ void AdapterNode::set_nav_to_node_handler(const std::string & handler_name)
     get_logger(), "Created nav to node handler plugin from class name [%s].", handler_name.c_str());
 }
 
+void AdapterNode::set_nav_through_nodes_handler(const std::string & handler_name)
+{
+  nav_through_nodes_ = nav_through_nodes_loader_->createUniqueInstance(handler_name);
+  nav_through_nodes_->compose(this, current_state_.get(), get_robot_name());
+  nav_through_nodes_->configure();
+  RCLCPP_INFO(
+    get_logger(), "Created nav through nodes handler plugin from class name [%s].",
+    handler_name.c_str());
+}
+
 void AdapterNode::execute_vda_action(const std::shared_ptr<GoalHandleProcessVDAAction> goal_handle)
 {
   std::string action_name = goal_handle->get_goal()->action.action_type;
@@ -277,6 +315,24 @@ void AdapterNode::execute_nav_to_node(const std::shared_ptr<GoalHandleNavigateTo
     nav_to_node_->execute();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(get_logger(), "Error while navigating to node: [%s].", e.what());
+  }
+}
+
+void AdapterNode::execute_nav_through_nodes(
+  const std::shared_ptr<GoalHandleNavigateThroughNodes> goal_handle)
+{
+  if (!nav_through_nodes_) {
+    RCLCPP_ERROR(get_logger(), "No nav through nodes handler is configured.");
+    goal_handle->abort(std::make_shared<NavigateThroughNodes::Result>());
+    return;
+  }
+
+  try {
+    nav_through_nodes_->reset(goal_handle->get_goal()->edges, goal_handle->get_goal()->nodes, goal_handle);
+    nav_through_nodes_->execute();
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(get_logger(), "Error while navigating through nodes: [%s].", e.what());
+    goal_handle->abort(std::make_shared<NavigateThroughNodes::Result>());
   }
 }
 
@@ -385,6 +441,56 @@ void AdapterNode::nav_to_node_handle_accepted(
 {
   std::thread{
     std::bind(&AdapterNode::execute_nav_to_node, this, std::placeholders::_1), goal_handle}
+    .detach();
+}
+
+rclcpp_action::GoalResponse AdapterNode::nav_through_nodes_handle_goal(
+  const rclcpp_action::GoalUUID & uuid,
+  std::shared_ptr<const NavigateThroughNodes::Goal> goal) const
+{
+  (void)goal;
+  RCLCPP_INFO(get_logger(), "Received navigation through nodes goal request with ID [%d].", uuid.at(0));
+
+  if (!nav_through_nodes_) {
+    RCLCPP_ERROR(
+      get_logger(), "Navigation through nodes goal [%d] rejected: no handler configured.", uuid.at(0));
+    return rclcpp_action::GoalResponse::REJECT;
+  }
+
+  if ((nav_to_node_ && nav_to_node_->is_driving()) || nav_through_nodes_->is_driving()) {
+    RCLCPP_INFO(
+      get_logger(),
+      "Navigation through nodes goal [%d] rejected. There is an active goal executing.",
+      uuid.at(0));
+    return rclcpp_action::GoalResponse::REJECT;
+  }
+
+  return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+}
+
+rclcpp_action::CancelResponse AdapterNode::nav_through_nodes_handle_cancel(
+  const std::shared_ptr<GoalHandleNavigateThroughNodes> goal_handle) const
+{
+  (void)goal_handle;
+  RCLCPP_INFO(get_logger(), "Received request to cancel navigation through nodes goal.");
+
+  if (!nav_through_nodes_) {
+    return rclcpp_action::CancelResponse::REJECT;
+  }
+
+  if (!nav_through_nodes_->cancel()) {
+    RCLCPP_INFO(get_logger(), "Unable to cancel navigation through nodes goal.");
+    return rclcpp_action::CancelResponse::REJECT;
+  }
+
+  return rclcpp_action::CancelResponse::ACCEPT;
+}
+
+void AdapterNode::nav_through_nodes_handle_accepted(
+  const std::shared_ptr<GoalHandleNavigateThroughNodes> goal_handle)
+{
+  std::thread{
+    std::bind(&AdapterNode::execute_nav_through_nodes, this, std::placeholders::_1), goal_handle}
     .detach();
 }
 
