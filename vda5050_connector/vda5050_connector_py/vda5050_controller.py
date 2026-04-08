@@ -97,7 +97,9 @@ DEFAULT_MANUFACTURER_NAME = "robots"
 DEFAULT_SERIAL_NUMBER = "robot_1"
 DEFAULT_PROTOCOL_VERSION = "2.0.0"
 DEFAULT_STARTING_NODE_ID = ""
+SUPPORTED_PROTOCOL_VERSIONS = ["1.1.0", "2.0.0"]
 DEFAULT_NAV_THROUGH_NODES = False
+DEFAULT_INTERFACE_NAME = "uagv"
 
 DEFAULT_GET_STATE_SVC_NAME = "adapter/get_state"
 DEFAULT_SUPPORTED_ACTIONS_SVC_NAME = "adapter/supported_actions"
@@ -269,6 +271,7 @@ class VDA5050Controller(Node):
                 self.logger.error(
                     "NavigateThroughNodes adapter action server not available, waiting again..."
                 )
+            self._navigate_through_nodes_goal_handle = None
 
         self._navigate_to_node_goal_handle = None
 
@@ -1243,6 +1246,21 @@ class VDA5050Controller(Node):
             # Note: the standard assumes the robot is at the first node of the order.
             # Otherwise, the order gets rejected and this method is not called.
             self._process_node(self._current_order.nodes[0])
+        else:
+            # For STITCH orders the stitching node (order.nodes[0]) may already
+            # have been visited.  Remove any stale node_states at or below the
+            # robot's current position so the fleet manager sees the order as
+            # complete once the last node is reached.
+            if order.nodes[0].sequence_id <= self._current_state.last_node_sequence_id:
+                self._update_state(
+                    {
+                        "node_states": [
+                            ns
+                            for ns in self._current_state.node_states
+                            if ns.sequence_id > self._current_state.last_node_sequence_id
+                        ]
+                    }
+                )
 
     def _reject_order(self, order: VDAOrder, error: OrderRejectErrors, description: str = ""):
         """
@@ -1344,7 +1362,14 @@ class VDA5050Controller(Node):
 
         # Interrupt any running navigation goal
         if self._is_navigation_active():
-            self._navigate_to_node_goal_handle.cancel_goal_async()
+            if self._navigate_to_node_goal_handle is not None:
+                self._navigate_to_node_goal_handle.cancel_goal_async()
+                return
+            if (
+                self._enable_nav_through_nodes
+                and self._navigate_through_nodes_goal_handle is not None
+            ):
+                self._navigate_through_nodes_goal_handle.cancel_goal_async()
             return
 
         # Delete remaining node / edge states / clear errors related to the order
@@ -1588,6 +1613,18 @@ class VDA5050Controller(Node):
         else:
             next_node = released_nodes[0]
 
+        # If the robot is already at the next target node (e.g. because a new
+        # order starts from a node the robot has already passed through), skip
+        # navigation and process the edge/node directly to avoid publishing a
+        # stale path that briefly flashes on-screen.
+        if self._is_robot_near_node(next_node):
+            self.logger.info(
+                f"Robot already near node {next_node.node_id}. "
+                "Skipping navigation and processing edge/node directly."
+            )
+            self._process_last_edge_node()
+            return
+
         if next_node != self._current_node_goal:
             if self._enable_nav_through_nodes and len(released_nodes) > 1:
                 # Do the nav through nodes as long as there's more than one released node
@@ -1598,7 +1635,13 @@ class VDA5050Controller(Node):
                 self.logger.info(f"Processing node: {next_node}")
                 self.send_adapter_navigate_to_node(edge=next_edge, node=next_node)
         else:
-            self.logger.error(f"{next_node} Already current goal")
+            if not self._is_navigation_active():
+                self.logger.warning(
+                    "Current goal marker is stale while navigation is idle. Re-dispatching goal."
+                )
+                self.send_adapter_navigate_to_node(edge=next_edge, node=next_node)
+            else:
+                self.logger.error(f"{next_node} Already current goal")
 
     # ---- Navigate to node: send goals ----
 
@@ -1668,6 +1711,12 @@ class VDA5050Controller(Node):
         if self._canceling_order():
             return
 
+        # Guard: the edge/node may have already been consumed (e.g. by a
+        # duplicate dispatch race between _process_next_navigation and
+        # _on_active_order).
+        if len(self._get_released_edges()) == 0:
+            return
+
         self._process_last_edge_node()
 
     def _process_last_edge_node(self):
@@ -1724,7 +1773,46 @@ class VDA5050Controller(Node):
             goal_msg, feedback_callback=self._navigate_through_nodes_feedback_callback)
 
         # Register callback to be executed when the goal is accepted
-        _send_goal_future.add_done_callback(self._navigate_to_node_goal_response_callback)
+        _send_goal_future.add_done_callback(self._navigate_through_nodes_goal_response_callback)
+
+    def _navigate_through_nodes_goal_response_callback(self, future: Future):
+        """Response callback function for navigate through nodes goal request."""
+        self._navigate_through_nodes_goal_handle = future.result()
+        if not self._navigate_through_nodes_goal_handle.accepted:
+            self.logger.error("Navigate through nodes goal request rejected by adapter. Trying again.")
+            self._navigate_through_nodes_goal_handle = None
+            self._current_node_goal = None
+            return
+
+        self.logger.info("Navigate through nodes goal request accepted by adapter.")
+
+        _get_result_future = self._navigate_through_nodes_goal_handle.get_result_async()
+        _get_result_future.add_done_callback(self._navigate_through_nodes_result_callback)
+
+    def _navigate_through_nodes_result_callback(self, future: Future):
+        """Handle terminal result for navigate through nodes goal requests."""
+        self._navigate_through_nodes_goal_handle = None
+
+        if self._canceling_order():
+            return
+
+        # The handler emitted feedback for every node it was given, but some
+        # feedback messages may not have been processed yet (race between
+        # feedback and result delivery).  Consume only nodes the robot has
+        # already passed; do NOT blindly mark distant nodes as arrived.
+        while len(self._get_released_edges()) > 0 and len(self._get_released_nodes()) > 0:
+            next_node = self._get_released_nodes()[0]
+            if self._is_robot_near_node(next_node):
+                self._process_last_edge_node()
+            else:
+                break
+
+        self._current_node_goal = None
+
+        # If there are still released edges the robot hasn't reached, dispatch
+        # new navigation instead of marking them as visited.
+        if len(self._get_released_edges()) > 0 and len(self._get_released_nodes()) > 0:
+            self._process_next_navigation()
 
     def _navigate_through_nodes_feedback_callback(self, feedback_msg):
         """
@@ -1766,7 +1854,17 @@ class VDA5050Controller(Node):
             True if robot is navigating to node, False otherwise.
 
         """
-        return self._navigate_to_node_goal_handle is not None
+        return self._navigate_to_node_goal_handle is not None or (
+            self._enable_nav_through_nodes and self._navigate_through_nodes_goal_handle is not None
+        )
+
+    def _is_robot_near_node(self, node, threshold=1.0):
+        """Check if the robot is within *threshold* metres of a node's position."""
+        pos = self._current_state.agv_position
+        np = node.node_position
+        dx = pos.x - np.x
+        dy = pos.y - np.y
+        return (dx * dx + dy * dy) < (threshold * threshold)
 
     # Factsheet
 
