@@ -1769,8 +1769,6 @@ class VDA5050Controller(Node):
         goal_msg.edges = edges
         goal_msg.nodes = nodes
 
-        # self.send_adapter_navigate_to_node(edge=edges[0], node=nodes[0])
-
         # Wait for NavigateThroughNodes action server to be ready
         self._navigate_through_nodes_act_cli.wait_for_server()
 
