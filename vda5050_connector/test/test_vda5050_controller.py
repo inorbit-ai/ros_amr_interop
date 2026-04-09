@@ -905,7 +905,7 @@ def test_vda5050_controller_node_new_order_nav_through_nodes(
     # Simulate the adapter reached navigation goals
     future = Future()
     future.set_result(result=NavigateThroughNodes.Result())
-    node._navigate_to_node_result_callback(future)
+    node._navigate_through_nodes_result_callback(future)
 
     spy_process_last_edge_node.assert_called_once()
     spy_process_last_edge_node.reset_mock()
@@ -1018,7 +1018,7 @@ def test_vda5050_controller_node_new_order_nav_through_nodes_unreleased_nodes(
     # Simulate the adapter reached navigation goals
     future = Future()
     future.set_result(result=NavigateThroughNodes.Result())
-    node._navigate_to_node_result_callback(future)
+    node._navigate_through_nodes_result_callback(future)
 
     spy_process_last_edge_node.assert_called_once()
     spy_process_last_edge_node.reset_mock()
