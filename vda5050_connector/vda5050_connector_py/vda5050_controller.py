@@ -1693,6 +1693,12 @@ class VDA5050Controller(Node):
         if self._canceling_order():
             return
 
+        # Check if goal failed
+        status = future.result().status
+        if status == GoalStatus.STATUS_ABORTED:
+            self._handle_navigation_failure()
+            return
+
         # Guard: the edge/node may have already been consumed (e.g. by a
         # duplicate dispatch race between _process_next_navigation and
         # _on_active_order).
@@ -1700,6 +1706,26 @@ class VDA5050Controller(Node):
             return
 
         self._process_last_edge_node()
+
+    def _handle_navigation_failure(self):
+        """Report a navigation failure."""
+        self.logger.info("Failed to reach goal. Order aborted.")
+
+        error = VDAError()
+        error.error_type = OrderRejectErrors.NO_ROUTE_ERROR.value
+        error.error_description = "Failed to reach current node."
+        error.error_level = VDAError.FATAL
+        error.error_references = [
+            VDAErrorReference(
+                reference_key="node_id",
+                reference_value=self._current_node_goal.node_id
+                if self._current_node_goal
+                else "unknown",
+            )
+        ]
+
+        current_errors = self._current_state.errors
+        self._update_state({"errors": current_errors + [error]}, publish_now=True)
 
     def _process_last_edge_node(self):
         """Update the states with the last nodes and edges that were reported."""
