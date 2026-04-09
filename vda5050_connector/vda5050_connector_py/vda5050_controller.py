@@ -1775,6 +1775,7 @@ class VDA5050Controller(Node):
         # Send goal to action server
         self.logger.info("Navigate through nodes goal request sent.")
         self._current_node_goal = nodes[0]
+        self._nav_through_nodes_last_seq = nodes[-1].sequence_id
         _send_goal_future = self._navigate_through_nodes_act_cli.send_goal_async(
             goal_msg, feedback_callback=self._navigate_through_nodes_feedback_callback)
 
@@ -1802,11 +1803,21 @@ class VDA5050Controller(Node):
         if self._canceling_order():
             return
 
-        # The handler emitted feedback for every node it was given, but some
-        # feedback messages may not have been processed yet (race between
-        # feedback and result delivery).  Consume any remaining nodes that
-        # were part of the completed action.
-        while len(self._get_released_edges()) > 0 and len(self._get_released_nodes()) > 0:
+        # Check if goal failed
+        status = future.result().status
+        if status == GoalStatus.STATUS_ABORTED:
+            self._handle_navigation_failure()
+            return
+
+        # Consume only the nodes/edges that were part of this goal.
+        # A stitch may have added new released edges since the goal was sent;
+        # those must NOT be consumed here.
+        max_seq = self._nav_through_nodes_last_seq
+        while (
+            self._current_state.last_node_sequence_id < max_seq
+            and len(self._get_released_edges()) > 0
+            and len(self._get_released_nodes()) > 0
+        ):
             self._process_last_edge_node()
 
         self._current_node_goal = None
