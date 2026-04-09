@@ -1225,14 +1225,23 @@ class VDA5050Controller(Node):
         ]
 
         # Update state
-        # Only on stitching updates the node and edges base states are kept
+        # On stitching updates, keep existing base node_states and append the new ones,
+        # then drop any that the robot has already visited.
+        if mode == OrderAcceptModes.STITCH:
+            node_states = [
+                ns
+                for ns in (self._current_state.node_states + self._get_node_states(order))
+                if ns.sequence_id > self._current_state.last_node_sequence_id
+            ]
+        else:
+            node_states = self._get_node_states(order)
+
         self._update_state(
             {
                 "order_id": order.order_id,
                 "order_update_id": order.order_update_id,
                 "errors": errors,
-                "node_states": (mode == OrderAcceptModes.STITCH) * self._current_state.node_states
-                + self._get_node_states(order),
+                "node_states": node_states,
                 "edge_states": (mode == OrderAcceptModes.STITCH) * self._current_state.edge_states
                 + self._get_edge_states(order),
                 "action_states": self._current_state.action_states[:-len(order.nodes[0].actions)]
@@ -1246,21 +1255,6 @@ class VDA5050Controller(Node):
             # Note: the standard assumes the robot is at the first node of the order.
             # Otherwise, the order gets rejected and this method is not called.
             self._process_node(self._current_order.nodes[0])
-        else:
-            # For STITCH orders the stitching node (order.nodes[0]) may already
-            # have been visited.  Remove any stale node_states at or below the
-            # robot's current position so the fleet manager sees the order as
-            # complete once the last node is reached.
-            if order.nodes[0].sequence_id <= self._current_state.last_node_sequence_id:
-                self._update_state(
-                    {
-                        "node_states": [
-                            ns
-                            for ns in self._current_state.node_states
-                            if ns.sequence_id > self._current_state.last_node_sequence_id
-                        ]
-                    }
-                )
 
     def _reject_order(self, order: VDAOrder, error: OrderRejectErrors, description: str = ""):
         """
