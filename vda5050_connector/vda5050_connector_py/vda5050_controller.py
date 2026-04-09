@@ -1613,21 +1613,9 @@ class VDA5050Controller(Node):
         else:
             next_node = released_nodes[0]
 
-        # If the robot is already at the next target node (e.g. because a new
-        # order starts from a node the robot has already passed through), skip
-        # navigation and process the edge/node directly to avoid publishing a
-        # stale path that briefly flashes on-screen.
-        if self._is_robot_near_node(next_node):
-            self.logger.info(
-                f"Robot already near node {next_node.node_id}. "
-                "Skipping navigation and processing edge/node directly."
-            )
-            self._process_last_edge_node()
-            return
-
         if next_node != self._current_node_goal:
-            if self._enable_nav_through_nodes and len(released_nodes) > 1:
-                # Do the nav through nodes as long as there's more than one released node
+            if self._enable_nav_through_nodes:
+                # Use nav through nodes for all navigation when enabled
                 self.send_adapter_navigate_through_nodes(
                     edges=released_edges, nodes=released_nodes)
             else:
@@ -1798,19 +1786,15 @@ class VDA5050Controller(Node):
 
         # The handler emitted feedback for every node it was given, but some
         # feedback messages may not have been processed yet (race between
-        # feedback and result delivery).  Consume only nodes the robot has
-        # already passed; do NOT blindly mark distant nodes as arrived.
+        # feedback and result delivery).  Consume any remaining nodes that
+        # were part of the completed action.
         while len(self._get_released_edges()) > 0 and len(self._get_released_nodes()) > 0:
-            next_node = self._get_released_nodes()[0]
-            if self._is_robot_near_node(next_node):
-                self._process_last_edge_node()
-            else:
-                break
+            self._process_last_edge_node()
 
         self._current_node_goal = None
 
-        # If there are still released edges the robot hasn't reached, dispatch
-        # new navigation instead of marking them as visited.
+        # If there are still released edges (e.g. from a stitch), dispatch
+        # new navigation.
         if len(self._get_released_edges()) > 0 and len(self._get_released_nodes()) > 0:
             self._process_next_navigation()
 
@@ -1826,6 +1810,9 @@ class VDA5050Controller(Node):
             feedback_msg : ROS2 Action Feedback object.
 
         """
+        if self._current_node_goal is None:
+            return
+
         if feedback_msg.feedback.last_node.sequence_id >= self._current_node_goal.sequence_id:
             self._process_last_edge_node()
 
@@ -1857,14 +1844,6 @@ class VDA5050Controller(Node):
         return self._navigate_to_node_goal_handle is not None or (
             self._enable_nav_through_nodes and self._navigate_through_nodes_goal_handle is not None
         )
-
-    def _is_robot_near_node(self, node, threshold=1.0):
-        """Check if the robot is within *threshold* metres of a node's position."""
-        pos = self._current_state.agv_position
-        np = node.node_position
-        dx = pos.x - np.x
-        dy = pos.y - np.y
-        return (dx * dx + dy * dy) < (threshold * threshold)
 
     # Factsheet
 
