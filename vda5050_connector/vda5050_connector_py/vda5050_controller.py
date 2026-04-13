@@ -249,16 +249,6 @@ class VDA5050Controller(Node):
         base_interface_name = (
             f"{self.get_namespace()}/{self._manufacturer_name}/{self._robot_name}/"
         )
-        # Action client for sending NavigateToNode goals to adapter
-        self._navigate_to_node_act_cli = ActionClient(
-            node=self,
-            action_type=NavigateToNode,
-            action_name=base_interface_name + self._nav_to_node_act_name,
-        )
-        while not self._navigate_to_node_act_cli.wait_for_server(timeout_sec=1.0):
-            self.logger.error(
-                "NavigateToNode adapter action server not available, waiting again..."
-            )
 
         if self._enable_nav_through_nodes:
             # Action client for sending NavigateThroughNodes goals to adapter
@@ -272,8 +262,18 @@ class VDA5050Controller(Node):
                     "NavigateThroughNodes adapter action server not available, waiting again..."
                 )
             self._navigate_through_nodes_goal_handle = None
-
-        self._navigate_to_node_goal_handle = None
+        else:
+            # Action client for sending NavigateToNode goals to adapter
+            self._navigate_to_node_act_cli = ActionClient(
+                node=self,
+                action_type=NavigateToNode,
+                action_name=base_interface_name + self._nav_to_node_act_name,
+            )
+            while not self._navigate_to_node_act_cli.wait_for_server(timeout_sec=1.0):
+                self.logger.error(
+                    "NavigateToNode adapter action server not available, waiting again..."
+                )
+            self._navigate_to_node_goal_handle = None
 
         # Action client for sending ProcessVDAAction goals to adapter
         self._process_vda_action_act_cli = ActionClient(
@@ -1356,14 +1356,10 @@ class VDA5050Controller(Node):
 
         # Interrupt any running navigation goal
         if self._is_navigation_active():
-            if self._navigate_to_node_goal_handle is not None:
-                self._navigate_to_node_goal_handle.cancel_goal_async()
-                return
-            if (
-                self._enable_nav_through_nodes
-                and self._navigate_through_nodes_goal_handle is not None
-            ):
+            if self._enable_nav_through_nodes:
                 self._navigate_through_nodes_goal_handle.cancel_goal_async()
+            else:
+                self._navigate_to_node_goal_handle.cancel_goal_async()
             return
 
         # Delete remaining node / edge states / clear errors related to the order
@@ -1418,6 +1414,11 @@ class VDA5050Controller(Node):
             return
 
         if not self._has_current_order():
+            return
+
+        # Do not retry navigation while any error is active — wait for
+        # the fleet manager to resolve or cancel the order.
+        if len(self._current_state.errors) > 0:
             return
 
         if len(self._current_node_actions) > 0:
@@ -1617,13 +1618,7 @@ class VDA5050Controller(Node):
                 self.logger.info(f"Processing node: {next_node}")
                 self.send_adapter_navigate_to_node(edge=next_edge, node=next_node)
         else:
-            if not self._is_navigation_active():
-                self.logger.warning(
-                    "Current goal marker is stale while navigation is idle. Re-dispatching goal."
-                )
-                self.send_adapter_navigate_to_node(edge=next_edge, node=next_node)
-            else:
-                self.logger.error(f"{next_node} Already current goal")
+            self.logger.error(f"{next_node} Already current goal")
 
     # ---- Navigate to node: send goals ----
 
@@ -1726,6 +1721,7 @@ class VDA5050Controller(Node):
 
         current_errors = self._current_state.errors
         self._update_state({"errors": current_errors + [error]}, publish_now=True)
+        self._current_node_goal = None
 
     def _process_last_edge_node(self):
         """Update the states with the last nodes and edges that were reported."""
@@ -1800,9 +1796,6 @@ class VDA5050Controller(Node):
         """Handle terminal result for navigate through nodes goal requests."""
         self._navigate_through_nodes_goal_handle = None
 
-        if self._canceling_order():
-            return
-
         # Check if goal failed
         status = future.result().status
         if status == GoalStatus.STATUS_ABORTED:
@@ -1870,9 +1863,9 @@ class VDA5050Controller(Node):
             True if robot is navigating to node, False otherwise.
 
         """
-        return self._navigate_to_node_goal_handle is not None or (
-            self._enable_nav_through_nodes and self._navigate_through_nodes_goal_handle is not None
-        )
+        if self._enable_nav_through_nodes:
+            return self._navigate_through_nodes_goal_handle is not None
+        return self._navigate_to_node_goal_handle is not None
 
     # Factsheet
 
