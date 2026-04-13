@@ -174,7 +174,7 @@ void AdapterNode::process_nav_to_node_parameters()
 void AdapterNode::process_nav_through_nodes_parameters()
 {
   const std::string handler_name =
-    vda5050_connector::utils::read_str_parameter(this, "nav_through_nodes.handler", "");
+    vda5050_connector::utils::read_str_parameter(this, "nav_through_nodes.handler");
   if (handler_name == "") {
     RCLCPP_INFO(
       get_logger(),
@@ -457,7 +457,7 @@ rclcpp_action::GoalResponse AdapterNode::nav_through_nodes_handle_goal(
     return rclcpp_action::GoalResponse::REJECT;
   }
 
-  if ((nav_to_node_ && nav_to_node_->is_driving()) || nav_through_nodes_->is_driving()) {
+  if (nav_through_nodes_->is_driving()) {
     RCLCPP_INFO(
       get_logger(),
       "Navigation through nodes goal [%d] rejected. There is an active goal executing.",
