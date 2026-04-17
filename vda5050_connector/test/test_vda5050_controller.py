@@ -794,7 +794,7 @@ def test_vda5050_controller_node_reject_order(
 def test_vda5050_controller_node_new_order_nav_through_nodes(
     mocker,
     adapter_node,
-    action_server_nav_to_node,
+    action_server_nav_through_nodes,
     action_server_process_vda_action,
     service_get_state,
     service_supported_actions,

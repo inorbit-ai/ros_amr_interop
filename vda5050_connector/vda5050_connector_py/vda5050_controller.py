@@ -262,6 +262,7 @@ class VDA5050Controller(Node):
                     "NavigateThroughNodes adapter action server not available, waiting again..."
                 )
             self._navigate_through_nodes_goal_handle = None
+            self._nav_through_nodes_last_seq = 0
         else:
             # Action client for sending NavigateToNode goals to adapter
             self._navigate_to_node_act_cli = ActionClient(
@@ -1625,7 +1626,8 @@ class VDA5050Controller(Node):
                 self.logger.info(f"Processing node: {next_node}")
                 self.send_adapter_navigate_to_node(edge=next_edge, node=next_node)
         else:
-            self.logger.error(f"{next_node} Already current goal")
+            self.logger.error(
+                f"{next_node} Already current goal", throttle_duration_sec=5)
 
     # ---- Navigate to node: send goals ----
 
@@ -1843,7 +1845,7 @@ class VDA5050Controller(Node):
             feedback_msg : ROS2 Action Feedback object.
 
         """
-        if self._current_node_goal is None:
+        if self._current_node_goal is None or self._canceling_order():
             return
 
         if feedback_msg.feedback.last_node.sequence_id >= self._current_node_goal.sequence_id:
