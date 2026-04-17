@@ -216,7 +216,7 @@ def action_server_nav_to_node(adapter_node):
     return MockActionServerNavigateToNode(adapter_node)
 
 
-@pytest.fixture()
+@pytest.fixture
 def action_server_nav_through_nodes(adapter_node):
     return MockActionServerNavigateThroughNodes(adapter_node)
 
