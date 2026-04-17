@@ -176,7 +176,7 @@ void AdapterNode::process_nav_through_nodes_parameters()
   const std::string handler_name =
     vda5050_connector::utils::read_str_parameter(this, "nav_through_nodes.handler");
   if (handler_name == "") {
-    RCLCPP_INFO(
+    RCLCPP_WARN(
       get_logger(),
       "No nav_through_nodes handler configured. NavigateThroughNodes goals will be rejected.");
     return;
@@ -310,11 +310,18 @@ void AdapterNode::execute_vda_action(const std::shared_ptr<GoalHandleProcessVDAA
 
 void AdapterNode::execute_nav_to_node(const std::shared_ptr<GoalHandleNavigateToNode> goal_handle)
 {
+  if (!nav_to_node_) {
+    RCLCPP_ERROR(get_logger(), "No nav to node handler is configured.");
+    goal_handle->abort(std::make_shared<NavigateToNode::Result>());
+    return;
+  }
+
   try {
     nav_to_node_->reset(goal_handle->get_goal()->node, goal_handle);
     nav_to_node_->execute();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(get_logger(), "Error while navigating to node: [%s].", e.what());
+    goal_handle->abort(std::make_shared<NavigateToNode::Result>());
   }
 }
 
@@ -415,6 +422,13 @@ rclcpp_action::GoalResponse AdapterNode::nav_to_node_handle_goal(
 {
   (void)goal;
   RCLCPP_INFO(get_logger(), "Received navigation goal request with ID [%d].", uuid.at(0));
+
+  if (!nav_to_node_) {
+    RCLCPP_ERROR(
+      get_logger(), "Navigation goal [%d] rejected: no handler configured.", uuid.at(0));
+    return rclcpp_action::GoalResponse::REJECT;
+  }
+
   if (nav_to_node_->is_driving()) {
     RCLCPP_INFO(
       get_logger(), "Navigation goal [%d] has been rejected. There is an active goal executing.",
@@ -429,6 +443,12 @@ rclcpp_action::CancelResponse AdapterNode::nav_to_node_handle_cancel(
 {
   (void)goal_handle;
   RCLCPP_INFO(get_logger(), "Received request to cancel navigation goal.");
+
+  if (!nav_to_node_) {
+    RCLCPP_WARN(get_logger(), "Cancel rejected: no nav to node handler configured.");
+    return rclcpp_action::CancelResponse::REJECT;
+  }
+
   if (!nav_to_node_->cancel()) {
     RCLCPP_INFO(get_logger(), "Unable to cancel navigation goal.");
     return rclcpp_action::CancelResponse::REJECT;
@@ -475,6 +495,7 @@ rclcpp_action::CancelResponse AdapterNode::nav_through_nodes_handle_cancel(
   RCLCPP_INFO(get_logger(), "Received request to cancel navigation through nodes goal.");
 
   if (!nav_through_nodes_) {
+    RCLCPP_WARN(get_logger(), "Cancel rejected: no nav through nodes handler configured.");
     return rclcpp_action::CancelResponse::REJECT;
   }
 
