@@ -29,12 +29,24 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+/**
+ * Pre-compiler statements
+ */
 #pragma once
 
+/**
+ * C++ Libraries / header
+ */
 #include "vda5050_connector/handler.hpp"
 
+/**
+ * ROS related dependencies / headers
+ */
 #include "rclcpp_action/rclcpp_action.hpp"
 
+/**
+ * ROS msgs / services
+ */
 #include "vda5050_connector/action/navigate_through_nodes.hpp"
 #include "vda5050_msgs/msg/edge.hpp"
 #include "vda5050_msgs/msg/node.hpp"
@@ -44,9 +56,20 @@ namespace adapter
 using NavigateThroughNodes = vda5050_connector::action::NavigateThroughNodes;
 using GoalHandleNavigateThroughNodes = rclcpp_action::ServerGoalHandle<NavigateThroughNodes>;
 
+/**
+ * @brief The NavThroughNodes handler is in charge of sending the robot to navigate through
+ * a sequence of nodes and edges.
+ */
+
 class NavThroughNodes : public Handler
 {
 public:
+  /**
+   * @brief Reset the nav through nodes handler.
+   * @param edges_msg VDA5050 messages with the edge information.
+   * @param nodes_msg VDA5050 messages with the node information.
+   * @param goal_handle Pointer to the navigate through nodes goal.
+   */
   virtual void reset(
     const std::vector<vda5050_msgs::msg::Edge> & edges_msg,
     const std::vector<vda5050_msgs::msg::Node> & nodes_msg,
@@ -60,24 +83,43 @@ public:
     result_.reset(new NavigateThroughNodes::Result);
   }
 
+  /**
+   * @brief Configure the nav through nodes handler (i.e. ROS interfaces, read parameters, etc).
+   */
   virtual void configure() = 0;
 
+  /**
+   * @brief State machine for processing the navigate through nodes goal request.
+   */
   virtual void execute() = 0;
 
+  /**
+   * @brief Cancel the current navigation goal.
+   * @return true if successfully cancelled, false otherwise.
+   */
   virtual bool cancel() = 0;
 
+  /**
+   * @brief Update the current driving state.
+   */
   void update_driving_state(bool driving)
   {
     current_state_->set_parameter(&SafeState::OrderState::driving, driving);
   }
 
+  /**
+   * @brief Get the driving state.
+   * @return true if the robot is driving, false otherwise.
+   */
   bool is_driving() const { return current_state_->get().driving; }
 
 protected:
+  // Goal handle for ROS2 action
   std::shared_ptr<GoalHandleNavigateThroughNodes> goal_handle_;
   std::shared_ptr<NavigateThroughNodes::Feedback> feedback_;
   std::shared_ptr<NavigateThroughNodes::Result> result_;
 
+  // VDA5050 Edge and Node messages
   std::vector<vda5050_msgs::msg::Edge> edges_msg_;
   std::vector<vda5050_msgs::msg::Node> nodes_msg_;
 };
