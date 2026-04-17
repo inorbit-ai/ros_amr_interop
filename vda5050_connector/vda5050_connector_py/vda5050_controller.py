@@ -1512,26 +1512,24 @@ class VDA5050Controller(Node):
         """
         _hard_soft_action_found = False
         for action in action_list:
-            # Hard or SOFT actions should be the last in the list
-            # because they cannot be performed when driving
             if action.blocking_type == VDAAction.HARD or \
                action.blocking_type == VDAAction.SOFT:
                 _hard_soft_action_found = True
                 break
         return _hard_soft_action_found
 
-    def _get_released_edges(self):
+    def _get_drivable_edges(self):
         """
-        Process the current order edges and return a list of those that are released.
+        Return the contiguous released edges that can be traversed in one navigation goal.
 
-        The list will end if there are no more released edges
-        in the current order OR if there are edges with HARD actions
-        If there are no edges that are traversable due to them not being
-        released the new_base_request flag will be set.
+        The list ends when a non-released edge is encountered, there are no
+        more edges, or an edge carrying a HARD/SOFT action is found (that
+        edge is included but terminates the segment).
+        If the very next edge is not released, the new_base_request flag is set.
 
         Returns
         -------
-        released_edges: List of the released edges that are traversable in one go.
+        list[VDAEdge]: Drivable edges for the next navigation segment.
 
         """
         released_edges = []
@@ -1556,19 +1554,19 @@ class VDA5050Controller(Node):
                     break
         return released_edges
 
-    def _get_released_nodes(self):
+    def _get_drivable_nodes(self):
         """
-        Process the current order nodes and return a list of those that are released.
+        Return the contiguous released nodes that can be traversed in one navigation goal.
 
-        The list will end if there are no more released nodes
-        in the current order OR if there are nodes with HARD actions.
+        The list ends when a non-released node is encountered, there are no
+        more nodes, or a node carrying a HARD/SOFT action is found (that
+        node is included but terminates the segment).
 
         Returns
         -------
-        released_nodes: List of the released nodes that are traversable in one go.
+        list[VDANode]: Drivable nodes for the next navigation segment.
 
         """
-        # List of nodes that are released in a row that don't have HARD actions on.
         released_nodes = []
 
         for node in self._current_order.nodes:
@@ -1592,7 +1590,7 @@ class VDA5050Controller(Node):
         Multiple released nodes/edges are sent to the navigate through nodes actions.
         Any node/edge actions that are hard or soft will be the end of a single navigate.
         """
-        released_edges = self._get_released_edges()
+        released_edges = self._get_drivable_edges()
         if len(released_edges) == 0:
             # This only happens when there is no order or it has finished,
             # but there is an active instant action running.
@@ -1601,7 +1599,7 @@ class VDA5050Controller(Node):
         else:
             next_edge = released_edges[0]
 
-        released_nodes = self._get_released_nodes()
+        released_nodes = self._get_drivable_nodes()
         if len(released_nodes) == 0:
             # Shouldn't happen if we got this far, but just checking for safety
             return
@@ -1611,6 +1609,15 @@ class VDA5050Controller(Node):
         if next_node != self._current_node_goal:
             if self._enable_nav_through_nodes:
                 # Use nav through nodes for all navigation when enabled
+                # TODO: If new edges/nodes are released at runtime (stitch/order update)
+                # while the handler is already navigating, the current goal is not updated.
+                # The robot will stop at the last released node that was sent with the
+                # original goal. A mechanism to extend/update the in-flight goal is needed.
+                self.logger.info(
+                    f"Processing nodes {released_nodes[0].node_id}"
+                    f" (seq {released_nodes[0].sequence_id})"
+                    f" to {released_nodes[-1].node_id}"
+                    f" (seq {released_nodes[-1].sequence_id})")
                 self.send_adapter_navigate_through_nodes(
                     edges=released_edges, nodes=released_nodes)
             else:
@@ -1697,7 +1704,7 @@ class VDA5050Controller(Node):
         # Guard: the edge/node may have already been consumed (e.g. by a
         # duplicate dispatch race between _process_next_navigation and
         # _on_active_order).
-        if len(self._get_released_edges()) == 0:
+        if len(self._get_drivable_edges()) == 0:
             return
 
         self._process_last_edge_node()
@@ -1769,7 +1776,9 @@ class VDA5050Controller(Node):
         self._navigate_through_nodes_act_cli.wait_for_server()
 
         # Send goal to action server
-        self.logger.info("Navigate through nodes goal request sent.")
+        self.logger.info(
+            f"Navigate through nodes goal request sent with {len(nodes)} nodes"
+            f" and {len(edges)} edges.")
         self._current_node_goal = nodes[0]
         self._nav_through_nodes_last_seq = nodes[-1].sequence_id
         _send_goal_future = self._navigate_through_nodes_act_cli.send_goal_async(
@@ -1796,6 +1805,11 @@ class VDA5050Controller(Node):
         """Handle terminal result for navigate through nodes goal requests."""
         self._navigate_through_nodes_goal_handle = None
 
+        # When the order is cancelled, this callback should avoid continuing its logic
+        if self._canceling_order():
+            self._current_node_goal = None
+            return
+
         # Check if goal failed
         status = future.result().status
         if status == GoalStatus.STATUS_ABORTED:
@@ -1805,11 +1819,8 @@ class VDA5050Controller(Node):
         # Consume only the nodes/edges that were part of this goal.
         # A stitch may have added new released edges since the goal was sent;
         # those must NOT be consumed here.
-        max_seq = self._nav_through_nodes_last_seq
         while (
-            self._current_state.last_node_sequence_id < max_seq
-            and len(self._get_released_edges()) > 0
-            and len(self._get_released_nodes()) > 0
+            self._current_state.last_node_sequence_id < self._nav_through_nodes_last_seq
         ):
             self._process_last_edge_node()
 
@@ -1817,7 +1828,7 @@ class VDA5050Controller(Node):
 
         # If there are still released edges (e.g. from a stitch), dispatch
         # new navigation.
-        if len(self._get_released_edges()) > 0 and len(self._get_released_nodes()) > 0:
+        if len(self._get_drivable_edges()) > 0 and len(self._get_drivable_nodes()) > 0:
             self._process_next_navigation()
 
     def _navigate_through_nodes_feedback_callback(self, feedback_msg):
@@ -1838,14 +1849,14 @@ class VDA5050Controller(Node):
         if feedback_msg.feedback.last_node.sequence_id >= self._current_node_goal.sequence_id:
             self._process_last_edge_node()
 
-            released_edges = self._get_released_edges()
+            released_edges = self._get_drivable_edges()
             if len(released_edges) == 0:
                 # This only happens when there is no order or it has finished,
                 # but there is an active instant action running.
                 # In this case, just exit.
                 return
 
-            released_nodes = self._get_released_nodes()
+            released_nodes = self._get_drivable_nodes()
             if len(released_nodes) == 0:
                 # Shouldn't happen if we got this far, but just checking for safety
                 return
