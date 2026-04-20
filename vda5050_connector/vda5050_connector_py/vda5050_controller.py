@@ -1519,69 +1519,74 @@ class VDA5050Controller(Node):
                 break
         return _hard_soft_action_found
 
-    def _get_drivable_edges(self):
+    def _get_drivable_segment(self):
         """
-        Return the contiguous released edges that can be traversed in one navigation goal.
+        Return the contiguous released edge-node pairs for one navigation goal.
 
-        The list ends when a non-released edge is encountered, there are no
-        more edges, or an edge carrying a HARD/SOFT action is found (that
-        edge is included but terminates the segment).
-        If the very next edge is not released, the new_base_request flag is set.
+        VDA5050 §6.1.1 defines that edges and nodes share a sequenceId space
+        (Node0, Edge1, Node2, Edge3, …) and that the number of edges equals the
+        number of nodes minus one.  Each edge with sequenceId S connects the
+        node at S-1 to the node at S+1, so they must always be treated as
+        pairs to keep the segment consistent.
+
+        The segment stops when:
+        - a non-released edge or its destination node is encountered,
+        - there are no more edges/nodes,
+        - a HARD or SOFT blocking action is found on an edge or its
+          destination node (§6.2.2 — the robot must stop driving to
+          execute the action; the pair is still included).
+
+        If the very next edge is not released the ``new_base_request`` flag
+        is set so that fleet control can extend the base (§6.6.3).
 
         Returns
         -------
-        list[VDAEdge]: Drivable edges for the next navigation segment.
+        tuple[list[VDAEdge], list[VDANode]]
+            Matched lists where ``len(edges) == len(nodes)``.  Each
+            ``edges[i]`` leads to ``nodes[i]``.
 
         """
         released_edges = []
-
-        for edge in self._current_order.edges:
-            if edge.sequence_id >= self._current_state.last_node_sequence_id + 1:
-                if edge.released:
-                    released_edges.append(edge)
-                    # if we find a hard or soft action break
-                    if self._check_hard_soft_actions(edge.actions):
-                        break
-                elif len(released_edges) == 0:
-                    # If there's no released edge available then request more and break
-                    if not self._current_state.new_base_request:
-                        self.logger.warn(
-                            "Next edge is part of the horizon. Stopping traversing of nodes."
-                            )
-                        self._update_state({"new_base_request": True}, publish_now=True)
-                    break
-                else:
-                    # There are no released edges after a non released edge
-                    break
-        return released_edges
-
-    def _get_drivable_nodes(self):
-        """
-        Return the contiguous released nodes that can be traversed in one navigation goal.
-
-        The list ends when a non-released node is encountered, there are no
-        more nodes, or a node carrying a HARD/SOFT action is found (that
-        node is included but terminates the segment).
-
-        Returns
-        -------
-        list[VDANode]: Drivable nodes for the next navigation segment.
-
-        """
         released_nodes = []
 
-        for node in self._current_order.nodes:
-            if node.sequence_id >= self._current_state.last_node_sequence_id + 2:
-                if node.released:
-                    released_nodes.append(node)
-                    # if we find a hard or soft action break
-                    if self._check_hard_soft_actions(node.actions):
-                        break
-                else:
-                    # There are no released nodes after a non released node
-                    break
-                
-        return released_nodes
+        # Build a lookup of nodes by sequenceId for O(1) pairing.
+        nodes_by_seq = {
+            n.sequence_id: n for n in self._current_order.nodes
+        }
+
+        for edge in self._current_order.edges:
+            if edge.sequence_id < self._current_state.last_node_sequence_id + 1:
+                continue
+
+            if not edge.released:
+                if len(released_edges) == 0:
+                    # Next edge is part of the horizon — request a base
+                    # extension (§6.6.3).
+                    if not self._current_state.new_base_request:
+                        self.logger.warn(
+                            "Next edge is part of the horizon. "
+                            "Stopping traversing of nodes."
+                        )
+                        self._update_state(
+                            {"new_base_request": True}, publish_now=True
+                        )
+                break
+
+            # Destination node sits at edge.sequence_id + 1 (§6.1.1).
+            dest_node = nodes_by_seq.get(edge.sequence_id + 1)
+            if dest_node is None or not dest_node.released:
+                break
+
+            released_edges.append(edge)
+            released_nodes.append(dest_node)
+
+            # Stop the segment on whichever HARD/SOFT comes first — the
+            # edge action or the destination-node action (§6.2.2).
+            if (self._check_hard_soft_actions(edge.actions)
+                    or self._check_hard_soft_actions(dest_node.actions)):
+                break
+
+        return released_edges, released_nodes
 
     def _process_next_navigation(self):
         """
@@ -1591,21 +1596,15 @@ class VDA5050Controller(Node):
         Multiple released nodes/edges are sent to the navigate through nodes actions.
         Any node/edge actions that are hard or soft will be the end of a single navigate.
         """
-        released_edges = self._get_drivable_edges()
+        released_edges, released_nodes = self._get_drivable_segment()
         if len(released_edges) == 0:
             # This only happens when there is no order or it has finished,
             # but there is an active instant action running.
             # In this case, just exit.
             return
-        else:
-            next_edge = released_edges[0]
 
-        released_nodes = self._get_drivable_nodes()
-        if len(released_nodes) == 0:
-            # Shouldn't happen if we got this far, but just checking for safety
-            return
-        else:
-            next_node = released_nodes[0]
+        next_edge = released_edges[0]
+        next_node = released_nodes[0]
 
         if next_node != self._current_node_goal:
             if self._enable_nav_through_nodes:
@@ -1706,7 +1705,8 @@ class VDA5050Controller(Node):
         # Guard: the edge/node may have already been consumed (e.g. by a
         # duplicate dispatch race between _process_next_navigation and
         # _on_active_order).
-        if len(self._get_drivable_edges()) == 0:
+        released_edges, _ = self._get_drivable_segment()
+        if len(released_edges) == 0:
             return
 
         self._process_last_edge_node()
@@ -1830,7 +1830,8 @@ class VDA5050Controller(Node):
 
         # If there are still released edges (e.g. from a stitch), dispatch
         # new navigation.
-        if len(self._get_drivable_edges()) > 0 and len(self._get_drivable_nodes()) > 0:
+        released_edges, _ = self._get_drivable_segment()
+        if len(released_edges) > 0:
             self._process_next_navigation()
 
     def _navigate_through_nodes_feedback_callback(self, feedback_msg):
@@ -1851,21 +1852,13 @@ class VDA5050Controller(Node):
         if feedback_msg.feedback.last_node.sequence_id >= self._current_node_goal.sequence_id:
             self._process_last_edge_node()
 
-            released_edges = self._get_drivable_edges()
-            if len(released_edges) == 0:
-                # This only happens when there is no order or it has finished,
-                # but there is an active instant action running.
-                # In this case, just exit.
-                return
-
-            released_nodes = self._get_drivable_nodes()
+            _, released_nodes = self._get_drivable_segment()
             if len(released_nodes) == 0:
-                # Shouldn't happen if we got this far, but just checking for safety
+                # No more drivable pairs — order finished or only instant
+                # actions remain.
                 return
-            else:
-                next_node = released_nodes[0]
 
-            self._current_node_goal = next_node
+            self._current_node_goal = released_nodes[0]
 
     def _is_navigation_active(self) -> bool:
         """
