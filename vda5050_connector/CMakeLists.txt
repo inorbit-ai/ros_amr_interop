@@ -40,6 +40,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "action/NavigateThroughNodes.action"
   "action/NavigateToNode.action"
   "action/ProcessVDAAction.action"
+  "srv/ExtendNavigation.srv"
   "srv/GetState.srv"
   "srv/SupportedActions.srv"
   DEPENDENCIES vda5050_msgs

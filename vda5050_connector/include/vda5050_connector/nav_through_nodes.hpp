@@ -48,6 +48,7 @@
  * ROS msgs / services
  */
 #include "vda5050_connector/action/navigate_through_nodes.hpp"
+#include "vda5050_connector/srv/extend_navigation.hpp"
 #include "vda5050_msgs/msg/edge.hpp"
 #include "vda5050_msgs/msg/node.hpp"
 
@@ -55,6 +56,7 @@ namespace adapter
 {
 using NavigateThroughNodes = vda5050_connector::action::NavigateThroughNodes;
 using GoalHandleNavigateThroughNodes = rclcpp_action::ServerGoalHandle<NavigateThroughNodes>;
+using ExtendNavigation = vda5050_connector::srv::ExtendNavigation;
 
 /**
  * @brief The NavThroughNodes handler is in charge of sending the robot to navigate through
@@ -114,6 +116,20 @@ public:
   bool is_driving() const { return current_state_->get().driving; }
 
 protected:
+  /**
+   * @brief Set up the ExtendNavigation service server.
+   * Call from configure() after node_ and robot_name_ are available.
+   * Builds the service name from namespace, manufacturer_name param, and robot_name_.
+   */
+  void setupExtendNavigationService();
+
+  /**
+   * @brief Called after the navigation has been extended with new edges/nodes.
+   * Override to react to the extension (e.g. rebuild task queues, extend planners).
+   * @param old_edge_count The number of edges before the extension.
+   */
+  virtual void onNavigationExtended(size_t /*old_edge_count*/) {}
+
   // Goal handle for ROS2 action
   std::shared_ptr<GoalHandleNavigateThroughNodes> goal_handle_;
   std::shared_ptr<NavigateThroughNodes::Feedback> feedback_;
@@ -122,6 +138,18 @@ protected:
   // VDA5050 Edge and Node messages
   std::vector<vda5050_msgs::msg::Edge> edges_msg_;
   std::vector<vda5050_msgs::msg::Node> nodes_msg_;
+
+private:
+  rclcpp::Service<ExtendNavigation>::SharedPtr extend_navigation_srv_;
+
+  /**
+   * @brief Callback for the ExtendNavigation service.
+   * Validates the request, appends new edges/nodes to the internal vectors,
+   * and calls onNavigationExtended() for subclass-specific handling.
+   */
+  void extendNavigationCallback(
+      const std::shared_ptr<ExtendNavigation::Request> request,
+      std::shared_ptr<ExtendNavigation::Response> response);
 };
 
 }  // namespace adapter

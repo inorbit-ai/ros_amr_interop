@@ -1,0 +1,10 @@
+# Request: extend an in-flight navigation goal with new edges and nodes.
+# nodes[0] is the stitch reference node (must match the last node already
+# known by the handler).  nodes[1:] are the new target nodes.
+# edges[i] leads to nodes[i+1], so len(edges) == len(nodes) - 1.
+vda5050_msgs/Edge[] edges
+vda5050_msgs/Node[] nodes
+---
+# Response
+bool success
+string message
