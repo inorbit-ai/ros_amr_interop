@@ -82,6 +82,7 @@ from vda5050_msgs.msg import Visualization as VDAVisualization
 from vda5050_msgs.msg import WheelDefinition as VDAWheelDefinition
 from action_msgs.msg import GoalStatus
 
+from vda5050_connector.srv import ExtendNavigation
 from vda5050_connector.srv import GetState
 from vda5050_connector.srv import SupportedActions
 
@@ -311,6 +312,14 @@ class VDA5050Controller(Node):
         )
         while not self._supported_actions_svc_cli.wait_for_service(timeout_sec=1.0):
             self.logger.error("SupportedActions adapter service not available, waiting again...")
+
+        # Service client to extend an in-flight navigation goal (nav_through_nodes only)
+        if self._enable_nav_through_nodes:
+            self._extend_nav_svc_cli = self.create_client(
+                srv_type=ExtendNavigation,
+                srv_name=base_interface_name + "adapter/extend_navigation",
+                callback_group=MutuallyExclusiveCallbackGroup(),
+            )
 
     def _configure_subscriptions(self):
         """Configure Master Control to Robot topic msgs."""
@@ -1257,6 +1266,39 @@ class VDA5050Controller(Node):
             # Note: the standard assumes the robot is at the first node of the order.
             # Otherwise, the order gets rejected and this method is not called.
             self._process_node(self._current_order.nodes[0])
+        elif self._enable_nav_through_nodes and self._is_navigation_active():
+            # Try to extend the in-flight navigation goal with the new segment
+            new_edges = [
+                e for e in order.edges
+                if e.released and e.sequence_id > self._nav_through_nodes_last_seq
+            ]
+            new_nodes = [
+                n for n in order.nodes[1:]
+                if n.released and n.sequence_id > self._nav_through_nodes_last_seq
+            ]
+
+            self.logger.info(
+                f"Stitch while navigating: {len(new_edges)} new edges,"
+                f" {len(new_nodes)} new nodes beyond seq"
+                f" {self._nav_through_nodes_last_seq}")
+
+            if new_edges and new_nodes:
+                # Include the stitch node (order.nodes[0]) as nodes[0] so the
+                # handler can verify continuity with its last known node.
+                req = ExtendNavigation.Request()
+                req.edges = new_edges
+                req.nodes = [order.nodes[0]] + new_nodes
+                future = self._extend_nav_svc_cli.call_async(req)
+                future.add_done_callback(
+                    functools.partial(
+                        self._extend_navigation_response_callback,
+                        new_nodes[-1].sequence_id
+                    )
+                )
+            else:
+                self.logger.info(
+                    "No new released edges/nodes to extend — will dispatch"
+                    " when current goal finishes.")
 
     def _reject_order(self, order: VDAOrder, error: OrderRejectErrors, description: str = ""):
         """
@@ -1882,6 +1924,18 @@ class VDA5050Controller(Node):
             return (self._navigate_through_nodes_goal_handle is not None
                     or self._nav_through_nodes_goal_pending)
         return self._navigate_to_node_goal_handle is not None
+
+    def _extend_navigation_response_callback(self, last_seq: int, future: Future):
+        """Handle the response from the extend_navigation service."""
+        result = future.result()
+        if result.success:
+            self._nav_through_nodes_last_seq = last_seq
+            self.logger.info(
+                f"Navigation extended in-flight up to seq {last_seq}")
+        else:
+            self.logger.warn(
+                f"Could not extend navigation: {result.message}. "
+                "Will dispatch new goal when current finishes.")
 
     # Factsheet
 
