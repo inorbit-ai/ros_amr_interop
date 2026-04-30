@@ -310,12 +310,6 @@ void AdapterNode::execute_vda_action(const std::shared_ptr<GoalHandleProcessVDAA
 
 void AdapterNode::execute_nav_to_node(const std::shared_ptr<GoalHandleNavigateToNode> goal_handle)
 {
-  if (!nav_to_node_) {
-    RCLCPP_ERROR(get_logger(), "No nav to node handler is configured.");
-    goal_handle->abort(std::make_shared<NavigateToNode::Result>());
-    return;
-  }
-
   try {
     nav_to_node_->reset(goal_handle->get_goal()->node, goal_handle);
     nav_to_node_->execute();
@@ -328,12 +322,6 @@ void AdapterNode::execute_nav_to_node(const std::shared_ptr<GoalHandleNavigateTo
 void AdapterNode::execute_nav_through_nodes(
   const std::shared_ptr<GoalHandleNavigateThroughNodes> goal_handle)
 {
-  if (!nav_through_nodes_) {
-    RCLCPP_ERROR(get_logger(), "No nav through nodes handler is configured.");
-    goal_handle->abort(std::make_shared<NavigateThroughNodes::Result>());
-    return;
-  }
-
   try {
     nav_through_nodes_->reset(goal_handle->get_goal()->edges, goal_handle->get_goal()->nodes, goal_handle);
     nav_through_nodes_->execute();
@@ -459,6 +447,11 @@ rclcpp_action::CancelResponse AdapterNode::nav_to_node_handle_cancel(
 void AdapterNode::nav_to_node_handle_accepted(
   const std::shared_ptr<GoalHandleNavigateToNode> goal_handle)
 {
+  if (!nav_to_node_) {
+    RCLCPP_ERROR(get_logger(), "No nav to node handler is configured.");
+    goal_handle->abort(std::make_shared<NavigateToNode::Result>());
+    return;
+  }
   std::thread{
     std::bind(&AdapterNode::execute_nav_to_node, this, std::placeholders::_1), goal_handle}
     .detach();
@@ -510,6 +503,11 @@ rclcpp_action::CancelResponse AdapterNode::nav_through_nodes_handle_cancel(
 void AdapterNode::nav_through_nodes_handle_accepted(
   const std::shared_ptr<GoalHandleNavigateThroughNodes> goal_handle)
 {
+  if (!nav_through_nodes_) {
+    RCLCPP_ERROR(get_logger(), "No nav through nodes handler is configured.");
+    goal_handle->abort(std::make_shared<NavigateThroughNodes::Result>());
+    return;
+  }
   std::thread{
     std::bind(&AdapterNode::execute_nav_through_nodes, this, std::placeholders::_1), goal_handle}
     .detach();
