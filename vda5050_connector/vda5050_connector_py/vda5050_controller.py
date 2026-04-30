@@ -262,6 +262,7 @@ class VDA5050Controller(Node):
                     "NavigateThroughNodes adapter action server not available, waiting again..."
                 )
             self._navigate_through_nodes_goal_handle = None
+            self._nav_through_nodes_goal_pending = False
             self._nav_through_nodes_last_seq = 0
         else:
             # Action client for sending NavigateToNode goals to adapter
@@ -1783,6 +1784,7 @@ class VDA5050Controller(Node):
             f" and {len(edges)} edges.")
         self._current_node_goal = nodes[0]
         self._nav_through_nodes_last_seq = nodes[-1].sequence_id
+        self._nav_through_nodes_goal_pending = True
         _send_goal_future = self._navigate_through_nodes_act_cli.send_goal_async(
             goal_msg, feedback_callback=self._navigate_through_nodes_feedback_callback)
 
@@ -1791,6 +1793,7 @@ class VDA5050Controller(Node):
 
     def _navigate_through_nodes_goal_response_callback(self, future: Future):
         """Response callback function for navigate through nodes goal request."""
+        self._nav_through_nodes_goal_pending = False
         self._navigate_through_nodes_goal_handle = future.result()
         if not self._navigate_through_nodes_goal_handle.accepted:
             self.logger.error("Navigate through nodes goal request rejected by adapter. Trying again.")
@@ -1849,8 +1852,14 @@ class VDA5050Controller(Node):
         if self._current_node_goal is None or self._canceling_order():
             return
 
-        if feedback_msg.feedback.last_node.sequence_id >= self._current_node_goal.sequence_id:
-            self._process_last_edge_node()
+        reported_seq = feedback_msg.feedback.last_node.sequence_id
+        if reported_seq >= self._current_node_goal.sequence_id:
+            # Process ALL nodes up to and including the reported one.
+            # The handler may report a node several positions ahead (e.g.
+            # when receding detection fires or intermediate nodes were
+            # skipped), so a single _process_last_edge_node() is not enough.
+            while self._current_state.last_node_sequence_id < reported_seq:
+                self._process_last_edge_node()
 
             _, released_nodes = self._get_drivable_segment()
             if len(released_nodes) == 0:
@@ -1870,7 +1879,8 @@ class VDA5050Controller(Node):
 
         """
         if self._enable_nav_through_nodes:
-            return self._navigate_through_nodes_goal_handle is not None
+            return (self._navigate_through_nodes_goal_handle is not None
+                    or self._nav_through_nodes_goal_pending)
         return self._navigate_to_node_goal_handle is not None
 
     # Factsheet
