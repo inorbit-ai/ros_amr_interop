@@ -1243,7 +1243,7 @@ class VDA5050Controller(Node):
         if error == OrderRejectErrors.ORDER_UPDATE_ERROR:
             # On orderUpdateError send orderUpdateId and orderId as reference
 
-            # TODO: Question: camelCase or snakeCase (order_id or orderId)
+            # reference_key value is snake_case for ROS2; camelCase conversion for MQTT is done in mqtt_bridge
             error_references.append(
                 VDAErrorReference(reference_key="order_id", reference_value=order.order_id)
             )

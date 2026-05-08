@@ -198,6 +198,10 @@ def json_snake_to_camel_case(s):
             if new_key != key:
                 obj[new_key] = obj[key]
                 del obj[key]
+        # referenceKey value must be camelCase per VDA5050 standard,
+        # but is stored as snake_case in the ROS2 message
+        if "referenceKey" in obj:
+            obj["referenceKey"] = to_camel_case(obj["referenceKey"])
         return obj
 
     return json.loads(s, object_hook=camel_case_dict)
