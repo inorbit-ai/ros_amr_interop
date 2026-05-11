@@ -39,6 +39,7 @@ from vda5050_connector.action import ProcessVDAAction
 from vda5050_connector_py.vda5050_controller import DEFAULT_NAV_TO_NODE_ACT_NAME
 from vda5050_connector_py.vda5050_controller import DEFAULT_NAV_THROUGH_NODES_ACT_NAME
 from vda5050_connector_py.vda5050_controller import DEFAULT_VDA_ACTION_ACT_NAME
+from vda5050_connector.srv import ExtendNavigation
 from vda5050_connector.srv import GetState
 from vda5050_connector_py.vda5050_controller import DEFAULT_GET_STATE_SVC_NAME
 from vda5050_connector.srv import SupportedActions
@@ -241,6 +242,21 @@ def service_supported_actions(adapter_node):
         SupportedActions,
         f"/vda5050/robots/robot_1/{DEFAULT_SUPPORTED_ACTIONS_SVC_NAME}",
         lambda _: adapter_node.get_logger().info("Supported actions request"),
+    )
+
+
+@pytest.fixture
+def service_extend_navigation(adapter_node):
+    """Mock ExtendNavigation service that always succeeds."""
+    def _callback(request, response):
+        response.success = True
+        response.message = f"Extended with {len(request.nodes) - 1} new nodes"
+        return response
+
+    return adapter_node.create_service(
+        ExtendNavigation,
+        "/vda5050/robots/robot_1/adapter/extend_navigation",
+        _callback,
     )
 
 
