@@ -45,10 +45,13 @@ def main(args=None):
     executor = MultiThreadedExecutor()
     executor.add_node(vda5050_controller_node)
 
-    executor.spin()
-
-    vda5050_controller_node.destroy_node()
-    rclpy.shutdown()
+    try:
+        executor.spin()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        vda5050_controller_node.destroy_node()
+        rclpy.try_shutdown()
 
 
 if __name__ == "__main__":
