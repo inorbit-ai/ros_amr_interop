@@ -51,7 +51,7 @@ def main(args=None):
         # Destroy the node explicitly
         # (optional - Done automatically when node is garbage collected)
         mqtt_bridge.destroy_node()
-        rclpy.shutdown()
+        rclpy.try_shutdown()
 
 
 if __name__ == "__main__":
