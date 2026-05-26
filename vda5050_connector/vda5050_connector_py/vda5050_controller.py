@@ -1248,13 +1248,14 @@ class VDA5050Controller(Node):
                 ns for ns in merged.values()
                 if ns.sequence_id > self._current_state.last_node_sequence_id
             ]
-            # Stitch node actions are already tracked in action_states from the
-            # previous order — keep them with their current status (may be
-            # FINISHED/RUNNING).  Only append actions from the new nodes/edges.
-            stitch_action_ids = {a.action_id for a in order.nodes[0].actions}
+            # Keep current action statuses (possibly FINISHED/RUNNING) and
+            # append only actions that are not already tracked.
+            existing_action_ids = {
+                a.action_id for a in self._current_state.action_states
+            }
             new_action_states = [
                 a for a in self._get_action_states(order)
-                if a.action_id not in stitch_action_ids
+                if a.action_id not in existing_action_ids
             ]
             action_states = self._current_state.action_states + new_action_states
         else:
@@ -1281,7 +1282,7 @@ class VDA5050Controller(Node):
             self._process_node(self._current_order.nodes[0])
         elif self._enable_nav_through_nodes and self._is_navigation_active():
             # Extend the in-flight navigation goal with the newly released
-            # segment from the stitch order.  Filter out nodes/edges whose
+            # segment from the stitch order. Filter out nodes/edges whose
             # sequence_id is already covered by the current goal (up to
             # _nav_through_nodes_last_seq) and any that are unreleased.
             # nodes[0] is the stitch reference node (shared with the old
