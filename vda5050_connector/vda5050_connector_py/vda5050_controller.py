@@ -1317,11 +1317,7 @@ class VDA5050Controller(Node):
                         new_nodes[-1].sequence_id
                     )
                 )
-            else:
-                self.logger.info(
-                    "No new released nodes/edges beyond current goal."
-                    " The new segment will be dispatched as a separate"
-                    " goal once the current navigation finishes.")
+
 
     def _reject_order(self, order: VDAOrder, error: OrderRejectErrors, description: str = ""):
         """
