@@ -19,10 +19,13 @@ The connector is composed of three main parts (ROS2 nodes):
 The way the adapter knows how to execute the different operations requested by the controller is using ROS2 plugins (components). The current project provides three plugin template interfaces, called handlers, which cover the main communication paths:
 
 - **State handler**: Designed for updating robot specific information on the VDA5050 [order_state](https://github.com/ipa320/vda5050_msgs/blob/ros2-vda5050-v2/vda5050_msgs/msg/OrderState.msg).
-- **NavTONode handler**: Designed for sending goals to the robot navigation stack.
+- **NavToNode handler**: Designed for sending goals to the robot navigation stack one node at a time.
+- **NavThroughNodes handler**: Designed for sending multi-node navigation goals, with optional in-flight goal extension via the `ExtendNavigation` service (VDA5050 order stitching).
 - **VDA Action handler**: Designed for handling requests to execute specific actions (localize, lift a load, etc).
 
 ![Connector diagram](./docs/source/_static/connector_package.png)
+
+For a full guide on implementing `NavThroughNodes` and the `ExtendNavigation` in-flight extension feature, see [docs/source/nav_through_nodes.md](./docs/source/nav_through_nodes.md).
 
 ## How to use it
 
