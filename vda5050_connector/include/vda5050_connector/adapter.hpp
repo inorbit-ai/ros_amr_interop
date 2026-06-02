@@ -45,6 +45,7 @@
 #include "pluginlib/class_loader.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
+#include "vda5050_connector/nav_through_nodes.hpp"
 #include "vda5050_connector/nav_to_node.hpp"
 #include "vda5050_connector/state_handler.hpp"
 #include "vda5050_connector/utils.hpp"
@@ -68,10 +69,12 @@ constexpr auto DEFAULT_ROS_NAMESPACE = "vda5050";
 constexpr auto DEFAULT_SUPPORTED_ACTIONS_SVC_NAME = "adapter/supported_actions";
 constexpr auto DEFAULT_GET_STATE_SVC_NAME = "adapter/get_state";
 constexpr auto DEFAULT_NAV_TO_NODE_ACT_NAME = "adapter/nav_to_node";
+constexpr auto DEFAULT_NAV_THROUGH_NODES_ACT_NAME = "adapter/nav_through_nodes";
 constexpr auto DEFAULT_VDA_ACTION_ACT_NAME = "adapter/vda_action";
 
 constexpr auto DEFAULT_VDA_ACTION_CLASS_PLUGIN = "adapter::VDAAction";
 constexpr auto DEFAULT_NAV_TO_NODE_CLASS_PLUGIN = "adapter::NavToNode";
+constexpr auto DEFAULT_NAV_THROUGH_NODES_CLASS_PLUGIN = "adapter::NavThroughNodes";
 constexpr auto DEFAULT_STATE_HANDLER_CLASS_PLUGIN = "adapter::StateHandler";
 }  // namespace
 
@@ -140,6 +143,11 @@ protected:
   virtual void process_nav_to_node_parameters();
 
   /**
+   * @brief Read and process nav through nodes parameters to load its plugins.
+   */
+  virtual void process_nav_through_nodes_parameters();
+
+  /**
    * @brief Read and process vda action parameters to load its plugins.
    */
   virtual void process_vda_action_parameters();
@@ -173,6 +181,13 @@ protected:
    * @throw Pluginlib exception if is not possible to create instance of handler_name
    */
   virtual void set_nav_to_node_handler(const std::string & handler_name);
+
+  /**
+   * @brief Create and add a nav through nodes handler.
+   * @param handler_name Name of the handler class to load.
+   * @throw Pluginlib exception if is not possible to create instance of handler_name
+   */
+  virtual void set_nav_through_nodes_handler(const std::string & handler_name);
 
   // -- Get State -- //
 
@@ -254,6 +269,42 @@ protected:
 
   // -- Navigate to Node -- //
 
+  // -- Navigate through Nodes -- //
+
+  /**
+   * @brief Handle navigate through nodes action request.
+   * @param uuid Goal ID.
+   * @param goal A pointer to the nav through nodes goal.
+   * @return Goal response.
+   */
+  virtual rclcpp_action::GoalResponse nav_through_nodes_handle_goal(
+    const rclcpp_action::GoalUUID & uuid,
+    std::shared_ptr<const NavigateThroughNodes::Goal> goal) const;
+
+  /**
+   * @brief Callback that decides if a nav through nodes action should be attempted
+   * to be canceled.
+   * @param goal_handle The handle to the nav through nodes action to cancel.
+   */
+  virtual rclcpp_action::CancelResponse nav_through_nodes_handle_cancel(
+    const std::shared_ptr<GoalHandleNavigateThroughNodes> goal_handle) const;
+
+  /**
+   * @brief Callback that triggers when a nav through nodes action is accepted.
+   * @param goal_handle The handle to the accepted nav through nodes action.
+   */
+  virtual void nav_through_nodes_handle_accepted(
+    const std::shared_ptr<GoalHandleNavigateThroughNodes> goal_handle);
+
+  /**
+   * @brief Execute a nav through nodes action request.
+   * @param goal_handle The handle to the nav through nodes action.
+   */
+  virtual void execute_nav_through_nodes(
+    const std::shared_ptr<GoalHandleNavigateThroughNodes> goal_handle);
+
+  // -- Navigate through Nodes -- //
+
   /**
    * @brief Callback for supported actions service.
    * @param request Empty message.
@@ -278,11 +329,13 @@ protected:
   std::string get_state_svc_name_{DEFAULT_GET_STATE_SVC_NAME};
   std::string vda_action_act_name_{DEFAULT_VDA_ACTION_ACT_NAME};
   std::string nav_to_node_act_name_{DEFAULT_NAV_TO_NODE_ACT_NAME};
+  std::string nav_through_nodes_act_name_{DEFAULT_NAV_THROUGH_NODES_ACT_NAME};
 
   // Plugin classes names
   const std::string state_handler_class_plugin_{DEFAULT_STATE_HANDLER_CLASS_PLUGIN};
   const std::string vda_action_class_plugin_{DEFAULT_VDA_ACTION_CLASS_PLUGIN};
   const std::string nav_to_node_class_plugin_{DEFAULT_NAV_TO_NODE_CLASS_PLUGIN};
+  const std::string nav_through_nodes_class_plugin_{DEFAULT_NAV_THROUGH_NODES_CLASS_PLUGIN};
 
   // Current state
   std::unique_ptr<SafeState> current_state_;
@@ -319,6 +372,14 @@ protected:
   // PluginLib NavToNode class loader
   std::unique_ptr<pluginlib::ClassLoader<NavToNode>> nav_to_node_loader_;
   // -- Navigate to Node -- //
+
+  // -- Navigate through Nodes -- //
+  rclcpp_action::Server<NavigateThroughNodes>::SharedPtr nav_through_nodes_act_srv_;
+
+  UniquePtr<NavThroughNodes> nav_through_nodes_;
+
+  std::unique_ptr<pluginlib::ClassLoader<NavThroughNodes>> nav_through_nodes_loader_;
+  // -- Navigate through Nodes -- //
 
   rclcpp::Service<SupportedActions>::SharedPtr supported_actions_svc_srv_;
 };

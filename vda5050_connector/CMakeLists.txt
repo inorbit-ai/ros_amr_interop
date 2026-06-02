@@ -37,8 +37,10 @@ find_package(vda5050_msgs REQUIRED)
 # BUILD
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "action/NavigateThroughNodes.action"
   "action/NavigateToNode.action"
   "action/ProcessVDAAction.action"
+  "srv/ExtendNavigation.srv"
   "srv/GetState.srv"
   "srv/SupportedActions.srv"
   DEPENDENCIES vda5050_msgs
@@ -47,7 +49,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 )
 
 ## EXECUTABLES
-add_library(${library_adapter} src/adapter.cpp src/utils.cpp)
+add_library(${library_adapter} src/adapter.cpp src/nav_through_nodes.cpp src/utils.cpp)
 target_compile_features(${library_adapter} PUBLIC cxx_std_17)  # Require C++17
 target_include_directories(${library_adapter} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
