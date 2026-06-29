@@ -152,6 +152,7 @@ class VDA5050Controller(Node):
         self._read_parameters()
 
         self._cancel_action = None
+        self._instant_action_ids = set()
         self._current_node_actions = []
         self._current_node_goal = None
         self._current_order = VDAOrder(order_id="-1")
@@ -714,13 +715,14 @@ class VDA5050Controller(Node):
                 f"Processing action '{action.action_id}' of type '{action.action_type}'"
             )
 
-            # Add action to action_states
+            # Add action to action_states and track it as an instant action
             action_state = VDACurrentAction(
                 action_id=action.action_id,
                 action_type=action.action_type,
                 action_description=action.action_description,
                 action_status=VDACurrentAction.WAITING,
             )
+            self._instant_action_ids.add(action.action_id)
             self._update_state(
                 {"action_states": self._current_state.action_states + [action_state]}
             )
@@ -982,6 +984,7 @@ class VDA5050Controller(Node):
                 not in [VDACurrentAction.FINISHED, VDACurrentAction.FAILED]
                 for action_state in self._current_state.action_states
                 if action_state.action_id != action_id_cancel
+                and action_state.action_id not in self._instant_action_ids
             ]
         )
 
@@ -1002,6 +1005,7 @@ class VDA5050Controller(Node):
                 action_state
                 for action_state in self._current_state.action_states
                 if action_state.action_id != action_id_cancel and
+                action_state.action_id not in self._instant_action_ids and
                 action_state.action_status not in [
                     VDACurrentAction.FINISHED, VDACurrentAction.FAILED
                 ]

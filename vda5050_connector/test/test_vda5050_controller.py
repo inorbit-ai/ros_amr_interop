@@ -47,6 +47,8 @@ from vda5050_msgs.msg import Edge
 from vda5050_msgs.msg import NodePosition
 from vda5050_msgs.msg import Action
 from vda5050_msgs.msg import ActionParameter
+from vda5050_msgs.msg import InstantActions
+from vda5050_msgs.msg import CurrentAction
 
 
 def get_order_new(order_id=str(uuid4()), order_update_id=0):
@@ -667,3 +669,96 @@ def test_vda5050_controller_node_reject_order(
         error=OrderRejectErrors.ORDER_UPDATE_ERROR,
         description="New update id 0 lower than old update id 1",
     )
+
+
+def get_instant_actions(*action_types):
+    """Build an InstantActions message with one action per given action_type."""
+    return InstantActions(
+        header_id=0,
+        timestamp=get_vda5050_ts(),
+        version="1.1.1",
+        manufacturer="MANUFACTURER",
+        serial_number="SERIAL_NUMBER",
+        actions=[
+            Action(
+                action_type=action_type,
+                action_id=str(uuid4()),
+                action_description=action_type,
+                blocking_type="NONE",
+            )
+            for action_type in action_types
+        ],
+    )
+
+
+def test_instant_action_does_not_block_active_order_check(
+    mocker,
+    adapter_node,
+    action_server_nav_to_node,
+    action_server_process_vda_action,
+    service_get_state,
+    service_supported_actions,
+):
+    node = VDA5050Controller()
+    node.logger.set_level(LoggingSeverity.DEBUG)
+
+    # No order and no instant actions: no active order
+    assert not node._has_current_order()
+
+    # The instant action is now WAITING/INITIALIZING — _has_current_order must still be False
+    instant_actions = get_instant_actions("startPause")
+    node.process_instant_actions(instant_actions)
+    assert not node._has_current_order()
+
+    # Manually move the instant action to RUNNING to cover that state too
+    action_id = instant_actions.actions[0].action_id
+    node._update_action_status(action_id, CurrentAction.RUNNING)
+    assert not node._has_current_order()
+
+    # Once it finishes it should still return False (no nodes/edges)
+    node._update_action_status(action_id, CurrentAction.FINISHED)
+    assert not node._has_current_order()
+
+
+def test_instant_action_ids_tracked_on_process_instant_actions(
+    mocker,
+    adapter_node,
+    action_server_nav_to_node,
+    action_server_process_vda_action,
+    service_get_state,
+    service_supported_actions,
+):
+    node = VDA5050Controller()
+
+    instant_actions = get_instant_actions("startPause", "stopPause")
+    node.process_instant_actions(instant_actions)
+
+    for action in instant_actions.actions:
+        assert action.action_id in node._instant_action_ids
+
+
+def test_order_action_still_blocks_active_order_check(
+    mocker,
+    adapter_node,
+    action_server_nav_to_node,
+    action_server_process_vda_action,
+    service_get_state,
+    service_supported_actions,
+):
+    node = VDA5050Controller()
+    node.logger.set_level(LoggingSeverity.DEBUG)
+
+    # Process an order that contains a node action
+    [base_order, _] = get_stitch_orders()
+    node.process_order(base_order)
+
+    rclpy.spin_once(node)
+    rclpy.spin_once(adapter_node)
+
+    # The order has running node/edge states — active order must be True
+    assert node._has_current_order()
+
+    # Layering an instant action on top must not change the result
+    instant_actions = get_instant_actions("startPause")
+    node.process_instant_actions(instant_actions)
+    assert node._has_current_order()
