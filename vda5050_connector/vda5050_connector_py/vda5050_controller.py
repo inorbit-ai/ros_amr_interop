@@ -1311,16 +1311,22 @@ class VDA5050Controller(Node):
                 # The handler uses it to verify that the extension connects to
                 # its current path endpoint before appending req.nodes[1:]
                 # and req.edges.
-                req = ExtendNavigation.Request()
-                req.edges = new_edges
-                req.nodes = [order.nodes[0]] + new_nodes
-                future = self._extend_nav_svc_cli.call_async(req)
-                future.add_done_callback(
-                    functools.partial(
-                        self._extend_navigation_response_callback,
-                        new_nodes[-1].sequence_id
+                if self._extend_nav_svc_cli.service_is_ready():
+                    req = ExtendNavigation.Request()
+                    req.edges = new_edges
+                    req.nodes = [order.nodes[0]] + new_nodes
+                    future = self._extend_nav_svc_cli.call_async(req)
+                    future.add_done_callback(
+                        functools.partial(
+                            self._extend_navigation_response_callback,
+                            new_nodes[-1].sequence_id
+                        )
                     )
-                )
+                else:
+                    self.logger.warn(
+                        "ExtendNavigation service unavailable; keeping in-flight goal "
+                        "unchanged and falling back to post-goal dispatch."
+                    )
 
 
     def _reject_order(self, order: VDAOrder, error: OrderRejectErrors, description: str = ""):
@@ -1424,7 +1430,13 @@ class VDA5050Controller(Node):
         # Interrupt any running navigation goal
         if self._is_navigation_active():
             if self._enable_nav_through_nodes:
-                self._navigate_through_nodes_goal_handle.cancel_goal_async()
+                if self._navigate_through_nodes_goal_handle is not None:
+                    self._navigate_through_nodes_goal_handle.cancel_goal_async()
+                else:
+                    self.logger.info(
+                        "cancelOrder requested while nav-through-nodes goal is pending acceptance;"
+                        " cancel will be sent once accepted."
+                    )
             else:
                 self._navigate_to_node_goal_handle.cancel_goal_async()
             return
@@ -1483,10 +1495,10 @@ class VDA5050Controller(Node):
         if not self._has_current_order():
             return
 
-        # Do not retry navigation while any error is active — controller
-        # errors (e.g. navigation failure) require a cancelOrder to clear;
-        # adapter errors self-resolve when the adapter stops reporting them.
-        if len(self._current_state.errors) > 0:
+        # Do not retry navigation while any FATAL error is active.
+        # WARNING-level errors (e.g. rejected order updates) must not
+        # freeze an otherwise valid in-flight order.
+        if any(error.error_level == VDAError.FATAL for error in self._current_state.errors):
             return
 
         if len(self._current_node_actions) > 0:
@@ -1865,6 +1877,14 @@ class VDA5050Controller(Node):
             return
 
         self.logger.info("Navigate through nodes goal request accepted by adapter.")
+
+        if self._canceling_order():
+            self.logger.info(
+                "Cancel requested while waiting for nav-through-nodes goal acceptance; "
+                "canceling accepted goal now."
+            )
+            self._navigate_through_nodes_goal_handle.cancel_goal_async()
+            return
 
         get_result_future = self._navigate_through_nodes_goal_handle.get_result_async()
         get_result_future.add_done_callback(self._navigate_through_nodes_result_callback)
