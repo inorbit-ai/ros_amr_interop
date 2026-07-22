@@ -71,27 +71,40 @@ void adapter::NavThroughNodes::extendNavigationCallback(
     return;
   }
 
-  // Validate stitch node: nodes[0] must match the last node we already have
-  const auto& stitch_node = request->nodes[0];
-  if (nodes_msg_.empty()
-      || stitch_node.node_id != nodes_msg_.back().node_id
-      || stitch_node.sequence_id != nodes_msg_.back().sequence_id)
+  size_t old_edge_count = 0;
   {
-    response->success = false;
-    response->message = "Stitch node mismatch: expected node_id='"
-        + nodes_msg_.back().node_id + "' seq="
-        + std::to_string(nodes_msg_.back().sequence_id)
-        + ", got node_id='" + stitch_node.node_id + "' seq="
-        + std::to_string(stitch_node.sequence_id);
-    RCLCPP_WARN(node_->get_logger(), "NavThroughNodes: %s", response->message.c_str());
-    return;
+    std::unique_lock lock(navigation_mutex_);
+
+    if (nodes_msg_.empty())
+    {
+      response->success = false;
+      response->message = "Cannot stitch: no existing navigation nodes available";
+      RCLCPP_WARN(node_->get_logger(), "NavThroughNodes: %s", response->message.c_str());
+      return;
+    }
+
+    // Validate stitch node: nodes[0] must match the last node we already have
+    const auto& stitch_node = request->nodes[0];
+    const auto& expected_node = nodes_msg_.back();
+    if (stitch_node.node_id != expected_node.node_id
+        || stitch_node.sequence_id != expected_node.sequence_id)
+    {
+      response->success = false;
+      response->message = "Stitch node mismatch: expected node_id='"
+          + expected_node.node_id + "' seq="
+          + std::to_string(expected_node.sequence_id)
+          + ", got node_id='" + stitch_node.node_id + "' seq="
+          + std::to_string(stitch_node.sequence_id);
+      RCLCPP_WARN(node_->get_logger(), "NavThroughNodes: %s", response->message.c_str());
+      return;
+    }
+
+    old_edge_count = edges_msg_.size();
+
+    // Append only the new edges and target nodes (skip stitch node)
+    edges_msg_.insert(edges_msg_.end(), request->edges.begin(), request->edges.end());
+    nodes_msg_.insert(nodes_msg_.end(), request->nodes.begin() + 1, request->nodes.end());
   }
-
-  size_t old_edge_count = edges_msg_.size();
-
-  // Append only the new edges and target nodes (skip stitch node)
-  edges_msg_.insert(edges_msg_.end(), request->edges.begin(), request->edges.end());
-  nodes_msg_.insert(nodes_msg_.end(), request->nodes.begin() + 1, request->nodes.end());
 
   onNavigationExtended(old_edge_count);
 

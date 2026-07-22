@@ -40,6 +40,8 @@
  */
 #include "vda5050_connector/handler.hpp"
 
+#include <shared_mutex>
+
 /**
  * ROS related dependencies / headers
  */
@@ -78,6 +80,7 @@ public:
     const std::vector<vda5050_msgs::msg::Node> & nodes_msg,
     const std::shared_ptr<GoalHandleNavigateThroughNodes> goal_handle)
   {
+    std::unique_lock lock(navigation_mutex_);
     edges_msg_ = edges_msg;
     nodes_msg_ = nodes_msg;
     goal_handle_ = goal_handle;
@@ -116,6 +119,16 @@ public:
    */
   bool is_driving() const { return current_state_->get().driving; }
 
+  /**
+   * @brief Return a thread-safe snapshot of the current edges/nodes.
+   */
+  std::pair<std::vector<vda5050_msgs::msg::Edge>, std::vector<vda5050_msgs::msg::Node>>
+  getNavigationSnapshot() const
+  {
+    std::shared_lock lock(navigation_mutex_);
+    return {edges_msg_, nodes_msg_};
+  }
+
 protected:
   /**
    * @brief Set up the ExtendNavigation service server.
@@ -139,6 +152,7 @@ protected:
   // VDA5050 Edge and Node messages
   std::vector<vda5050_msgs::msg::Edge> edges_msg_;
   std::vector<vda5050_msgs::msg::Node> nodes_msg_;
+  mutable std::shared_mutex navigation_mutex_;
 
 private:
   rclcpp::Service<ExtendNavigation>::SharedPtr extend_navigation_srv_;
