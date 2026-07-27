@@ -1155,7 +1155,6 @@ class VDA5050Controller(Node):
         has_same_node_position = (
             last_node_position.x == stitch_node_position.x
             and last_node_position.y == stitch_node_position.y
-            and last_node_position.y == stitch_node_position.y
             and last_node_position.theta == stitch_node_position.theta
             and (last_node_position.allowed_deviation_x_y ==
                  stitch_node_position.allowed_deviation_x_y)
@@ -1884,7 +1883,6 @@ class VDA5050Controller(Node):
                 "canceling accepted goal now."
             )
             self._navigate_through_nodes_goal_handle.cancel_goal_async()
-            return
 
         get_result_future = self._navigate_through_nodes_goal_handle.get_result_async()
         get_result_future.add_done_callback(self._navigate_through_nodes_result_callback)

@@ -60,7 +60,7 @@ PLUGINLIB_EXPORT_CLASS(MyNavHandler, adapter::NavThroughNodes)
 | Method | Called when | Responsibility |
 |---|---|---|
 | `configure()` | Once at adapter startup | Create ROS publishers/subscribers/clients, read parameters, call `setupExtendNavigationService()` |
-| `execute()` | Each time a new navigation goal arrives (`edges_msg_` / `nodes_msg_` already set by `reset()`) | Start robot motion |
+| `execute()` | Each time a new navigation goal arrives (edges/nodes already set by `reset()`; read them via `getNavigationSnapshot()`) | Start robot motion |
 | `cancel()` | When a `cancelOrder` instant action is received | Stop the robot and return `true` on success |
 
 Within all three methods the following inherited members are available:
@@ -69,11 +69,20 @@ Within all three methods the following inherited members are available:
 |---|---|---|
 | `node_` | `rclcpp::Node*` | The adapter ROS node |
 | `robot_name_` | `std::string` | Robot name (from parameter) |
-| `edges_msg_` | `std::vector<vda5050_msgs::msg::Edge>` | Current edge list |
-| `nodes_msg_` | `std::vector<vda5050_msgs::msg::Node>` | Current node list (target nodes only) |
 | `goal_handle_` | `shared_ptr<GoalHandle>` | Active action goal handle |
 | `feedback_` | `shared_ptr<Feedback>` | Feedback to publish |
 | `result_` | `shared_ptr<Result>` | Result to send on completion |
+
+The edge and node lists are **private**. Read them through the thread-safe accessor
+`getNavigationSnapshot()`, which returns a `{edges, nodes}` copy taken under a shared lock:
+
+```cpp
+const auto [edges, nodes] = getNavigationSnapshot();
+```
+
+Do not cache references to the internal vectors: they are mutated under an exclusive lock by the
+`ExtendNavigation` service (see below), so any retained reference would race with an in-flight
+extension.
 
 Use `goal_handle_->publish_feedback(feedback_)`, `goal_handle_->succeed(result_)` and
 `goal_handle_->abort(result_)` to drive the action lifecycle. Populate `feedback_->last_node` with
@@ -153,13 +162,21 @@ Override `onNavigationExtended(size_t old_edge_count)` to extend your motion pri
 ```cpp
 void MyNavHandler::onNavigationExtended(size_t old_edge_count)
 {
-  // edges_msg_ and nodes_msg_ now contain the new segments starting at old_edge_count.
+  // Re-snapshot to observe the just-appended segments.
+  const auto [edges, nodes] = getNavigationSnapshot();
+  // edges/nodes now contain the new segments starting at old_edge_count.
   // Extend your planner, re-queue tasks, etc.
 }
 ```
 
-`old_edge_count` is the number of edges **before** the extension, so
-`edges_msg_[old_edge_count]` is the first newly added edge.
+`old_edge_count` is the number of edges **before** the extension, so in the freshly taken
+snapshot `edges[old_edge_count]` is the first newly added edge.
+
+> **Contract — re-snapshot inside `onNavigationExtended()`.** The hook runs *after* the base
+> class releases the navigation lock, so calling `getNavigationSnapshot()` from it is safe (no
+> deadlock, no re-entrancy). A snapshot captured earlier in `execute()` is memory-safe but is
+> frozen at goal start and will never observe the extension — relying on it makes stitching
+> silently no-op. Always take a fresh snapshot here.
 
 If `onNavigationExtended` is not overridden the base no-op is used: the new edges/nodes are
 stored and will be dispatched normally once the current navigation finishes.

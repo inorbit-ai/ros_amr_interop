@@ -38,9 +38,9 @@
 /**
  * C++ Libraries / header
  */
-#include "vda5050_connector/handler.hpp"
-
 #include <shared_mutex>
+
+#include "vda5050_connector/handler.hpp"
 
 /**
  * ROS related dependencies / headers
@@ -141,6 +141,9 @@ protected:
    * @brief Called after the navigation has been extended with new edges/nodes.
    * Override to react to the extension (e.g. rebuild task queues, extend planners).
    * @param old_edge_count The number of edges before the extension.
+   * @note Runs after the navigation lock is released; call getNavigationSnapshot()
+   *       here to observe the newly appended edges/nodes. A snapshot taken in
+   *       execute() is frozen at goal start and will not include the extension.
    */
   virtual void onNavigationExtended(size_t /*old_edge_count*/) {}
 
@@ -149,12 +152,12 @@ protected:
   std::shared_ptr<NavigateThroughNodes::Feedback> feedback_;
   std::shared_ptr<NavigateThroughNodes::Result> result_;
 
+private:
   // VDA5050 Edge and Node messages
   std::vector<vda5050_msgs::msg::Edge> edges_msg_;
   std::vector<vda5050_msgs::msg::Node> nodes_msg_;
   mutable std::shared_mutex navigation_mutex_;
 
-private:
   rclcpp::Service<ExtendNavigation>::SharedPtr extend_navigation_srv_;
 
   /**
@@ -163,8 +166,8 @@ private:
    * and calls onNavigationExtended() for subclass-specific handling.
    */
   void extendNavigationCallback(
-      const std::shared_ptr<ExtendNavigation::Request> request,
-      std::shared_ptr<ExtendNavigation::Response> response);
+    const std::shared_ptr<ExtendNavigation::Request> request,
+    std::shared_ptr<ExtendNavigation::Response> response);
 };
 
 }  // namespace adapter

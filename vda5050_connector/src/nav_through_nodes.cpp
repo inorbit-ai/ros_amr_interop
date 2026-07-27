@@ -50,13 +50,6 @@ void adapter::NavThroughNodes::extendNavigationCallback(
     const std::shared_ptr<ExtendNavigation::Request> request,
     std::shared_ptr<ExtendNavigation::Response> response)
 {
-  if (!goal_handle_)
-  {
-    response->success = false;
-    response->message = "No active navigation goal";
-    return;
-  }
-
   if (request->edges.empty() || request->nodes.size() < 2)
   {
     response->success = false;
@@ -74,6 +67,13 @@ void adapter::NavThroughNodes::extendNavigationCallback(
   size_t old_edge_count = 0;
   {
     std::unique_lock lock(navigation_mutex_);
+
+    if (!goal_handle_)
+    {
+      response->success = false;
+      response->message = "No active navigation goal";
+      return;
+    }
 
     if (nodes_msg_.empty())
     {
