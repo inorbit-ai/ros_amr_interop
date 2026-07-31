@@ -34,6 +34,7 @@
 # Python dependencies
 from paho.mqtt import client as mqtt_client
 from paho.mqtt.client import error_string
+from paho.mqtt.enums import CallbackAPIVersion
 import copy
 import json
 import ssl
@@ -247,7 +248,7 @@ class MQTTBridge(Node):
         self._interface_name = read_str_parameter(self, "interface_name", "uagv")
 
         # Configure MQTT
-        self.mqtt_client = mqtt_client.Client()
+        self.mqtt_client = mqtt_client.Client(CallbackAPIVersion.VERSION1)
         self.mqtt_client.on_connect = self.on_connect_mqtt
         self.mqtt_client.on_message = self.on_message_mqtt
         self.mqtt_client.on_disconnect = self.on_disconnect_mqtt
