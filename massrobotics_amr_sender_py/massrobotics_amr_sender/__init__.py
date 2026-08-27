@@ -282,7 +282,7 @@ class MassRoboticsAMRInteropNode(Node):
             x=twist.linear.x, y=twist.linear.y, z=twist.linear.z
         ).Norm()
         quat = PyKDL.Rotation.EulerZYX(
-            Alfa=twist.angular.z, Beta=twist.angular.y, Gamma=twist.angular.x
+            twist.angular.z, twist.angular.y, twist.angular.x
         ).GetQuaternion()
 
         self.mass_status_report.data[param_name] = {
