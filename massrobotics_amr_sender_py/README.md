@@ -30,7 +30,7 @@ colcon build --packages-select massrobotics_amr_sender
 ```
 # Node configuration
 
-A configuration file must be provided to define how ROS2 messages are mapped to different AMR Interop Standard messages. A [sample_config.yaml](https://github.com/inorbit-ai/ros_amr_interop/blob/foxy-devel/massrobotics_amr_sender_py/sample_config.yaml) is provided for reference.
+A configuration file must be provided to define how ROS2 messages are mapped to different AMR Interop Standard messages. A [sample_config.yaml](https://github.com/inorbit-ai/ros_amr_interop/blob/humble-devel/massrobotics_amr_sender_py/params/sample_config.yaml) is provided for reference.
 
 # Running the sender node
 
