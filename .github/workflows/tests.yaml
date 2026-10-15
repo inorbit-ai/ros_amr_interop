@@ -30,5 +30,4 @@ jobs:
     - name: Test
       run: |
         source install/setup.bash
-        # ament linter tests (flake8, pep257) are not clean yet; skip them for now.
-        python3 -m pytest -q -m "not linter" src/ros_amr_interop/vda5050_connector/test
+        python3 -m pytest -q src/ros_amr_interop/vda5050_connector/test
