@@ -449,7 +449,7 @@ def test_vda5050_mqtt_bridge_defaults(setup_rclpy, mocker, mock_mqtt_client):
     will_payload = convert_ros_message_to_json(msg)
 
     mqtt_client.will_set.assert_called_with(
-        topic="uagv/v1/robots/robot_1/connection",
+        topic="uagv/v2/robots/robot_1/connection",
         payload=will_payload,
         qos=1,
         retain=True,
@@ -467,10 +467,10 @@ def test_vda5050_mqtt_bridge_defaults_with_tls(
             "mqtt_password": "password",
             "manufacturer_name": "robots",
             "serial_number": "robot_1",
-        }[param_name]
+        }.get(param_name, alternative)
 
     mocker.patch(
-        "vda5050_connector.mqtt_bridge.read_str_parameter",
+        "vda5050_connector_py.mqtt_bridge.read_str_parameter",
         side_effect=mock_read_str_parameter,
     )
     mqtt_bridge = MQTTBridge()
