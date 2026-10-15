@@ -112,17 +112,12 @@ if(BUILD_TESTING)
   ament_pep257()
   ament_copyright()
 
-  set(_pytest_tests
-    test/test_vda5050_controller.py
+  # Runs every test_*.py under test/
+  ament_add_pytest_test(pytest test
+    APPEND_ENV PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
+    TIMEOUT 60
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   )
-  foreach(_test_path ${_pytest_tests})
-    get_filename_component(_test_name ${_test_path} NAME_WE)
-    ament_add_pytest_test(${_test_name} ${_test_path}
-      APPEND_ENV PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
-      TIMEOUT 60
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    )
-  endforeach()
   add_subdirectory(test/adapter)
   pluginlib_export_plugin_description_file(vda5050_connector test/adapter/plugins_test.xml)
 endif()

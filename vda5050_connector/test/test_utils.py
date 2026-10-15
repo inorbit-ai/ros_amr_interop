@@ -70,7 +70,10 @@ def test_json_snake_to_camel_case(test_input, expected):
 @pytest.mark.parametrize(
     "test_input, expected",
     [
-        ({"manufacturer": "M", "serial_number": "SN", "topic": "order"}, "uagv/v1/M/SN/order"),
+        (
+            {"manufacturer": "M", "serial_number": "SN", "topic": "order", "major_version": "v1"},
+            "uagv/v1/M/SN/order",
+        ),
         (
             {
                 "manufacturer": "M",

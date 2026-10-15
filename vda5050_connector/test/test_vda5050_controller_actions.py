@@ -148,7 +148,12 @@ def test_vda5050_controller_node_order_processing(
 
     spy_send_adapter_process_vda_action.assert_called_once()
 
-    rclpy.spin_once(adapter_node)
+    # The same tick may also send a navigation goal (NONE actions allow driving),
+    # so spin until the action server has received its goal.
+    for _ in range(5):
+        rclpy.spin_once(adapter_node, timeout_sec=0.5)
+        if hasattr(action_server_process_vda_action, "goal_id"):
+            break
 
     # Mocked action server publishes feedback to let the controller
     # know the first action is being initialized
