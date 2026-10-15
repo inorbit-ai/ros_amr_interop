@@ -29,6 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from action_msgs.msg import GoalStatus
 import rclpy
 from rclpy.logging import LoggingSeverity
 from rclpy.task import Future
@@ -50,6 +51,11 @@ from vda5050_msgs.msg import Action
 from vda5050_msgs.msg import ActionParameter
 from vda5050_msgs.msg import InstantActions
 from vda5050_msgs.msg import CurrentAction
+
+
+def succeeded_result(action_type):
+    """Build the GetResult response the controller's result callbacks read."""
+    return action_type.Impl.GetResultService.Response(status=GoalStatus.STATUS_SUCCEEDED)
 
 
 def get_order_new(order_id=str(uuid4()), order_update_id=0):
@@ -543,7 +549,7 @@ def test_vda5050_controller_node_new_order(
 
     # Future for invoking adapter navigation goal result callback
     future = Future()
-    future.set_result(result=NavigateToNode.Result())
+    future.set_result(result=succeeded_result(NavigateToNode))
 
     spy_send_adapter_navigate_to_node.reset_mock()
     # Simulate the adapter reached navigation goal
@@ -626,7 +632,7 @@ def test_vda5050_controller_node_update_order(
 
     # Simulate the adapter reached navigation goals
     future = Future()
-    future.set_result(result=NavigateToNode.Result())
+    future.set_result(result=succeeded_result(NavigateToNode))
 
     # The NEW order contains 5 nodes and 4 edges. The first node (in deviation range)
     # is processed and remove, and 4 nodes are send to navigate to.
@@ -673,7 +679,7 @@ def test_vda5050_controller_node_update_order(
 
     # Future for invoking adapter navigation goal result callback
     future = Future()
-    future.set_result(result=NavigateToNode.Result())
+    future.set_result(result=succeeded_result(NavigateToNode))
 
     # Simulate the adapter reached navigation goal
     node._navigate_to_node_result_callback(future)
@@ -775,7 +781,7 @@ def test_vda5050_controller_node_reject_order(
 
     # Simulate the adapter reached navigation goals
     future = Future()
-    future.set_result(result=NavigateToNode.Result())
+    future.set_result(result=succeeded_result(NavigateToNode))
 
     # The NEW order contains 5 nodes and 4 edges. The first node (in deviation range)
     # is processed and remove, and 4 nodes are send to navigate to.
@@ -1003,7 +1009,7 @@ def test_vda5050_controller_node_new_order_nav_through_nodes(
 
     # Simulate the adapter reached navigation goals
     future = Future()
-    future.set_result(result=NavigateThroughNodes.Result())
+    future.set_result(result=succeeded_result(NavigateThroughNodes))
     node._navigate_through_nodes_result_callback(future)
 
     spy_process_last_edge_node.assert_called_once()
@@ -1116,7 +1122,7 @@ def test_vda5050_controller_node_new_order_nav_through_nodes_unreleased_nodes(
 
     # Simulate the adapter reached navigation goals
     future = Future()
-    future.set_result(result=NavigateThroughNodes.Result())
+    future.set_result(result=succeeded_result(NavigateThroughNodes))
     node._navigate_through_nodes_result_callback(future)
 
     spy_process_last_edge_node.assert_called_once()
@@ -1553,3 +1559,95 @@ def test_stitch_no_actions_on_stitch_node(
     action_map = {a.action_id: a for a in node._current_state.action_states}
     assert action_map[edge_action.action_id].action_status == CurrentAction.FINISHED
     assert action_map[node_c_action.action_id].action_status == CurrentAction.WAITING
+
+
+def get_order_with_node_b_action(blocking_type):
+    """A(0) --e1--> B(2, one action of ``blocking_type``) --e2--> C(4), all released."""
+    return Order(
+        header_id=0, timestamp=get_vda5050_ts(), version="1.1.1",
+        manufacturer="MANUFACTURER", serial_number="SERIAL_NUMBER",
+        order_id=str(uuid4()), order_update_id=0,
+        nodes=[
+            Node(node_id="A", sequence_id=0, released=True,
+                 node_position=NodePosition(x=0.0, y=0.0, theta=0.0, map_id="map")),
+            Node(node_id="B", sequence_id=2, released=True,
+                 node_position=NodePosition(x=1.0, y=0.0, theta=0.0, map_id="map"),
+                 actions=[Action(action_type="foo", action_id=str(uuid4()),
+                                 blocking_type=blocking_type)]),
+            Node(node_id="C", sequence_id=4, released=True,
+                 node_position=NodePosition(x=2.0, y=0.0, theta=0.0, map_id="map")),
+        ],
+        edges=[
+            Edge(edge_id="e1", sequence_id=1, released=True,
+                 start_node_id="A", end_node_id="B"),
+            Edge(edge_id="e2", sequence_id=3, released=True,
+                 start_node_id="B", end_node_id="C"),
+        ],
+    )
+
+
+def test_nav_through_nodes_stays_at_node_with_soft_action(
+    mocker,
+    adapter_node,
+    action_server_nav_through_nodes,
+    action_server_process_vda_action,
+    service_get_state,
+    service_supported_actions,
+):
+    """Regression test: reaching a node with a SOFT action must not dispatch the next
+    navigation goal; the vehicle shall not drive during SOFT/HARD actions."""
+    nav_through_nodes_param = Parameter(
+        "enable_nav_through_nodes", type_=Parameter.Type.BOOL, value=True)
+    node = VDA5050Controller(parameter_overrides=[nav_through_nodes_param])
+    mocker.patch.object(node, "send_adapter_process_vda_action")
+    spy_send_adapter_navigate_through_nodes = mocker.spy(
+        node, "send_adapter_navigate_through_nodes"
+    )
+
+    order = get_order_with_node_b_action("SOFT")
+    node.process_order(order)
+    rclpy.spin_once(node)
+    rclpy.spin_once(adapter_node)
+
+    # The segment stops at B because of its SOFT action
+    spy_send_adapter_navigate_through_nodes.assert_called_once_with(
+        edges=order.edges[:1], nodes=order.nodes[1:2]
+    )
+    spy_send_adapter_navigate_through_nodes.reset_mock()
+
+    future = Future()
+    future.set_result(result=succeeded_result(NavigateThroughNodes))
+    node._navigate_through_nodes_result_callback(future)
+
+    assert node._current_state.last_node_id == "B"
+    spy_send_adapter_navigate_through_nodes.assert_not_called()
+
+
+def test_nav_to_node_drives_while_none_action_runs(
+    mocker,
+    adapter_node,
+    action_server_nav_to_node,
+    action_server_process_vda_action,
+    service_get_state,
+    service_supported_actions,
+):
+    """Regression test: a pending NONE action must not keep the vehicle stopped."""
+    node = VDA5050Controller()
+    mocker.patch.object(node, "send_adapter_process_vda_action")
+    spy_send_adapter_navigate_to_node = mocker.spy(node, "send_adapter_navigate_to_node")
+
+    order = get_order_with_node_b_action("NONE")
+    node.process_order(order)
+    rclpy.spin_once(node)
+    rclpy.spin_once(adapter_node)
+    spy_send_adapter_navigate_to_node.reset_mock()
+
+    # Arrive at B; its NONE action is still pending
+    future = Future()
+    future.set_result(result=succeeded_result(NavigateToNode))
+    node._navigate_to_node_result_callback(future)
+    node._on_active_order()
+
+    spy_send_adapter_navigate_to_node.assert_called_once_with(
+        edge=order.edges[1], node=order.nodes[2]
+    )
