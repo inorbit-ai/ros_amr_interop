@@ -1,0 +1,35 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [humble-devel]
+
+jobs:
+  vda5050-connector:
+    name: vda5050_connector
+    runs-on: ubuntu-22.04
+    container: ros:humble-ros-base
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        path: src/ros_amr_interop
+    - name: Install dependencies
+      run: |
+        apt-get update
+        rosdep update --rosdistro humble
+        rosdep install -iy --rosdistro humble --from-paths \
+          src/ros_amr_interop/vda5050_msgs src/ros_amr_interop/vda5050_connector
+    - name: Build
+      run: |
+        source /opt/ros/humble/setup.bash
+        colcon build --packages-up-to vda5050_connector
+    - name: Test
+      run: |
+        source install/setup.bash
+        python3 -m pytest -q \
+          src/ros_amr_interop/vda5050_connector/test/test_vda5050_controller.py \
+          src/ros_amr_interop/vda5050_connector/test/test_vda5050_controller_actions.py
