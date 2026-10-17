@@ -337,6 +337,19 @@ class VDA5050Controller(Node):
             qos_profile=10,
         )
 
+        # Orders the bridge could not decode: report them as rejected
+        self._order_errors_sub = self.create_subscription(
+            msg_type=VDAError,
+            topic=get_vda5050_ros2_topic(
+                manufacturer=self._manufacturer_name,
+                serial_number=self._serial_number,
+                topic="order",
+                interface_name=self._interface_name
+            ) + "_errors",
+            callback=self._report_undecodable_order,
+            qos_profile=10,
+        )
+
         # Process instant actions coming from the Master Control
         self._process_instant_actions_sub = self.create_subscription(
             msg_type=VDAInstantActions,
@@ -1376,6 +1389,12 @@ class VDA5050Controller(Node):
         self._update_state(
             {"errors": self._current_state.errors + [order_error]}, publish_now=True
         )
+
+    def _report_undecodable_order(self, error: VDAError):
+        """Add an order error published by the bridge to the state errors."""
+        error.error_type = OrderRejectErrors.VALIDATION_ERROR.value
+        self.logger.warn(f"Order rejected: {error.error_description}")
+        self._update_state({"errors": self._current_state.errors + [error]}, publish_now=True)
 
     def _cancel_order(self):
         """

@@ -57,6 +57,8 @@ from vda5050_msgs.msg import ActionParameter as VDAActionParameter
 from vda5050_msgs.msg import Connection as VDAConnection
 from vda5050_msgs.msg import ControlPoint as VDAControlPoint
 from vda5050_msgs.msg import Edge as VDAEdge
+from vda5050_msgs.msg import Error as VDAError
+from vda5050_msgs.msg import ErrorReference as VDAErrorReference
 from vda5050_msgs.msg import InstantActions as VDAInstantActions
 from vda5050_msgs.msg import Node as VDANode
 from vda5050_msgs.msg import NodePosition as VDANodePosition
@@ -373,7 +375,11 @@ class MQTTBridge(Node):
 
         try:
             if msg.topic.endswith("order"):
-                vda_order_msg = VDAOrder(**generate_vda_order_msg(msg_json))
+                try:
+                    vda_order_msg = VDAOrder(**generate_vda_order_msg(msg_json))
+                except (KeyError, ValueError, TypeError) as ex:
+                    self._report_undecodable_order(msg_json, ex)
+                    raise
                 self._order_pub.publish(msg=vda_order_msg)
             if msg.topic.endswith("instantActions"):
                 vda_instant_actions_message = VDAInstantActions(
@@ -383,6 +389,30 @@ class MQTTBridge(Node):
         except KeyError as ex:
             self.logger.warn(f"Ignoring invalid VDA5050 message: {ex}.")
             return
+        except (ValueError, TypeError) as ex:
+            if not msg.topic.endswith("order"):
+                raise
+            self.logger.warn(f"Ignoring invalid VDA5050 message: {ex}.")
+            return
+
+    def _report_undecodable_order(self, msg_json, ex):
+        """Tell the controller an order could not be decoded (VDA 5050 validationError)."""
+        reason = f"missing field {ex}" if isinstance(ex, KeyError) else str(ex)
+        references = []
+        if isinstance(msg_json, dict):
+            for key in ("order_id", "order_update_id"):
+                if key in msg_json:
+                    references.append(
+                        VDAErrorReference(reference_key=key, reference_value=str(msg_json[key]))
+                    )
+        self._order_errors_pub.publish(
+            VDAError(
+                error_type="validationError",
+                error_description=f"order rejected: cannot decode: {reason}",
+                error_level=VDAError.WARNING,
+                error_references=references,
+            )
+        )
 
     def on_disconnect_mqtt(self, client, userdata, rc):
         """MQTT client disconnect callback."""
@@ -445,6 +475,17 @@ class MQTTBridge(Node):
                 topic="order",
                 interface_name=self._interface_name
             ),
+            qos_profile=10,
+        )
+
+        self._order_errors_pub = self.create_publisher(
+            msg_type=VDAError,
+            topic=get_vda5050_ros2_topic(
+                manufacturer=self._manufacturer_name,
+                serial_number=self._serial_number,
+                topic="order",
+                interface_name=self._interface_name
+            ) + "_errors",
             qos_profile=10,
         )
 
