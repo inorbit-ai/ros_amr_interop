@@ -125,7 +125,7 @@ class ActionErrors(Enum):
 class OrderRejectErrors(Enum):
     """Order Processing - Reject Error types."""
 
-    VALIDATION_ERROR = "validationOrder"
+    VALIDATION_ERROR = "validationError"  # the VDA 5050 error type (was "validationOrder")
     ORDER_UPDATE_ERROR = "orderUpdateError"
     NO_ROUTE_ERROR = "noRouteError"
 
@@ -242,6 +242,9 @@ class VDA5050Controller(Node):
             self, "execute_order_period", DEFAULT_EXECUTE_ORDER_PERIOD
         )
         self._interface_name = read_str_parameter(self, "interface_name", DEFAULT_INTERFACE_NAME)
+        # VDA 5050 2.1 6.7.1: maps the vehicle has. Empty = do not check orders' mapIds.
+        # [""], not []: rclpy types an empty default as BYTE_ARRAY and then refuses a string list.
+        self._known_map_ids = [m for m in read_str_array_parameter(self, "known_map_ids", [""]) if m]
 
 
     # ---- Configure ROS interfaces ----
@@ -921,7 +924,12 @@ class VDA5050Controller(Node):
         # Validate order msg
         msg_is_valid, error = self.order_msg_is_valid(order)
         if not msg_is_valid:
-            self._reject_order(order, OrderRejectErrors.VALIDATION_ERROR, error.error_description)
+            self._reject_order(
+                order,
+                OrderRejectErrors.VALIDATION_ERROR,
+                error.error_description,
+                list(error.error_references),
+            )
             return
 
         accept_mode = None
@@ -992,7 +1000,23 @@ class VDA5050Controller(Node):
             True if msg is valid, False otherwise, VDAError if msg in invalid.
 
         """
-        # TODO: Proper implementation
+        # Only the map check (6.7.1) is implemented; disabled when known_map_ids is empty.
+        if self._known_map_ids:
+            for node in order.nodes:
+                map_id = node.node_position.map_id
+                if map_id and map_id not in self._known_map_ids:
+                    return False, VDAError(
+                        error_type=OrderRejectErrors.VALIDATION_ERROR.value,
+                        error_description=(
+                            f"order {order.order_id}: unknown map '{map_id}'"
+                            f" (node '{node.node_id}')"
+                        ),
+                        error_level=VDAError.WARNING,
+                        error_references=[
+                            VDAErrorReference(reference_key="node_id", reference_value=node.node_id),
+                            VDAErrorReference(reference_key="map_id", reference_value=map_id),
+                        ],
+                    )
         return True, VDAError()
 
     def _has_current_order(self) -> bool:
@@ -1328,7 +1352,13 @@ class VDA5050Controller(Node):
                     )
 
 
-    def _reject_order(self, order: VDAOrder, error: OrderRejectErrors, description: str = ""):
+    def _reject_order(
+        self,
+        order: VDAOrder,
+        error: OrderRejectErrors,
+        description: str = "",
+        references: list = None,
+    ):
         """
         Reject order.
 
@@ -1340,9 +1370,10 @@ class VDA5050Controller(Node):
                 ORDER_UPDATE_ERROR
                 NO_ROUTE_ERROR
             description (str): Order rejection description
+            references (list): Extra VDAErrorReference entries
 
         """
-        error_references = []
+        error_references = list(references or [])
         if error == OrderRejectErrors.ORDER_UPDATE_ERROR:
             # On orderUpdateError send orderUpdateId and orderId as reference
 
