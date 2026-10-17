@@ -33,6 +33,7 @@
 
 # Python dependencies
 from enum import Enum
+import math
 import itertools
 import functools
 
@@ -1155,7 +1156,10 @@ class VDA5050Controller(Node):
         has_same_node_position = (
             last_node_position.x == stitch_node_position.x
             and last_node_position.y == stitch_node_position.y
-            and last_node_position.theta == stitch_node_position.theta
+            # theta is optional: NaN means "not given", and NaN != NaN
+            and (last_node_position.theta == stitch_node_position.theta
+                 or (math.isnan(last_node_position.theta)
+                     and math.isnan(stitch_node_position.theta)))
             and (last_node_position.allowed_deviation_x_y ==
                  stitch_node_position.allowed_deviation_x_y)
             and (last_node_position.allowed_deviation_theta ==

@@ -85,8 +85,12 @@ def generate_vda_order_msg(order):
     for node in vda_order["nodes"]:
         # Force all numbers to float. Values with no decimals are
         # interpret as integers, causing the validation errors
-        for k in ["x", "y", "theta"]:
+        for k in ["x", "y"]:
             node["node_position"][k] = float(node["node_position"][k])
+        # VDA 5050 2.x nodePosition.theta is optional ("the vehicle can plan the path by
+        # itself"); NaN means "not given".
+        theta = node["node_position"].get("theta")
+        node["node_position"]["theta"] = float("nan") if theta is None else float(theta)
         node["node_position"] = VDANodePosition(**node["node_position"])
         for action in node["actions"]:
             if "action_parameters" in action:
