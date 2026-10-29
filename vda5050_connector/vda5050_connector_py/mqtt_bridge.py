@@ -238,6 +238,9 @@ class MQTTBridge(Node):
 
         self.vda5050_version = read_str_parameter(self, "vda5050_protocol_version", "2.0.0")
         self.vda5050_version_alias = generate_vda5050_topic_alias(self.vda5050_version)
+        
+        # DEBUG: Log the version being used
+        self.get_logger().info(f"VDA5050 Protocol Version: {self.vda5050_version} (alias: {self.vda5050_version_alias})")
 
         self._manufacturer_name = read_str_parameter(
             self, "manufacturer_name", "robots"
@@ -407,7 +410,8 @@ class MQTTBridge(Node):
                 manufacturer=self._manufacturer_name,
                 serial_number=self._serial_number,
                 topic="state",
-                interface_name=self._interface_name
+                interface_name=self._interface_name,
+                major_version=self.vda5050_version_alias
             ),
             callback=self._publish_state,
             qos_profile=10,
@@ -419,7 +423,8 @@ class MQTTBridge(Node):
                 manufacturer=self._manufacturer_name,
                 serial_number=self._serial_number,
                 topic="connection",
-                interface_name=self._interface_name
+                interface_name=self._interface_name,
+                major_version=self.vda5050_version_alias
             ),
             callback=self._publish_connection,
             qos_profile=10,
@@ -431,7 +436,8 @@ class MQTTBridge(Node):
                 manufacturer=self._manufacturer_name,
                 serial_number=self._serial_number,
                 topic="visualization",
-                interface_name=self._interface_name
+                interface_name=self._interface_name,
+                major_version=self.vda5050_version_alias
             ),
             callback=self._publish_visualization,
             qos_profile=10,
@@ -443,7 +449,8 @@ class MQTTBridge(Node):
                 manufacturer=self._manufacturer_name,
                 serial_number=self._serial_number,
                 topic="order",
-                interface_name=self._interface_name
+                interface_name=self._interface_name,
+                major_version=self.vda5050_version_alias
             ),
             qos_profile=10,
         )
@@ -454,7 +461,8 @@ class MQTTBridge(Node):
                 manufacturer=self._manufacturer_name,
                 serial_number=self._serial_number,
                 topic="instantActions",
-                interface_name=self._interface_name
+                interface_name=self._interface_name,
+                major_version=self.vda5050_version_alias
             ),
             qos_profile=10,
         )
@@ -512,6 +520,14 @@ class MQTTBridge(Node):
 
         """
         json_msg = convert_ros_message_to_json(msg)
+        
+        # WORKAROUND: Remove 'informations' field for OpenTCS compatibility
+        # OpenTCS v2.0 driver doesn't accept this field even though it's in VDA5050 v2.0 spec
+        json_dict = json.loads(json_msg)
+        if 'informations' in json_dict:
+            del json_dict['informations']
+        json_msg = json.dumps(json_dict)
+        
         self.logger.debug(f"Publishing MQTT message to topic {topic}: {json_msg}")
         self.mqtt_client.publish(topic, json_msg)
 

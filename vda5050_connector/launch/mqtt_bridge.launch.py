@@ -80,6 +80,7 @@ def generate_launch_description():
         namespace=namespace,
         name="mqtt_bridge",
         parameters=[configured_params],
+        arguments=['--ros-args', '--log-level', "debug"]
     )
 
     # Create the launch description and populate
