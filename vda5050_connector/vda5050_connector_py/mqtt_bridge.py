@@ -360,7 +360,7 @@ class MQTTBridge(Node):
             )
 
         else:
-            self.logger.error("Failed to connect, return code %d\n", rc)
+            self.logger.error(f"Failed to connect, return code {rc}")
 
     def on_message_mqtt(self, client, userdata, msg):
         """MQTT client message callback."""
