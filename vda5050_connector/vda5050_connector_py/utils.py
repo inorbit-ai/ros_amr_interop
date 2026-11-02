@@ -207,6 +207,15 @@ def json_snake_to_camel_case(s):
     return json.loads(s, object_hook=camel_case_dict)
 
 
+def _drop_nan(obj):
+    """Omit NaN fields (optional values such as nodePosition.theta): NaN is not valid JSON."""
+    if isinstance(obj, dict):
+        return {k: _drop_nan(v) for k, v in obj.items() if v == v}
+    if isinstance(obj, list):
+        return [_drop_nan(v) for v in obj]
+    return obj
+
+
 def convert_ros_message_to_json(msg):
     """
     Convert a ROS2 message into a JSON for MQTT publishing.
@@ -220,7 +229,7 @@ def convert_ros_message_to_json(msg):
         dict: JSON representation of the ROS2 msg
 
     """
-    json_msg = json.dumps(message_to_ordereddict(msg))
+    json_msg = json.dumps(_drop_nan(message_to_ordereddict(msg)))
     return json.dumps(json_snake_to_camel_case(json_msg))
 
 
