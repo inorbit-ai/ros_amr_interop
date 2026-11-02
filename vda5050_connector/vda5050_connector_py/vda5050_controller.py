@@ -1285,35 +1285,45 @@ class VDA5050Controller(Node):
             self._process_node(self._current_order.nodes[0])
         elif self._enable_nav_through_nodes and self._is_navigation_active():
             # Extend the in-flight navigation goal with the newly released
-            # segment from the stitch order. Filter out nodes/edges whose
-            # sequence_id is already covered by the current goal (up to
-            # _nav_through_nodes_last_seq) and any that are unreleased.
-            # nodes[0] is the stitch reference node (shared with the old
-            # base), so new targets start at nodes[1:].
-            new_edges = [
-                e for e in order.edges
-                if e.released and e.sequence_id > self._nav_through_nodes_last_seq
-            ]
-            new_nodes = [
-                n for n in order.nodes[1:]
-                if n.released and n.sequence_id > self._nav_through_nodes_last_seq
-            ]
+            # segment beyond the goal's end node, following the same rules as
+            # _get_drivable_segment so the robot still stops on SOFT/HARD
+            # actions (§6.2.2).
+            goal_end_seq = self._nav_through_nodes_last_seq
+            goal_end_node = next(
+                (n for n in self._current_order.nodes if n.sequence_id == goal_end_seq), None
+            )
+            goal_end_edge = next(
+                (e for e in self._current_order.edges if e.sequence_id == goal_end_seq - 1), None
+            )
+            if goal_end_node is None:
+                self.logger.warn(
+                    f"Stitch while navigating: goal end node seq {goal_end_seq} not found"
+                    " in order, not extending.")
+                return
+            if (self._check_hard_soft_actions(goal_end_node.actions)
+                    or (goal_end_edge is not None
+                        and self._check_hard_soft_actions(goal_end_edge.actions))):
+                self.logger.info(
+                    f"Stitch while navigating: goal ends on blocking node seq {goal_end_seq},"
+                    " not extending.")
+                return
+
+            new_edges, new_nodes = self._get_drivable_segment(after_seq=goal_end_seq)
 
             self.logger.info(
                 f"Stitch while navigating: {len(new_edges)} new edges,"
-                f" {len(new_nodes)} new nodes beyond seq"
-                f" {self._nav_through_nodes_last_seq}")
+                f" {len(new_nodes)} new nodes beyond seq {goal_end_seq}")
 
             if new_edges and new_nodes:
                 # Build the ExtendNavigation request.  req.nodes[0] is the
-                # stitch node — the last node the handler already knows about.
-                # The handler uses it to verify that the extension connects to
-                # its current path endpoint before appending req.nodes[1:]
-                # and req.edges.
+                # goal's end node — the last node the handler already knows
+                # about. The handler uses it to verify that the extension
+                # connects to its current path endpoint before appending
+                # req.nodes[1:] and req.edges.
                 if self._extend_nav_svc_cli.service_is_ready():
                     req = ExtendNavigation.Request()
                     req.edges = new_edges
-                    req.nodes = [order.nodes[0]] + new_nodes
+                    req.nodes = [goal_end_node] + new_nodes
                     future = self._extend_nav_svc_cli.call_async(req)
                     future.add_done_callback(
                         functools.partial(
@@ -1601,7 +1611,7 @@ class VDA5050Controller(Node):
                 break
         return hard_soft_action_found
 
-    def _get_drivable_segment(self):
+    def _get_drivable_segment(self, after_seq=None):
         """
         Return the contiguous released edge-node pairs for one navigation goal.
 
@@ -1621,6 +1631,12 @@ class VDA5050Controller(Node):
         If the very next edge is not released the ``new_base_request`` flag
         is set so that fleet control can extend the base (§6.6.3).
 
+        Args:
+        ----
+            after_seq (int): Node sequence_id the segment starts from.
+                Defaults to the last reached node; when given, the
+                ``new_base_request`` flag is left untouched.
+
         Returns
         -------
         tuple[list[VDAEdge], list[VDANode]]
@@ -1628,6 +1644,10 @@ class VDA5050Controller(Node):
             ``edges[i]`` leads to ``nodes[i]``.
 
         """
+        request_base = after_seq is None
+        if after_seq is None:
+            after_seq = self._current_state.last_node_sequence_id
+
         released_edges = []
         released_nodes = []
 
@@ -1637,11 +1657,11 @@ class VDA5050Controller(Node):
         }
 
         for edge in self._current_order.edges:
-            if edge.sequence_id < self._current_state.last_node_sequence_id + 1:
+            if edge.sequence_id < after_seq + 1:
                 continue
 
             if not edge.released:
-                if len(released_edges) == 0:
+                if request_base and len(released_edges) == 0:
                     # Next edge is part of the horizon — request a base
                     # extension (§6.6.3).
                     if not self._current_state.new_base_request:
@@ -1967,11 +1987,12 @@ class VDA5050Controller(Node):
                 self._process_last_edge_node()
 
             _, released_nodes = self._get_drivable_segment()
-            if len(released_nodes) == 0:
-                # No more drivable pairs — order finished or only instant
-                # actions remain.
+            # Released nodes beyond the current goal's end are not being driven to yet; they become
+            # the target once an extension is confirmed or a new goal is dispatched.
+            if (not released_nodes
+                    or released_nodes[0].sequence_id > self._nav_through_nodes_last_seq):
+                self._current_node_goal = None
                 return
-
             self._current_node_goal = released_nodes[0]
 
     def _is_navigation_active(self) -> bool:
@@ -1995,6 +2016,12 @@ class VDA5050Controller(Node):
             self._nav_through_nodes_last_seq = last_seq
             self.logger.info(
                 f"Navigation extended in-flight up to seq {last_seq}")
+            # Restores the navigation target when the robot reached the old goal end before this
+            # response: feedback then cleared it, and without a target node arrivals are ignored.
+            if self._current_node_goal is None and self._is_navigation_active():
+                _, released_nodes = self._get_drivable_segment()
+                if released_nodes and released_nodes[0].sequence_id <= last_seq:
+                    self._current_node_goal = released_nodes[0]
         else:
             self.logger.warn(
                 f"Could not extend navigation: {result.message}. "

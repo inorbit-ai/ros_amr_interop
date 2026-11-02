@@ -58,13 +58,22 @@ def succeeded_result(action_type):
     return action_type.Impl.GetResultService.Response(status=GoalStatus.STATUS_SUCCEEDED)
 
 
-def get_order_new(order_id=str(uuid4()), order_update_id=0):
+def make_order(order_id, order_update_id, nodes, edges):
     return Order(
         header_id=0,
         timestamp=get_vda5050_ts(),
         version="1.1.1",
         manufacturer="MANUFACTURER",
         serial_number="SERIAL_NUMBER",
+        order_id=order_id,
+        order_update_id=order_update_id,
+        nodes=nodes,
+        edges=edges,
+    )
+
+
+def get_order_new(order_id=str(uuid4()), order_update_id=0):
+    return make_order(
         order_id=order_id,
         order_update_id=order_update_id,
         nodes=[
@@ -180,12 +189,7 @@ def get_order_new(order_id=str(uuid4()), order_update_id=0):
 
 
 def get_order_update(order_id=str(uuid4()), order_update_id=0):
-    return Order(
-        header_id=0,
-        timestamp=get_vda5050_ts(),
-        version="1.1.1",
-        manufacturer="MANUFACTURER",
-        serial_number="SERIAL_NUMBER",
+    return make_order(
         order_id=order_id,
         order_update_id=order_update_id,
         nodes=[
@@ -232,12 +236,7 @@ def get_order_update(order_id=str(uuid4()), order_update_id=0):
 
 
 def get_order_w_unreleased_new(order_id=str(uuid4()), order_update_id=0):
-    return Order(
-        header_id=0,
-        timestamp=get_vda5050_ts(),
-        version="1.1.1",
-        manufacturer="MANUFACTURER",
-        serial_number="SERIAL_NUMBER",
+    return make_order(
         order_id=order_id,
         order_update_id=order_update_id,
         nodes=[
@@ -380,12 +379,7 @@ def get_stitch_orders(order_id=str(uuid4())):
             ActionParameter(key="abc", value="xyz")
         ]
     )
-    base_order = Order(
-        header_id=0,
-        timestamp=get_vda5050_ts(),
-        version="1.1.1",
-        manufacturer="MANUFACTURER",
-        serial_number="SERIAL_NUMBER",
+    base_order = make_order(
         order_id=order_id,
         order_update_id=0,
         nodes=[
@@ -436,12 +430,7 @@ def get_stitch_orders(order_id=str(uuid4())):
         ],
     )
 
-    stitch_order = Order(
-        header_id=0,
-        timestamp=get_vda5050_ts(),
-        version="1.1.1",
-        manufacturer="MANUFACTURER",
-        serial_number="SERIAL_NUMBER",
+    stitch_order = make_order(
         order_id=order_id,
         order_update_id=1,
         nodes=[
@@ -1170,12 +1159,7 @@ def test_vda5050_controller_stitch_while_navigating(
 
     # --- Build a base order with 3 released nodes + 1 unreleased horizon node ---
     order_id = str(uuid4())
-    base_order = Order(
-        header_id=0,
-        timestamp=get_vda5050_ts(),
-        version="1.1.1",
-        manufacturer="MANUFACTURER",
-        serial_number="SERIAL_NUMBER",
+    base_order = make_order(
         order_id=order_id,
         order_update_id=0,
         nodes=[
@@ -1231,12 +1215,7 @@ def test_vda5050_controller_stitch_while_navigating(
     spy_accept_order.reset_mock()
     spy_send_adapter_navigate_through_nodes.reset_mock()
 
-    stitch_order = Order(
-        header_id=0,
-        timestamp=get_vda5050_ts(),
-        version="1.1.1",
-        manufacturer="MANUFACTURER",
-        serial_number="SERIAL_NUMBER",
+    stitch_order = make_order(
         order_id=order_id,
         order_update_id=1,
         nodes=[
@@ -1324,12 +1303,7 @@ def test_vda5050_controller_skipped_feedback_nodes(
 
     # --- Order: A(0) → B(2) → C(4) → D(6) → E(8) ---
     order_id = str(uuid4())
-    order = Order(
-        header_id=0,
-        timestamp=get_vda5050_ts(),
-        version="1.1.1",
-        manufacturer="MANUFACTURER",
-        serial_number="SERIAL_NUMBER",
+    order = make_order(
         order_id=order_id,
         order_update_id=0,
         nodes=[
@@ -1417,6 +1391,162 @@ def test_vda5050_controller_skipped_feedback_nodes(
     assert len(node._current_state.edge_states) == 0
 
 
+def test_stitch_while_navigating_stops_on_blocking_node(
+    mocker,
+    adapter_node,
+    action_server_nav_through_nodes,
+    action_server_process_vda_action,
+    service_get_state,
+    service_supported_actions,
+):
+    """Test that an in-flight goal is not extended past a SOFT/HARD node."""
+    nav_through_nodes_param = Parameter(
+        "enable_nav_through_nodes", type_=Parameter.Type.BOOL, value=True)
+    node = VDA5050Controller(parameter_overrides=[nav_through_nodes_param])
+
+    # Mocks the ExtendNavigation client to capture its requests and answer them immediately.
+    from vda5050_connector.srv import ExtendNavigation
+    mock_extend_future = Future()
+    mock_extend_future.set_result(ExtendNavigation.Response(success=True, message="ok"))
+    node._extend_nav_svc_cli = mocker.MagicMock()
+    node._extend_nav_svc_cli.service_is_ready = mocker.MagicMock(return_value=True)
+    node._extend_nav_svc_cli.call_async = mocker.MagicMock(return_value=mock_extend_future)
+
+    # Builds the graph A → B → C (HARD) → D → E used by the orders below.
+    hard_action = Action(action_type="pick", action_id="pick_C", blocking_type=Action.HARD)
+    a = Node(node_id="A", sequence_id=0, released=True)
+    b = Node(node_id="B", sequence_id=2, released=True)
+    c = Node(node_id="C", sequence_id=4, released=True, actions=[hard_action])
+    d = Node(node_id="D", sequence_id=6, released=True)
+    e = Node(node_id="E", sequence_id=8, released=True)
+    e1 = Edge(edge_id="e1", sequence_id=1, released=True, start_node_id="A", end_node_id="B")
+    e2 = Edge(edge_id="e2", sequence_id=3, released=True, start_node_id="B", end_node_id="C")
+    e3 = Edge(edge_id="e3", sequence_id=5, released=True, start_node_id="C", end_node_id="D")
+    e4 = Edge(edge_id="e4", sequence_id=7, released=True, start_node_id="D", end_node_id="E")
+    order_id = str(uuid4())
+
+    # Sends a goal A → B, with C (HARD) still in the horizon.
+    c_horizon = Node(node_id="C", sequence_id=4, released=False, actions=[hard_action])
+    e2_horizon = Edge(
+        edge_id="e2", sequence_id=3, released=False, start_node_id="B", end_node_id="C")
+    node.process_order(make_order(order_id, 0, [a, b, c_horizon], [e1, e2_horizon]))
+    rclpy.spin_once(node)
+    rclpy.spin_once(adapter_node)
+    assert node._nav_through_nodes_last_seq == 2
+
+    # Extends the goal up to C only when the stitch releases C (HARD) and D.
+    node.process_order(make_order(order_id, 1, [b, c, d], [e2, e3]))
+    req = node._extend_nav_svc_cli.call_async.call_args[0][0]
+    assert [n.node_id for n in req.nodes] == ["B", "C"]
+    assert [e.edge_id for e in req.edges] == ["e2"]
+    assert node._nav_through_nodes_last_seq == 4
+
+    # Keeps the goal ending at C (HARD), even once the stitch releases E.
+    node._extend_nav_svc_cli.call_async.reset_mock()
+    node.process_order(make_order(order_id, 2, [d, e], [e4]))
+    node._extend_nav_svc_cli.call_async.assert_not_called()
+    assert node._nav_through_nodes_last_seq == 4
+
+
+def test_feedback_does_not_target_node_beyond_goal(
+    adapter_node,
+    action_server_nav_through_nodes,
+    action_server_process_vda_action,
+    service_get_state,
+    service_supported_actions,
+):
+    """Test that a released node beyond the goal's end is not taken as the navigation target.
+
+    When a goal stops on a SOFT/HARD node, the nodes after it may already be released
+    but are not part of the goal. Keeping the navigation target within the goal prevents
+    the controller from believing it already drives to these nodes, which would leave the
+    robot idle once the blocking action finishes.
+    """
+    nav_through_nodes_param = Parameter(
+        "enable_nav_through_nodes", type_=Parameter.Type.BOOL, value=True)
+    node = VDA5050Controller(parameter_overrides=[nav_through_nodes_param])
+
+    # Builds the graph A → B (HARD) → C used by the order below.
+    hard_action = Action(action_type="pick", action_id="pick_B", blocking_type=Action.HARD)
+    a = Node(node_id="A", sequence_id=0, released=True)
+    b = Node(node_id="B", sequence_id=2, released=True, actions=[hard_action])
+    c = Node(node_id="C", sequence_id=4, released=True)
+    e1 = Edge(edge_id="e1", sequence_id=1, released=True, start_node_id="A", end_node_id="B")
+    e2 = Edge(edge_id="e2", sequence_id=3, released=True, start_node_id="B", end_node_id="C")
+
+    # Sends a goal A → B that stops on B (HARD) while C is already released.
+    node.process_order(make_order(str(uuid4()), 0, [a, b, c], [e1, e2]))
+    node._on_active_order()
+    assert node._nav_through_nodes_last_seq == 2
+
+    # Does not take C as the navigation target on arrival at B.
+    feedback_msg = NavigateThroughNodes.Impl.FeedbackMessage()
+    feedback_msg.feedback.last_node = b
+    node._navigate_through_nodes_feedback_callback(feedback_msg)
+    assert node._current_state.last_node_id == "B"
+    assert node._current_node_goal is None
+
+
+def test_extension_restores_target_cleared_by_earlier_feedback(
+    mocker,
+    adapter_node,
+    action_server_nav_through_nodes,
+    action_server_process_vda_action,
+    service_get_state,
+    service_supported_actions,
+):
+    """Test that a confirmed extension restores the navigation target.
+
+    When the robot reaches the goal's end before the extension response arrives, feedback
+    clears the target since the next node is not yet part of the goal. Restoring it keeps
+    node arrivals on the extended segment reported.
+    """
+    nav_through_nodes_param = Parameter(
+        "enable_nav_through_nodes", type_=Parameter.Type.BOOL, value=True)
+    node = VDA5050Controller(parameter_overrides=[nav_through_nodes_param])
+
+    # Mocks the ExtendNavigation client with a response the test delivers later.
+    from vda5050_connector.srv import ExtendNavigation
+    extend_future = Future()
+    node._extend_nav_svc_cli = mocker.MagicMock()
+    node._extend_nav_svc_cli.call_async = mocker.MagicMock(return_value=extend_future)
+
+    # Builds the graph A → B → C → D used by the orders below.
+    a = Node(node_id="A", sequence_id=0, released=True)
+    b = Node(node_id="B", sequence_id=2, released=True)
+    c = Node(node_id="C", sequence_id=4, released=True)
+    d = Node(node_id="D", sequence_id=6, released=True)
+    e1 = Edge(edge_id="e1", sequence_id=1, released=True, start_node_id="A", end_node_id="B")
+    e2 = Edge(edge_id="e2", sequence_id=3, released=True, start_node_id="B", end_node_id="C")
+    e3 = Edge(edge_id="e3", sequence_id=5, released=True, start_node_id="C", end_node_id="D")
+    order_id = str(uuid4())
+
+    # Sends a goal A → B, with C still in the horizon.
+    c_horizon = Node(node_id="C", sequence_id=4, released=False)
+    e2_horizon = Edge(
+        edge_id="e2", sequence_id=3, released=False, start_node_id="B", end_node_id="C")
+    node.process_order(make_order(order_id, 0, [a, b, c_horizon], [e1, e2_horizon]))
+    rclpy.spin_once(node)
+    rclpy.spin_once(adapter_node)
+    assert node._nav_through_nodes_last_seq == 2
+
+    # Requests an extension up to D when the stitch releases C and D.
+    node.process_order(make_order(order_id, 1, [b, c, d], [e2, e3]))
+    node._extend_nav_svc_cli.call_async.assert_called_once()
+
+    # Clears the target on arrival at B: C is not part of the goal until the extension
+    # is confirmed.
+    feedback_msg = NavigateThroughNodes.Impl.FeedbackMessage()
+    feedback_msg.feedback.last_node = b
+    node._navigate_through_nodes_feedback_callback(feedback_msg)
+    assert node._current_node_goal is None
+
+    # Restores C as the target once the extension is confirmed.
+    extend_future.set_result(ExtendNavigation.Response(success=True, message="ok"))
+    assert node._nav_through_nodes_last_seq == 6
+    assert node._current_node_goal == c
+
+
 def test_stitch_preserves_action_statuses(
     mocker,
     adapter_node,
@@ -1497,10 +1627,9 @@ def test_stitch_no_actions_on_stitch_node(
 
     # Base order: A(0) --[e1 w/ edge_action]--> B(2) --[e2 unreleased]--> C(4 unreleased)
     # The horizon keeps has_current_order() True after reaching B.
-    base_order = Order(
-        header_id=0, timestamp=get_vda5050_ts(), version="1.1.1",
-        manufacturer="MANUFACTURER", serial_number="SERIAL_NUMBER",
-        order_id=order_id, order_update_id=0,
+    base_order = make_order(
+        order_id=order_id,
+        order_update_id=0,
         nodes=[
             Node(node_id="A", sequence_id=0, released=True,
                  node_position=NodePosition(x=0.0, y=0.0, theta=0.0, map_id="map")),
@@ -1519,10 +1648,9 @@ def test_stitch_no_actions_on_stitch_node(
     )
 
     # Stitch order: B(2, no actions) --> C(4, node_c_action)
-    stitch_order = Order(
-        header_id=0, timestamp=get_vda5050_ts(), version="1.1.1",
-        manufacturer="MANUFACTURER", serial_number="SERIAL_NUMBER",
-        order_id=order_id, order_update_id=1,
+    stitch_order = make_order(
+        order_id=order_id,
+        order_update_id=1,
         nodes=[
             Node(node_id="B", sequence_id=2, released=True,
                  node_position=NodePosition(x=1.0, y=0.0, theta=0.0, map_id="map")),
@@ -1563,10 +1691,9 @@ def test_stitch_no_actions_on_stitch_node(
 
 def get_order_with_node_b_action(blocking_type):
     """A(0) --e1--> B(2, one action of ``blocking_type``) --e2--> C(4), all released."""
-    return Order(
-        header_id=0, timestamp=get_vda5050_ts(), version="1.1.1",
-        manufacturer="MANUFACTURER", serial_number="SERIAL_NUMBER",
-        order_id=str(uuid4()), order_update_id=0,
+    return make_order(
+        order_id=str(uuid4()),
+        order_update_id=0,
         nodes=[
             Node(node_id="A", sequence_id=0, released=True,
                  node_position=NodePosition(x=0.0, y=0.0, theta=0.0, map_id="map")),
