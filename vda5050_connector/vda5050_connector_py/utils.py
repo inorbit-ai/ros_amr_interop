@@ -287,7 +287,10 @@ def get_vda5050_ros2_topic(
     Note that these topics follow the same structure as the one defined on the
     VDA5050 standard, but preceded by ``/``.
 
-    Example: /uagv/v2/KIT/0001/order
+    The manufacturer and serial number are sanitized into valid ROS2 name tokens
+    (see ``to_ros_name_token``); the MQTT topics keep them unchanged.
+
+    Example: serial number ``0001`` gives /uagv/v2/KIT/_0001/order
 
 
     Args
@@ -306,17 +309,14 @@ def get_vda5050_ros2_topic(
 
     Returns
     -------
-        string: MQTT topic
+        string: ROS2 topic
 
     """
-    mqtt_topic = get_vda5050_mqtt_topic(
-        manufacturer, serial_number, topic, major_version, interface_name)
-    # MQTT topics keep the names as they are; only the ROS2 topic needs valid name tokens.
-    interface, version, _, _, subtopic = mqtt_topic.split("/")
-    return "/" + "/".join(
-        [interface, version, to_ros_name_token(manufacturer), to_ros_name_token(serial_number),
-         subtopic]
-    )
+    # Validates topic and major_version. MQTT topics keep the names as they are;
+    # only the ROS2 topic needs valid name tokens.
+    get_vda5050_mqtt_topic(manufacturer, serial_number, topic, major_version, interface_name)
+    return (f"/{interface_name}/{major_version}/{to_ros_name_token(manufacturer)}/"
+            f"{to_ros_name_token(serial_number)}/{topic}")
 
 
 def to_ros_name_token(name):

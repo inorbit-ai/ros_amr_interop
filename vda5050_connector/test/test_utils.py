@@ -145,6 +145,12 @@ def test_get_vda5050_mqtt_topic_exceptions(test_input, expectation):
              "major_version": "v2"},
             "/uagv/v2/Acme_Robots/AB_12_3/order",
         ),
+        # A multi-level interface name, e.g. for a cloud broker (VDA5050 section 6.3)
+        (
+            {"manufacturer": "M", "serial_number": "SN-0007", "topic": "order",
+             "interface_name": "fleet/uagv", "major_version": "v2"},
+            "/fleet/uagv/v2/M/SN_0007/order",
+        ),
     ],
 )
 def test_get_vda5050_ros2_topic(test_input, expected):
