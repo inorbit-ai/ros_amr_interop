@@ -287,7 +287,10 @@ def get_vda5050_ros2_topic(
     Note that these topics follow the same structure as the one defined on the
     VDA5050 standard, but preceded by ``/``.
 
-    Example: /uagv/v2/KIT/0001/order
+    The manufacturer and serial number are sanitized into valid ROS2 name tokens
+    (see ``to_ros_name_token``); the MQTT topics keep them unchanged.
+
+    Example: serial number ``0001`` gives /uagv/v2/KIT/_0001/order
 
 
     Args
@@ -306,11 +309,33 @@ def get_vda5050_ros2_topic(
 
     Returns
     -------
-        string: MQTT topic
+        string: ROS2 topic
 
     """
-    mqtt_topic = get_vda5050_mqtt_topic(
-        manufacturer, serial_number, topic, major_version, interface_name)
-    return (
-        f"/{mqtt_topic}"
-    )
+    # Validates topic and major_version. MQTT topics keep the names as they are;
+    # only the ROS2 topic needs valid name tokens.
+    get_vda5050_mqtt_topic(manufacturer, serial_number, topic, major_version, interface_name)
+    return (f"/{interface_name}/{major_version}/{to_ros_name_token(manufacturer)}/"
+            f"{to_ros_name_token(serial_number)}/{topic}")
+
+
+def to_ros_name_token(name):
+    """
+    Turn a VDA5050 name into a valid ROS2 topic name token.
+
+    VDA5050 allows ``A-Z a-z 0-9 _ - . :`` in serial numbers, but a ROS2 name token
+    only allows ``A-Z a-z 0-9 _`` and must not start with a digit. Other characters
+    become ``_``, and a leading digit gets a ``_`` prefix: ``SN-0007`` -> ``SN_0007``,
+    ``0001`` -> ``_0001``.
+
+    Args
+    ----
+        name (string): Manufacturer or serial number.
+
+    Returns
+    -------
+        string: Valid ROS2 topic name token.
+
+    """
+    token = re.sub(r"[^A-Za-z0-9_]", "_", name)
+    return f"_{token}" if token[:1].isdigit() else token
