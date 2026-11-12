@@ -29,6 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import math
 import ssl
 from uuid import uuid4
 from paho.mqtt.client import MQTTMessage
@@ -369,6 +370,26 @@ def test_vda5050_mqtt_bridge_generate_vda_order_msg(mocker):
     assert edge_3.actions == []
 
 
+def test_vda5050_mqtt_bridge_generate_vda_order_msg_without_theta(mocker):
+    # theta is optional in nodePosition: a missing theta becomes NaN ("not given")
+    order = get_order()
+    del order["nodes"][0]["node_position"]["theta"]
+    order_vda_msg = generate_vda_order_msg(order)
+
+    nodes = order_vda_msg["nodes"]
+    assert math.isnan(nodes[0].node_position.theta)
+    assert nodes[0].node_position.x == -2.0
+    assert nodes[1].node_position.theta == 0.0
+
+
+def test_vda5050_mqtt_bridge_generate_vda_order_msg_null_theta(mocker):
+    # The schema doesn't allow "theta": null, so it's an error, not "not given"
+    order = get_order()
+    order["nodes"][0]["node_position"]["theta"] = None
+    with pytest.raises(TypeError):
+        generate_vda_order_msg(order)
+
+
 def test_vda5050_mqtt_bridge_generate_vda_instant_action_msg(mocker):
     instant_action = get_instant_action()
     instant_action_vda_msg = generate_vda_instant_action_msg(instant_action)
@@ -669,3 +690,55 @@ def test_vda5050_mqtt_bridge_on_valid_vda5050_mqtt_messages(
         mqtt_bridge._instant_actions_pub.publish.assert_called_once()
     else:
         assert False
+
+
+def get_order_with_one_node(node_position):
+    return json.dumps(
+        {
+            "headerId": 1,
+            "timestamp": "1970-01-01T12:00:00.00Z",
+            "version": "2.0.0",
+            "manufacturer": "foo",
+            "serialNumber": "123",
+            "orderId": "order1",
+            "orderUpdateId": 0,
+            "nodes": [
+                {
+                    "nodeId": "node1",
+                    "sequenceId": 0,
+                    "released": True,
+                    "nodePosition": node_position,
+                    "actions": [],
+                }
+            ],
+            "edges": [],
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    "node_position,published",
+    [
+        ({"x": 1.0, "y": 2.0, "mapId": "map"}, True),
+        ({"x": 1.0, "y": 2.0, "theta": None, "mapId": "map"}, False),
+    ],
+)
+def test_vda5050_mqtt_bridge_on_order_theta_missing_or_null(
+    setup_rclpy, mocker, mock_mqtt_client, node_position, published
+):
+    # A missing theta is accepted; a null theta is ignored without raising, which would
+    # end the MQTT client's network thread
+    mqtt_bridge = MQTTBridge()
+    mocker.patch.object(mqtt_bridge, "_order_pub", return_value=MagicMock())
+    mocker.patch.object(mqtt_bridge, "_instant_actions_pub", return_value=MagicMock())
+
+    mqtt_message = MQTTMessage(topic=str.encode("foo/bar/order"))
+    mqtt_message.payload = str.encode(get_order_with_one_node(node_position))
+    mqtt_bridge.on_message_mqtt(mqtt_bridge.mqtt_client, ..., mqtt_message)
+
+    if published:
+        mqtt_bridge._order_pub.publish.assert_called_once()
+        order = mqtt_bridge._order_pub.publish.call_args.kwargs["msg"]
+        assert math.isnan(order.nodes[0].node_position.theta)
+    else:
+        mqtt_bridge._order_pub.publish.assert_not_called()

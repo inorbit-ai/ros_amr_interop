@@ -88,9 +88,10 @@ def generate_vda_order_msg(order):
         for k in ["x", "y"]:
             node["node_position"][k] = float(node["node_position"][k])
         # VDA 5050 2.x nodePosition.theta is optional ("the vehicle can plan the path by
-        # itself"); NaN means "not given".
-        theta = node["node_position"].get("theta")
-        node["node_position"]["theta"] = float("nan") if theta is None else float(theta)
+        # itself"); NaN means "not given". Only a missing theta is "not given": the schema
+        # doesn't allow null, so "theta": null raises TypeError and the order is ignored.
+        theta = node["node_position"].get("theta", float("nan"))
+        node["node_position"]["theta"] = float(theta)
         node["node_position"] = VDANodePosition(**node["node_position"])
         for action in node["actions"]:
             if "action_parameters" in action:
@@ -384,7 +385,9 @@ class MQTTBridge(Node):
                     **generate_vda_instant_action_msg(msg_json)
                 )
                 self._instant_actions_pub.publish(msg=vda_instant_actions_message)
-        except KeyError as ex:
+        except (KeyError, TypeError) as ex:
+            # TypeError: e.g. float(None) for a null number. Uncaught, it would end the
+            # MQTT client's network thread.
             self.logger.warn(f"Ignoring invalid VDA5050 message: {ex}.")
             return
 

@@ -29,6 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import math
+
 from action_msgs.msg import GoalStatus
 import rclpy
 from rclpy.logging import LoggingSeverity
@@ -36,6 +38,8 @@ from rclpy.task import Future
 from rclpy.parameter import Parameter
 
 from uuid import uuid4
+
+import pytest
 
 from vda5050_connector_py.vda5050_controller import VDA5050Controller
 from vda5050_connector_py.vda5050_controller import OrderAcceptModes
@@ -745,6 +749,48 @@ def test_vda5050_controller_node_stitch_order(
 
     assert node._current_state.last_node_id == "node3"
     assert node._current_state.last_node_sequence_id == 4
+
+
+@pytest.mark.parametrize(
+    "base_theta,stitch_theta,accepted",
+    [
+        (math.nan, math.nan, True),  # neither gives theta: the same node
+        (math.nan, 0.5, False),  # only one gives theta: not the same node position
+        (0.5, math.nan, False),
+    ],
+)
+def test_vda5050_controller_node_stitch_order_theta_not_given(
+    mocker,
+    adapter_node,
+    action_server_nav_to_node,
+    action_server_process_vda_action,
+    service_get_state,
+    service_supported_actions,
+    base_theta,
+    stitch_theta,
+    accepted,
+):
+    node = VDA5050Controller()
+    spy_accept_order = mocker.spy(node, "_accept_order")
+    spy_reject_order = mocker.spy(node, "_reject_order")
+
+    [base_order, stitch_order] = get_stitch_orders()
+    base_order.nodes[1].node_position.theta = base_theta
+    stitch_order.nodes[0].node_position.theta = stitch_theta
+
+    node.process_order(base_order)
+    rclpy.spin_once(node)
+    rclpy.spin_once(adapter_node)
+
+    spy_accept_order.reset_mock()
+    node.process_order(stitch_order)
+    if accepted:
+        spy_accept_order.assert_called_once_with(order=stitch_order, mode=OrderAcceptModes.STITCH)
+        spy_reject_order.assert_not_called()
+    else:
+        spy_accept_order.assert_not_called()
+        spy_reject_order.assert_called_once()
+        assert spy_reject_order.call_args.kwargs["error"] == OrderRejectErrors.ORDER_UPDATE_ERROR
 
 
 def test_vda5050_controller_node_reject_order(

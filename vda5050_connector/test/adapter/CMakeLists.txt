@@ -29,6 +29,10 @@ add_dependencies_to_test(test_node_config)
 ament_add_gtest(test_plugin_load plugin_load/plugin_load_test.cpp)
 add_dependencies_to_test(test_plugin_load)
 
+# TEST - UTILS
+ament_add_gtest(test_utils_cpp utils/utils_test.cpp)
+add_dependencies_to_test(test_utils_cpp)
+
 # TEST - PLUGIN LOAD
 ament_add_gtest(test_handler_execution handler_execution/handler_execution_test.cpp)
 add_dependencies_to_test(test_handler_execution)

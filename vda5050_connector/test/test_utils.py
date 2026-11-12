@@ -29,6 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import json
+
 import pytest
 
 from vda5050_connector_py.utils import json_camel_to_snake_case
@@ -190,3 +192,23 @@ def test_get_vda5050_mqtt_topic_keeps_the_serial_number():
 def test_get_vda5050_ros2_topic_exceptions(test_input, expectation):
     with expectation:
         assert get_vda5050_ros2_topic(**test_input) == expectation
+
+
+def test_convert_ros_message_to_json_leaves_out_an_undefined_theta():
+    # A node without theta is NaN in ROS; the published state must stay valid JSON
+    import math
+    from vda5050_connector_py.utils import convert_ros_message_to_json
+    from vda5050_msgs.msg import NodePosition
+    from vda5050_msgs.msg import NodeState
+
+    node_state = NodeState(
+        node_id="n1", sequence_id=0, released=True,
+        node_position=NodePosition(x=1.0, y=2.0, theta=math.nan, map_id="map"),
+    )
+
+    def no_nan(token):
+        raise ValueError(f"{token} is not JSON")
+
+    msg = json.loads(convert_ros_message_to_json(node_state), parse_constant=no_nan)
+    assert "theta" not in msg["nodePosition"]
+    assert msg["nodePosition"]["x"] == 1.0
