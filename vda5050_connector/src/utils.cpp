@@ -34,6 +34,8 @@
  */
 #include "vda5050_connector/utils.hpp"
 
+#include <cmath>
+
 #include "tf2/LinearMath/Quaternion.h"
 
 namespace vda5050_connector
@@ -86,8 +88,12 @@ geometry_msgs::msg::PoseStamped get_pose_from_node(const vda5050_msgs::msg::Node
   pose_stamped.pose.position.x = node.node_position.x;
   pose_stamped.pose.position.y = node.node_position.y;
 
+  // A node without theta (NaN) leaves the orientation to the vehicle. NaN would make the
+  // quaternion invalid, so use yaw 0; handlers that care can check
+  // std::isnan(node.node_position.theta) themselves.
+  const double theta = std::isnan(node.node_position.theta) ? 0.0 : node.node_position.theta;
   tf2::Quaternion q;
-  q.setRPY(0, 0, node.node_position.theta);
+  q.setRPY(0, 0, theta);
   pose_stamped.pose.orientation.x = q.getX();
   pose_stamped.pose.orientation.y = q.getY();
   pose_stamped.pose.orientation.z = q.getZ();

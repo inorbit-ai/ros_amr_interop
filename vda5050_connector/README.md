@@ -33,6 +33,10 @@ The package is also a library package; it exports the headers and binary files t
 
 To do this this, you can check the [vda5050_examples](https://github.com/inorbit-ai/vda5050_adapter_examples) repository, where you will find examples of adapter packages, for python and C++, as well as docker scripts to quickly start testing them.
 
+### Nodes without `theta`
+
+`theta` is optional in a node's `nodePosition`: without it, the vehicle may plan its own heading. The connector passes a missing `theta` to the adapter as NaN, so NavToNode and NavThroughNodes handlers may receive `node_position.theta` as NaN; check it with `std::isnan` (C++) or `math.isnan` (Python). `get_pose_from_node` falls back to yaw 0 for such a node rather than returning a NaN quaternion. An order with `"theta": null` isn't schema-valid and is ignored.
+
 ### Dependencies
 
 - ROS2 - ament_cmake: The package is based on ROS2, and uses `ament_cmake`.

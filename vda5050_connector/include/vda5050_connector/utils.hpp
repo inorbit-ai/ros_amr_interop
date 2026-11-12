@@ -89,6 +89,7 @@ std::string to_snake_case(const std::string & camel_case_msg);
 
 /**
  * @brief Get a pose stamped msg from a VDANode msg object.
+ * A node without theta (NaN) gets yaw 0.
  * @param node VDA5050 node to get the pose from.
  * @return Pose stamped msg.
  */
