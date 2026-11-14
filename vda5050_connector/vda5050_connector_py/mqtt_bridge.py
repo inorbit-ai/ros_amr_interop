@@ -50,6 +50,7 @@ from vda5050_connector_py.utils import convert_ros_message_to_json
 from vda5050_connector_py.utils import get_vda5050_ts
 
 from vda5050_connector_py.vda5050_controller import DEFAULT_PROTOCOL_VERSION, SUPPORTED_PROTOCOL_VERSIONS
+from vda5050_connector_py.vda5050_controller import OrderRejectErrors
 
 # ROS msgs / srvs / actions
 from vda5050_msgs.msg import Action as VDAAction
@@ -382,23 +383,22 @@ class MQTTBridge(Node):
             if msg.topic.endswith("order"):
                 try:
                     vda_order_msg = VDAOrder(**generate_vda_order_msg(msg_json))
-                except (KeyError, ValueError, TypeError) as ex:
+                except (KeyError, ValueError, TypeError, AssertionError) as ex:
+                    # AssertionError: the generated message classes assert on a field of the
+                    # wrong type or out of range, and on an unknown field
+                    self.logger.warn(f"Rejecting invalid VDA5050 order: {ex}.")
                     self._report_undecodable_order(msg_json, ex)
-                    raise
+                    return
                 self._order_pub.publish(msg=vda_order_msg)
             if msg.topic.endswith("instantActions"):
                 vda_instant_actions_message = VDAInstantActions(
                     **generate_vda_instant_action_msg(msg_json)
                 )
                 self._instant_actions_pub.publish(msg=vda_instant_actions_message)
-        except (KeyError, TypeError) as ex:
-            # TypeError: e.g. float(None) for a null number. Uncaught, it would end the
-            # MQTT client's network thread.
-            self.logger.warn(f"Ignoring invalid VDA5050 message: {ex}.")
-            return
-        except (ValueError, TypeError) as ex:
-            if not msg.topic.endswith("order"):
-                raise
+        except (KeyError, ValueError, TypeError, AssertionError) as ex:
+            # TypeError: e.g. float(None) for a null number; AssertionError: a field of the
+            # wrong type, out of range or unknown. Uncaught, any of these would end the MQTT
+            # client's network thread.
             self.logger.warn(f"Ignoring invalid VDA5050 message: {ex}.")
             return
 
@@ -414,7 +414,7 @@ class MQTTBridge(Node):
                     )
         self._order_errors_pub.publish(
             VDAError(
-                error_type="validationError",
+                error_type=OrderRejectErrors.VALIDATION_ERROR.value,
                 error_description=f"order rejected: cannot decode: {reason}",
                 error_level=VDAError.WARNING,
                 error_references=references,

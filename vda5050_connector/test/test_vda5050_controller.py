@@ -55,6 +55,8 @@ from vda5050_msgs.msg import Action
 from vda5050_msgs.msg import ActionParameter
 from vda5050_msgs.msg import InstantActions
 from vda5050_msgs.msg import CurrentAction
+from vda5050_msgs.msg import Error
+from vda5050_msgs.msg import ErrorReference
 
 
 def succeeded_result(action_type):
@@ -1824,3 +1826,26 @@ def test_nav_to_node_drives_while_none_action_runs(
     spy_send_adapter_navigate_to_node.assert_called_once_with(
         edge=order.edges[1], node=order.nodes[2]
     )
+
+
+def test_vda5050_controller_reports_undecodable_order(
+    mocker,
+    adapter_node,
+    action_server_nav_to_node,
+    action_server_process_vda_action,
+    service_get_state,
+    service_supported_actions,
+):
+    # The bridge sets the error type; the controller adds the error to the state as given
+    node = VDA5050Controller()
+    error = Error(
+        error_type=OrderRejectErrors.VALIDATION_ERROR.value,
+        error_description="order rejected: cannot decode: missing field 'nodes'",
+        error_level=Error.WARNING,
+        error_references=[ErrorReference(reference_key="order_id", reference_value="o1")],
+    )
+
+    node._report_undecodable_order(error)
+
+    assert node._current_state.errors[-1] == error
+    assert node._current_state.errors[-1].error_type == "validationError"

@@ -49,6 +49,7 @@ from vda5050_msgs.msg import Edge
 from vda5050_msgs.msg import OrderState
 from vda5050_msgs.msg import Action
 from vda5050_msgs.msg import Connection
+from vda5050_msgs.msg import Error
 from vda5050_msgs.msg import Visualization
 from vda5050_msgs.msg import InstantActions
 
@@ -742,3 +743,78 @@ def test_vda5050_mqtt_bridge_on_order_theta_missing_or_null(
         assert math.isnan(order.nodes[0].node_position.theta)
     else:
         mqtt_bridge._order_pub.publish.assert_not_called()
+
+
+def get_order_json_with(path, value):
+    # A valid order with one field (a key path, or a new key for an unknown field) set to value
+    node_position = {"x": 1.0, "y": 2.0, "theta": 0.0, "mapId": "map"}
+    order = json.loads(get_order_with_one_node(node_position))
+    *parents, key = path
+    target = order
+    for parent in parents:
+        target = target[parent]
+    if value is KeyError:
+        del target[key]
+    else:
+        target[key] = value
+    return json.dumps(order)
+
+
+@pytest.mark.parametrize(
+    "path,value",
+    [
+        (["orderId"], 123),  # wrong type: AssertionError from the message class
+        (["orderUpdateId"], "1"),
+        (["orderUpdateId"], -1),  # out of range (uint32)
+        (["nodes", 0, "sequenceId"], 2.5),
+        (["fooBar"], "baz"),  # unknown field
+        (["nodes"], KeyError),  # missing required field
+        (["nodes", 0, "nodePosition", "theta"], None),  # null number: TypeError
+    ],
+)
+def test_vda5050_mqtt_bridge_reports_undecodable_orders(
+    setup_rclpy, mocker, mock_mqtt_client, path, value
+):
+    # VDA 5050 6.6.4.1: a malformed order is rejected with a validationError in the state,
+    # not dropped silently, and must not end the MQTT client's network thread
+    mqtt_bridge = MQTTBridge()
+    mocker.patch.object(mqtt_bridge, "_order_pub", return_value=MagicMock())
+    mocker.patch.object(mqtt_bridge, "_order_errors_pub", return_value=MagicMock())
+
+    mqtt_message = MQTTMessage(topic=str.encode("foo/bar/order"))
+    mqtt_message.payload = str.encode(get_order_json_with(path, value))
+    mqtt_bridge.on_message_mqtt(mqtt_bridge.mqtt_client, ..., mqtt_message)
+
+    mqtt_bridge._order_pub.publish.assert_not_called()
+    mqtt_bridge._order_errors_pub.publish.assert_called_once()
+    error = mqtt_bridge._order_errors_pub.publish.call_args.args[0]
+    assert error.error_type == "validationError"
+    assert error.error_level == Error.WARNING
+    assert error.error_description.startswith("order rejected: cannot decode: ")
+    assert error.error_references[0].reference_key == "order_id"
+    assert error.error_references[0].reference_value == ("123" if path == ["orderId"] else "order1")
+
+
+def test_vda5050_mqtt_bridge_ignores_instant_actions_of_the_wrong_type(
+    setup_rclpy, mocker, mock_mqtt_client
+):
+    # AssertionError from the message class is caught for instant actions too
+    mqtt_bridge = MQTTBridge()
+    mocker.patch.object(mqtt_bridge, "_instant_actions_pub", return_value=MagicMock())
+    mocker.patch.object(mqtt_bridge, "_order_errors_pub", return_value=MagicMock())
+
+    mqtt_message = MQTTMessage(topic=str.encode("foo/bar/instantActions"))
+    mqtt_message.payload = json.dumps(
+        {
+            "headerId": "one",
+            "timestamp": "1970-01-01T12:00:00.00Z",
+            "version": "2.0.0",
+            "manufacturer": "foo",
+            "serialNumber": "123",
+            "actions": [],
+        }
+    ).encode()
+    mqtt_bridge.on_message_mqtt(mqtt_bridge.mqtt_client, ..., mqtt_message)
+
+    mqtt_bridge._instant_actions_pub.publish.assert_not_called()
+    mqtt_bridge._order_errors_pub.publish.assert_not_called()
