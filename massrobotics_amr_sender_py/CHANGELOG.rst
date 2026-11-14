@@ -2,6 +2,11 @@
 Changelog for package massrobotics_amr_sender
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.0.0 (2026-11-14)
+------------------
+* Fixed the ``EulerZYX`` call for PyKDL on ROS 2 Humble. (`#77 <https://github.com/inorbit-ai/ros_amr_interop/issues/77>`_)
+* README link and lint fixes. (`#78 <https://github.com/inorbit-ai/ros_amr_interop/issues/78>`_, `#79 <https://github.com/inorbit-ai/ros_amr_interop/issues/79>`_)
+
 1.1.1 (2022-10-28)
 ------------------
 * Fixed ROS buildfarm job (`#29 <https://github.com/inorbit-ai/ros_amr_interop/issues/29>`_)
