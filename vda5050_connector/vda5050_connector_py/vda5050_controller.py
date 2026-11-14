@@ -1437,7 +1437,7 @@ class VDA5050Controller(Node):
 
     def _report_undecodable_order(self, error: VDAError):
         """Add an order error published by the bridge to the state errors."""
-        self.logger.warn(f"Order rejected: {error.error_description}")
+        self.logger.warn(error.error_description)
         self._update_state({"errors": self._current_state.errors + [error]}, publish_now=True)
 
     def _cancel_order(self):

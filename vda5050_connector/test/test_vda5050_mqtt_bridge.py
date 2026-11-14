@@ -818,3 +818,50 @@ def test_vda5050_mqtt_bridge_ignores_instant_actions_of_the_wrong_type(
 
     mqtt_bridge._instant_actions_pub.publish.assert_not_called()
     mqtt_bridge._order_errors_pub.publish.assert_not_called()
+
+
+@pytest.mark.parametrize("payload", [b"\x80abc", b"{bad", b"[]", b"null", b"5"])
+def test_vda5050_mqtt_bridge_rejects_undecodable_payloads(
+    setup_rclpy, mocker, mock_mqtt_client, payload
+):
+    # A payload that isn't UTF-8, isn't JSON or isn't a JSON object must not end the MQTT
+    # client's network thread. On the order topic it is a malformed order (validationError).
+    mqtt_bridge = MQTTBridge()
+    for publisher in ("_order_pub", "_instant_actions_pub", "_order_errors_pub"):
+        mocker.patch.object(mqtt_bridge, publisher, return_value=MagicMock())
+
+    for topic in ("order", "instantActions"):
+        mqtt_message = MQTTMessage(topic=str.encode(f"foo/bar/{topic}"))
+        mqtt_message.payload = payload
+        mqtt_bridge.on_message_mqtt(mqtt_bridge.mqtt_client, ..., mqtt_message)
+
+    mqtt_bridge._order_pub.publish.assert_not_called()
+    mqtt_bridge._instant_actions_pub.publish.assert_not_called()
+    mqtt_bridge._order_errors_pub.publish.assert_called_once()
+    error = mqtt_bridge._order_errors_pub.publish.call_args.args[0]
+    assert error.error_type == "validationError"
+    assert error.error_references == []
+
+
+@pytest.mark.parametrize(
+    "version, key, other_key",
+    [("2.0.0", "information", "informations"), ("1.1.0", "informations", "information")],
+)
+def test_vda5050_mqtt_bridge_state_information_field(
+    setup_rclpy, mocker, mock_mqtt_client, version, key, other_key
+):
+    # VDA 5050 2.x renamed the state's "informations" (1.x) to "information"
+    mocker.patch(
+        "vda5050_connector_py.mqtt_bridge.read_str_parameter",
+        side_effect=lambda node, name, alternative: (
+            version if name == "vda5050_protocol_version" else alternative
+        ),
+    )
+    mqtt_bridge = MQTTBridge()
+    mqtt_bridge._publish_state(OrderState())
+
+    topic, payload = mqtt_bridge.mqtt_client.publish.call_args.args
+    assert topic.endswith("/state")
+    state = json.loads(payload)
+    assert state[key] == []
+    assert other_key not in state

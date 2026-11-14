@@ -11,6 +11,10 @@ Forthcoming
 * New ``known_map_ids`` parameter: when set, orders whose nodes reference
   any other ``mapId`` are rejected with ``validationError``.
   (`#83 <https://github.com/inorbit-ai/ros_amr_interop/issues/83>`_)
+* With VDA 5050 2.x, the ``state`` message now carries ``information``, the 2.x
+  field name, instead of the 1.x ``informations``. The ROS 2 ``OrderState``
+  message keeps ``informations``; 1.x is unchanged.
+  (`#43 <https://github.com/inorbit-ai/ros_amr_interop/issues/43>`_)
 
 1.1.1 (2022-10-28)
 ------------------

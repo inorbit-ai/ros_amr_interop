@@ -374,9 +374,15 @@ class MQTTBridge(Node):
         """MQTT client message callback."""
         try:
             msg_json = json_camel_to_snake_case(msg.payload)
+            if not isinstance(msg_json, dict):
+                raise ValueError("not a JSON object")
             self.logger.debug(f"Received '{msg_json}' from '{msg.topic}' topic")
-        except json.decoder.JSONDecodeError:
+        except ValueError as ex:
+            # JSONDecodeError, or UnicodeDecodeError for a payload that isn't UTF-8. Uncaught,
+            # it would end the MQTT client's network thread.
             self.logger.error(f"Failed to decode message: '{msg.payload}'")
+            if msg.topic.endswith("order"):
+                self._report_undecodable_order(None, ex)
             return
 
         try:
@@ -579,7 +585,16 @@ class MQTTBridge(Node):
             major_version=self.vda5050_version_alias,
             interface_name=self._interface_name
         )
-        self._publish_to_topic(msg, topic)
+        if self.vda5050_version_alias == "v1":
+            self._publish_to_topic(msg, topic)
+            return
+        # VDA 5050 2.x renamed the 1.x "informations" field to "information". The ROS message
+        # keeps the 1.x name, which adapters use.
+        state = json.loads(convert_ros_message_to_json(msg))
+        state["information"] = state.pop("informations")
+        state = json.dumps(state)
+        self.logger.debug(f"Publishing MQTT message to topic {topic}: {state}")
+        self.mqtt_client.publish(topic, state)
 
     def _publish_connection(self, msg: VDAConnection):
         """
