@@ -29,6 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import gc
+
 import pytest
 import paho.mqtt.client as mqtt
 
@@ -202,6 +204,10 @@ class MockActionServerProcessVDAAction:
 
 @pytest.fixture
 def setup_rclpy():
+    # Free the previous test's nodes now. They are only freed by the garbage collector, which
+    # would otherwise run in the middle of this test: that can stall DDS discovery (an action
+    # client never sees its server) or crash rclpy.
+    gc.collect()
     rclpy.init()
     yield
     rclpy.shutdown()
