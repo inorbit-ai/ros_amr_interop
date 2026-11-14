@@ -818,3 +818,27 @@ def test_vda5050_mqtt_bridge_ignores_instant_actions_of_the_wrong_type(
 
     mqtt_bridge._instant_actions_pub.publish.assert_not_called()
     mqtt_bridge._order_errors_pub.publish.assert_not_called()
+
+
+@pytest.mark.parametrize("payload", [b"\x80abc", b"{bad", b"[]", b"null", b"5"])
+def test_vda5050_mqtt_bridge_rejects_undecodable_payloads(
+    setup_rclpy, mocker, mock_mqtt_client, payload
+):
+    # A payload that isn't UTF-8, isn't JSON or isn't a JSON object must not end the MQTT
+    # client's network thread. On the order topic it is a malformed order (validationError).
+    mqtt_bridge = MQTTBridge()
+    for publisher in ("_order_pub", "_instant_actions_pub", "_order_errors_pub"):
+        mocker.patch.object(mqtt_bridge, publisher, return_value=MagicMock())
+
+    for topic in ("order", "instantActions"):
+        mqtt_message = MQTTMessage(topic=str.encode(f"foo/bar/{topic}"))
+        mqtt_message.payload = payload
+        mqtt_bridge.on_message_mqtt(mqtt_bridge.mqtt_client, ..., mqtt_message)
+
+    mqtt_bridge._order_pub.publish.assert_not_called()
+    mqtt_bridge._instant_actions_pub.publish.assert_not_called()
+    mqtt_bridge._order_errors_pub.publish.assert_called_once()
+    error = mqtt_bridge._order_errors_pub.publish.call_args.args[0]
+    assert error.error_type == "validationError"
+    assert error.error_references == []
+

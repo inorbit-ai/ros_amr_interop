@@ -374,9 +374,15 @@ class MQTTBridge(Node):
         """MQTT client message callback."""
         try:
             msg_json = json_camel_to_snake_case(msg.payload)
+            if not isinstance(msg_json, dict):
+                raise ValueError("not a JSON object")
             self.logger.debug(f"Received '{msg_json}' from '{msg.topic}' topic")
-        except json.decoder.JSONDecodeError:
+        except ValueError as ex:
+            # JSONDecodeError, or UnicodeDecodeError for a payload that isn't UTF-8. Uncaught,
+            # it would end the MQTT client's network thread.
             self.logger.error(f"Failed to decode message: '{msg.payload}'")
+            if msg.topic.endswith("order"):
+                self._report_undecodable_order(None, ex)
             return
 
         try:
