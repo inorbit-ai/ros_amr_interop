@@ -18,8 +18,8 @@ If you run a container any other way:
   dirs that exist only inside the container, or pass
   `--user "$(id -u):$(id -g)" -e HOME=/tmp`. The `ros:*` images have no
   matching user, so with `--user` apt/rosdep won't work.
-- `docker exec` runs as root too, whatever the container was started with.
-  Pass `-u "$(id -u):$(id -g)"`.
+- `docker exec` runs as the container's start user: root by default, and
+  root for `run.sh` containers. Pass `-u "$(id -u):$(id -g)"`.
 - `sudo` inside the container writes as root. Don't use it on mounted paths.
 - Prefer one-shot `docker run --rm`. If you start a long-lived container,
   `docker rm -f` it when you're done.

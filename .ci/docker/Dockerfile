@@ -30,8 +30,6 @@ RUN useradd -m docker -s /bin/bash && echo "docker:docker" | chpasswd \
 
 USER docker
 
-WORKDIR /home/docker/dev_ws
-
 # Add ROS and workspace overlays to docker user
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /home/docker/.bashrc \
    && rosdep update
