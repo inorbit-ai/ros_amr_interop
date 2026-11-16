@@ -46,33 +46,35 @@ To do this this, you can check the [vda5050_examples](https://github.com/inorbit
 
 ### Compilation
 
-Start a docker container with the required packages mounted on `dev_ws`:
+Start a docker container from the repository root:
 
 ```bash
-# Go to the repository root folder and execute
-docker run -ti --rm \
-    --workdir /dev_ws/ \
-    -v ./vda5050_msgs:/dev_ws/src/vda5050_msgs \
-    -v ./vda5050_serializer:/dev_ws/src/vda5050_serializer \
-    -v ./vda5050_connector:/dev_ws/src/vda5050_connector \
-    osrf/ros:humble-desktop-full
+.ci/docker/run.sh
 ```
 
-Now build the package:
+The repository is mounted at `/ws/src/ros_amr_interop` and `/ws` is the colcon workspace. The shell runs as the owner of your checkout, with passwordless `sudo`, so it doesn't leave root-owned files behind. The image is `ros:humble-ros-base`, as in CI; set `IMAGE` to use another one, e.g. `IMAGE=osrf/ros:humble-desktop-full .ci/docker/run.sh`.
+
+Now install the dependencies and build the package:
 
 ```bash
-apt update && apt install ros-humble-ament* -y
-cd /dev_ws/
-colcon build --symlink-install
+sudo apt-get update && rosdep update --rosdistro humble
+rosdep install -iy --rosdistro humble --from-paths \
+    src/ros_amr_interop/vda5050_msgs src/ros_amr_interop/vda5050_connector
+colcon build --symlink-install --packages-up-to vda5050_connector
 ```
 
 ### Testing
 
-The package provides several lint test (`ament_pep257` and `ament_flake8` for Python, `ament_clang_format` for C++ and `ament_copyright`), as well as specific unit tests to check the correct functionality of the different modules. To run the tests, execute:
+The package provides several lint test (`ament_pep257` and `ament_flake8` for Python, `ament_clang_format` for C++ and `ament_copyright`), as well as specific unit tests to check the correct functionality of the different modules. To run the unit tests, as CI does:
 
 ```sh
-cd /dev_ws/
-rosdep install --from-paths src -y --ignore-src
+source install/setup.bash
+python3 -m pytest -q src/ros_amr_interop/vda5050_connector/test
+```
+
+To run the unit and lint tests:
+
+```sh
 colcon test --packages-select vda5050_connector && colcon test-result --verbose
 ```
 
