@@ -46,15 +46,15 @@ To do this this, you can check the [vda5050_examples](https://github.com/inorbit
 
 ### Compilation
 
-Start a docker container with the required packages mounted on `dev_ws`:
+Start a docker container with the required packages mounted read-only on `dev_ws` (the container runs as root, so a writable mount would leave root-owned files such as `__pycache__` in your checkout):
 
 ```bash
 # Go to the repository root folder and execute
 docker run -ti --rm \
     --workdir /dev_ws/ \
-    -v ./vda5050_msgs:/dev_ws/src/vda5050_msgs \
-    -v ./vda5050_serializer:/dev_ws/src/vda5050_serializer \
-    -v ./vda5050_connector:/dev_ws/src/vda5050_connector \
+    -v ./vda5050_msgs:/dev_ws/src/vda5050_msgs:ro \
+    -v ./vda5050_serializer:/dev_ws/src/vda5050_serializer:ro \
+    -v ./vda5050_connector:/dev_ws/src/vda5050_connector:ro \
     osrf/ros:humble-desktop-full
 ```
 
