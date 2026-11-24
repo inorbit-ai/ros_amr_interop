@@ -417,7 +417,7 @@ rclcpp_action::GoalResponse AdapterNode::nav_to_node_handle_goal(
     return rclcpp_action::GoalResponse::REJECT;
   }
 
-  if (nav_to_node_->is_driving()) {
+  if (nav_to_node_->has_active_goal()) {
     RCLCPP_INFO(
       get_logger(), "Navigation goal [%d] has been rejected. There is an active goal executing.",
       uuid.at(0));
@@ -470,7 +470,7 @@ rclcpp_action::GoalResponse AdapterNode::nav_through_nodes_handle_goal(
     return rclcpp_action::GoalResponse::REJECT;
   }
 
-  if (nav_through_nodes_->is_driving()) {
+  if (nav_through_nodes_->has_active_goal()) {
     RCLCPP_INFO(
       get_logger(),
       "Navigation through nodes goal [%d] rejected. There is an active goal executing.",

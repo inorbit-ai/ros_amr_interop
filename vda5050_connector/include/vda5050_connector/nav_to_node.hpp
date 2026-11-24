@@ -108,6 +108,11 @@ public:
    */
   bool is_driving() const { return current_state_->get().driving; }
 
+  /**
+   * @brief Return whether a navigation goal is executing.
+   */
+  bool has_active_goal() const { return goal_handle_ && goal_handle_->is_active(); }
+
 protected:
   // Goal handle for ROS2 action
   std::shared_ptr<GoalHandleNavigateToNode> goal_handle_;
