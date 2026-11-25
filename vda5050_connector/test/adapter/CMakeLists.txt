@@ -15,6 +15,7 @@ endmacro()
 ## LIBRARY TEST PLUGINS
 set(plugins
   common/stub_nav_to_node.cpp
+  common/stub_nav_through_nodes.cpp
   common/stub_state_handlers.cpp
   common/stub_vda_actions.cpp
 )

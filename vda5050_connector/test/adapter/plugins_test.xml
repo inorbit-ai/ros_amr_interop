@@ -2,6 +2,9 @@
   <class type="test::StubNavToNode" base_class_type="adapter::NavToNode">
     <description>StubNavToNode: Stub simplier version of NavToNode handler.</description>
   </class>
+  <class type="test::StubNavThroughNodes" base_class_type="adapter::NavThroughNodes">
+    <description>StubNavThroughNodes: Stub NavThroughNodes handler that keeps the goal executing until it is canceled.</description>
+  </class>
   <class type="test::StubStateHandlerPub" base_class_type="adapter::StateHandler">
     <description>StubStateHandlerPub: Stub simplier version of StateHandler handler that creates ROS2 publisher.</description>
   </class>

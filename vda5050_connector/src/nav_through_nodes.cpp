@@ -68,7 +68,8 @@ void adapter::NavThroughNodes::extendNavigationCallback(
   {
     std::unique_lock lock(navigation_mutex_);
 
-    if (!goal_handle_)
+    // A finished goal keeps its handle until the next goal replaces it.
+    if (!goal_handle_ || !goal_handle_->is_active())
     {
       response->success = false;
       response->message = "No active navigation goal";
