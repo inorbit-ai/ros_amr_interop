@@ -734,6 +734,9 @@ class VDA5050Controller(Node):
                 "operating_mode": order_state.state.operating_mode
             }
         )
+        # Pass on the adapter's e-stop and field state, keep NONE if it leaves e_stop unset
+        if order_state.state.safety_state.e_stop:
+            self._update_state({"safety_state": order_state.state.safety_state})
 
     # Instant Actions
 
