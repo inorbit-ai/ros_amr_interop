@@ -37,6 +37,10 @@ add_dependencies_to_test(test_utils_cpp)
 ament_add_gtest(test_handler_execution handler_execution/handler_execution_test.cpp)
 add_dependencies_to_test(test_handler_execution)
 
+# TEST - NAVIGATION GUARD
+ament_add_gtest(test_navigation_guard navigation_guard/navigation_guard_test.cpp)
+add_dependencies_to_test(test_navigation_guard)
+
 install(
   TARGETS test_plugins
   EXPORT test_plugins

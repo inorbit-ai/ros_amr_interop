@@ -311,7 +311,6 @@ void AdapterNode::execute_vda_action(const std::shared_ptr<GoalHandleProcessVDAA
 void AdapterNode::execute_nav_to_node(const std::shared_ptr<GoalHandleNavigateToNode> goal_handle)
 {
   try {
-    nav_to_node_->reset(goal_handle->get_goal()->node, goal_handle);
     nav_to_node_->execute();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(get_logger(), "Error while navigating to node: [%s].", e.what());
@@ -323,7 +322,6 @@ void AdapterNode::execute_nav_through_nodes(
   const std::shared_ptr<GoalHandleNavigateThroughNodes> goal_handle)
 {
   try {
-    nav_through_nodes_->reset(goal_handle->get_goal()->edges, goal_handle->get_goal()->nodes, goal_handle);
     nav_through_nodes_->execute();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(get_logger(), "Error while navigating through nodes: [%s].", e.what());
@@ -452,6 +450,14 @@ void AdapterNode::nav_to_node_handle_accepted(
     goal_handle->abort(std::make_shared<NavigateToNode::Result>());
     return;
   }
+  // stores the goal before the next goal request is handled, so the active goal guard sees it
+  try {
+    nav_to_node_->reset(goal_handle->get_goal()->node, goal_handle);
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(get_logger(), "Failed to start navigation to node: [%s].", e.what());
+    goal_handle->abort(std::make_shared<NavigateToNode::Result>());
+    return;
+  }
   std::thread{
     std::bind(&AdapterNode::execute_nav_to_node, this, std::placeholders::_1), goal_handle}
     .detach();
@@ -505,6 +511,14 @@ void AdapterNode::nav_through_nodes_handle_accepted(
 {
   if (!nav_through_nodes_) {
     RCLCPP_ERROR(get_logger(), "No nav through nodes handler is configured.");
+    goal_handle->abort(std::make_shared<NavigateThroughNodes::Result>());
+    return;
+  }
+  // stores the goal before the next goal request is handled, so the active goal guard sees it
+  try {
+    nav_through_nodes_->reset(goal_handle->get_goal()->edges, goal_handle->get_goal()->nodes, goal_handle);
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(get_logger(), "Failed to start navigation through nodes: [%s].", e.what());
     goal_handle->abort(std::make_shared<NavigateThroughNodes::Result>());
     return;
   }
