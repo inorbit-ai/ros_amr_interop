@@ -57,6 +57,8 @@ from vda5050_msgs.msg import InstantActions
 from vda5050_msgs.msg import CurrentAction
 from vda5050_msgs.msg import Error
 from vda5050_msgs.msg import ErrorReference
+from vda5050_msgs.msg import SafetyState
+from vda5050_connector.srv import GetState
 
 
 def succeeded_result(action_type):
@@ -1849,3 +1851,50 @@ def test_vda5050_controller_reports_undecodable_order(
 
     assert node._current_state.errors[-1] == error
     assert node._current_state.errors[-1].error_type == "validationError"
+
+
+@pytest.mark.parametrize(
+    "e_stop, field_violation",
+    [
+        (SafetyState.MANUAL, True),
+        (SafetyState.AUTO_ACK, False),
+        (SafetyState.REMOTE, True),
+        (SafetyState.NONE, True),
+    ],
+)
+def test_vda5050_controller_state_from_adapter_safety_state(
+    mocker,
+    adapter_node,
+    action_server_nav_to_node,
+    action_server_process_vda_action,
+    service_get_state,
+    service_supported_actions,
+    e_stop,
+    field_violation,
+):
+    # The adapter's safety state is reported to master control
+    node = VDA5050Controller()
+    adapter_state = GetState.Response()
+    adapter_state.state.safety_state = SafetyState(e_stop=e_stop, field_violation=field_violation)
+
+    node._update_state_from_adapter(adapter_state)
+
+    assert node._current_state.safety_state.e_stop == e_stop
+    assert node._current_state.safety_state.field_violation == field_violation
+
+
+def test_vda5050_controller_state_from_adapter_safety_state_unset(
+    mocker,
+    adapter_node,
+    action_server_nav_to_node,
+    action_server_process_vda_action,
+    service_get_state,
+    service_supported_actions,
+):
+    # An adapter that leaves safety_state unset keeps the default: no e-stop, no field violation
+    node = VDA5050Controller()
+
+    node._update_state_from_adapter(GetState.Response())
+
+    assert node._current_state.safety_state.e_stop == SafetyState.NONE
+    assert not node._current_state.safety_state.field_violation
