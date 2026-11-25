@@ -120,6 +120,15 @@ public:
   bool is_driving() const { return current_state_->get().driving; }
 
   /**
+   * @brief Return whether a navigation goal is executing.
+   */
+  bool has_active_goal() const
+  {
+    std::shared_lock lock(navigation_mutex_);
+    return goal_handle_ && goal_handle_->is_active();
+  }
+
+  /**
    * @brief Return a thread-safe snapshot of the current edges/nodes.
    */
   std::pair<std::vector<vda5050_msgs::msg::Edge>, std::vector<vda5050_msgs::msg::Node>>
